@@ -1,8 +1,7 @@
 export type CardType = 'rock' | 'paper' | 'scissors';
 
 export interface CardProps {
-  id: number;
+  id: string;
   type: CardType;
-  name: string;
-  emoji: string;
+  onClick?: (id:string) => void;
 }

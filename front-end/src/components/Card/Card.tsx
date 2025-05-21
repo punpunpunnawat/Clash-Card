@@ -1,23 +1,30 @@
-// Card.tsx
-import React from 'react';
-import { type CardProps } from '../../types/Card';
+// src/components/Card/index.tsx (หรือที่คุณใช้)
 
-const Card: React.FC<CardProps> = ({ name, emoji }) => {
+import type { CardProps } from "../../types/Card"; // ปรับ path ตามจริง
+import "./Card.css";
+const Card = (props: CardProps & { flipped?: boolean }) => {
+  const { id, type, onClick, flipped = false } = props;
+
+  const handleOnClick = () => {
+    onClick?.(id);
+  };
+
   return (
     <div
-      style={{
-        border: '2px solid #333',
-        borderRadius: '8px',
-        padding: '12px',
-        margin: '8px',
-        textAlign: 'center',
-        width: '80px',
-        cursor: 'pointer',
-        userSelect: 'none',
-      }}
+      className={`Card ${!flipped ? "flipped" : ""}`}
+      onClick={handleOnClick}
     >
-      <div style={{ fontSize: '36px' }}>{emoji}</div>
-      <div>{name}</div>
+      <div className="Card__inner">
+        <div className="Card__front">
+          <img src='/BackOfCard.svg' width={175} height={300} />
+        </div>
+        <div className="Card__back">
+          {type == "rock" ? <img src='/RockCard.svg' width={175} height={300} /> :
+           type == "paper" ? <img src='/PaperCard.svg' width={175} height={300} /> :
+           type == "scissors" && <img src='/ScissorsCard.svg' width={175} height={300} />}
+        </div>
+      </div>
+      {id}
     </div>
   );
 };

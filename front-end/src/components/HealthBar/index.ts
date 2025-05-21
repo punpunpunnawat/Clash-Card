@@ -1,2 +1,2 @@
-import HealthBar from "./HealtBar";
+import HealthBar from "./HealthBar";
 export default HealthBar
