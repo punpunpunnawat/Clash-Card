@@ -1,37 +1,30 @@
 import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { setPlayer } from "../../store/slices/playerSlice";
-import { type RootState } from "../../store"; // หรือ path ที่เก็บ store
-import { setDeck } from "../../store/slices/deckSlice";
+import { fetchPlayer } from "../../store/slices/playerSlice";
+import { fetchDeck  } from "../../store/slices/deckSlice";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState, AppDispatch } from "../../store"; // import AppDispatch ด้วย
+
 
 function Home() {
-  const dispatch = useDispatch();
+  
   const player = useSelector((state: RootState) => state.player.player);
   const deck = useSelector((state: RootState) => state.deck.deck);
   const navigate = useNavigate();
 
+  const dispatch: AppDispatch = useDispatch();
   useEffect(() => {
-    fetch("http://localhost:8080/api/user/1")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Fetched player:", data);
-        dispatch(setPlayer(data));
-      })
-      .catch(console.error);
-
-    fetch("http://localhost:8080/api/user/1/deck")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Fetched deck:", data);
-        dispatch(setDeck(data));
-      })
-      .catch(console.error);
+    dispatch(fetchPlayer(1));
+    dispatch(fetchDeck(1));
   }, [dispatch]);
 
   const handleClickPlayWithBot = () => {
-    navigate("/bot-battle")
-  }
+    navigate("/bot-battle");
+  };
+
+  const handleClickSelectLevel = () => {
+    navigate("/level");
+  };
 
   if (!player) return <div>กำลังโหลดข้อมูลผู้เล่น...</div>;
 
@@ -52,7 +45,9 @@ function Home() {
         ))}
       </ul>
       <button onClick={handleClickPlayWithBot}>Play with Bot</button>
+      <button onClick={handleClickSelectLevel}>Select Level</button>
     </div>
   );
 }
+
 export default Home

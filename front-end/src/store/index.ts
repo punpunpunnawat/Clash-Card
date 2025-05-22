@@ -1,14 +1,11 @@
-// src/store/index.ts
-import { configureStore } from '@reduxjs/toolkit';
-import playerReducer from './slices/playerSlice';
-import gameReducer from './slices/gameSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import playerReducer from "./slices/playerSlice";
 import deckReducer from "./slices/deckSlice";
 
 export const store = configureStore({
   reducer: {
     player: playerReducer,
-    game: gameReducer,
-    deck: deckReducer
+    deck: deckReducer,
   },
 });
 

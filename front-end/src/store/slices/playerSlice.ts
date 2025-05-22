@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { UnitStat } from "../../types/UnitStat";
 
 export interface Player {
@@ -7,13 +7,11 @@ export interface Player {
   email: string;
   stat: UnitStat;
   level: number;
-  currentLevel: number;
+  currentCampaignLevel: number;
   exp: number;
   money: number;
   createdAt: string;
 }
-
-
 
 interface PlayerState {
   player: Player | null;
@@ -23,20 +21,32 @@ const initialState: PlayerState = {
   player: null,
 };
 
+export const fetchPlayer = createAsyncThunk(
+  "player/fetchPlayer",
+  async (id: number) => {
+    const res = await fetch(`http://localhost:8080/api/user/${id}`);
+    return await res.json();
+  }
+);
+
 const playerSlice = createSlice({
   name: "player",
   initialState,
   reducers: {
     setPlayer(state, action: PayloadAction<Player>) {
-      console.log(action);
       state.player = action.payload;
-      console.log("Updated player state:", state.player);
     },
     clearPlayer(state) {
       state.player = null;
     },
   },
+  extraReducers: (builder) => {
+    builder.addCase(fetchPlayer.fulfilled, (state, action) => {
+      state.player = action.payload;
+    });
+  },
 });
+
 
 export const { setPlayer, clearPlayer } = playerSlice.actions;
 

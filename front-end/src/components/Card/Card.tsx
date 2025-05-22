@@ -24,7 +24,6 @@ const Card = (props: CardProps & { flipped?: boolean }) => {
            type == "scissors" && <img src='/ScissorsCard.svg' width={150} height={250} />}
         </div>
       </div>
-      {id}
     </div>
   );
 };

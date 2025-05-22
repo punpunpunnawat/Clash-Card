@@ -166,6 +166,20 @@ func endGame(userID int, winner string) {
 	// TODO: อัปเดต DB, เพิ่มเงิน, เก็บ log, ลบ game state ฯลฯ
 }
 
+func generateBotStats(level int) (atk, def, spd, hp int) {
+	baseATK := 10
+	baseDEF := 5
+	baseSPD := 5
+	baseHP := 50
+
+	atk = baseATK + level*2
+	def = baseDEF + level
+	spd = baseSPD + (level / 2)
+	hp = baseHP + level*10
+
+	return
+}
+
 // ----------- Handlers -----------
 
 func StartBattleHandler(db *sql.DB) http.HandlerFunc {
@@ -173,7 +187,8 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("start call")
 		var req struct {
-			UserID int `json:"userId"`
+			UserID   int `json:"userId"`
+			BotLevel int `json:"levelId"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UserID == 0 {
 			http.Error(w, "Invalid or missing userId", http.StatusBadRequest)
@@ -195,22 +210,23 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 		botDeck := newShuffledDeck()
 		playerHand := drawCards(&deck, 3)
 		botHand := drawCards(&botDeck, 3)
-
+		botATK, botDEF, botSPD, botHP := generateBotStats(req.BotLevel)
+		fmt.Println("bot stat ", botATK, botDEF, botSPD, botHP)
 		gameState := &GameState{
 			PlayerDeck:      deck,
 			BotDeck:         botDeck,
 			PlayerHand:      playerHand,
 			BotHand:         botHand,
 			PlayerATK:       user.Stat.Atk,
-			BotATK:          user.Stat.Atk,
+			BotATK:          botATK,
 			PlayerDEF:       user.Stat.Def,
-			BotDEF:          user.Stat.Def,
+			BotDEF:          botDEF,
 			PlayerSPD:       user.Stat.Spd,
-			BotSPD:          user.Stat.Spd,
+			BotSPD:          botSPD,
 			PlayerMaxHP:     user.Stat.HP,
-			BotMaxHP:        user.Stat.HP,
+			BotMaxHP:        botHP,
 			PlayerCurrentHP: user.Stat.HP,
-			BotCurrentHP:    user.Stat.HP,
+			BotCurrentHP:    botHP,
 		}
 
 		gameStatesMutex.Lock()

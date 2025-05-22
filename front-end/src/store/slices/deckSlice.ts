@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 
 type CardType = "rock" | "paper" | "scissors";
 
@@ -14,6 +14,14 @@ const initialState: DeckState = {
   deck: [],
 };
 
+export const fetchDeck = createAsyncThunk(
+  "deck/fetchDeck",
+  async (id: number) => {
+    const res = await fetch(`http://localhost:8080/api/user/${id}/deck`);
+    return await res.json();
+  }
+);
+
 const deckSlice = createSlice({
   name: "deck",
   initialState,
@@ -24,6 +32,11 @@ const deckSlice = createSlice({
     clearDeck(state) {
       state.deck = [];
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(fetchDeck.fulfilled, (state, action) => {
+      state.deck = action.payload;
+    });
   },
 });
 

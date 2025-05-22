@@ -26,7 +26,7 @@
   display: flex;
   justify-content: space-between;
   z-index: 999;     /* ให้อยู่บนสุด */
-  padding: 10px;     /* เพิ่มช่องว่างข้างในนิดหน่อย */
+  padding: 0px 10px 0px 10px;     /* เพิ่มช่องว่างข้างในนิดหน่อย */
   box-sizing: border-box;
 }
 .BotBattle__board-enemy {
@@ -37,7 +37,7 @@
   display: flex;
   justify-content: space-between;
   z-index: 999;
-  padding: 10px;
+  padding: 0px 10px 0px 10px;  
   box-sizing: border-box;
   /* transform: rotate(180deg); */
 }
