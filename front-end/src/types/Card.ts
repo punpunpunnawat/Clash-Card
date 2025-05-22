@@ -1,4 +1,4 @@
-export type CardType = 'rock' | 'paper' | 'scissors';
+export type CardType = 'rock' | 'paper' | 'scissors' | 'hidden';
 
 export interface CardProps {
   id: string;

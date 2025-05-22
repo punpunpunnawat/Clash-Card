@@ -1,6 +1,6 @@
 .hand {
   display: inline-flex;
-  align-items: flex-end;
+  align-items: center;
   perspective: 1000px;
   overflow: visible;
 }
@@ -18,3 +18,27 @@
   transform: scale(1.1);
   z-index: 10;
 }
+.BotBattle__board-player {
+  position: fixed;   /* ติดกับ viewport */
+  bottom: 0;         /* ติดล่าง */
+  left: 0;           /* ติดซ้าย */
+  width: 100%;       /* กว้างเต็ม */
+  display: flex;
+  justify-content: space-between;
+  z-index: 999;     /* ให้อยู่บนสุด */
+  padding: 10px;     /* เพิ่มช่องว่างข้างในนิดหน่อย */
+  box-sizing: border-box;
+}
+.BotBattle__board-enemy {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  z-index: 999;
+  padding: 10px;
+  box-sizing: border-box;
+  /* transform: rotate(180deg); */
+}
+

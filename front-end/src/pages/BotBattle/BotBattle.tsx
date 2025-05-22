@@ -37,6 +37,7 @@ const BotBattle = () => {
   const [currentPlayerHP, setCurrentPlayerHP] = useState<number>(
     Number(player?.stat.hp)
   );
+  const [maxEnemyHP, setMaxEnemyHP] = useState<number>(0);
   const [currentEnemyHP, setCurrentEnemyHP] = useState<number>(0);
   const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
   const [updatedData, setUpdatedData] = useState<UpdatedData>();
@@ -48,25 +49,130 @@ const BotBattle = () => {
   const [showCard, setShowCard] = useState(true);
   const [winner, setWinner] = useState("");
 
-  const [animatingCard, setAnimatingCard] = useState<CardProps | null>(null);
-  const [animStyle, setAnimStyle] = useState<React.CSSProperties>({});
-  const deckRef = useRef<HTMLDivElement>(null);
-  const handRef = useRef<HTMLDivElement>(null);
+  const [animatingPlayerCard, setAnimatingPlayerCard] =
+    useState<CardProps | null>(null);
+  const [animatingEnemyCard, setAnimatingEnemyCard] =
+    useState<CardProps | null>(null);
+  const [playerDrawStyle, setPlayerDrawStyle] = useState<React.CSSProperties>(
+    {}
+  );
+  const [enemyDrawStyle, setEnemyDrawStyle] = useState<React.CSSProperties>({});
+  const playerDeckRef = useRef<HTMLDivElement>(null);
+  const playerHandRef = useRef<HTMLDivElement>(null);
+  const enemyDeckRef = useRef<HTMLDivElement>(null);
+  const enemyHandRef = useRef<HTMLDivElement>(null);
 
-  const animateDrawCard = (card: CardProps) => {
-    const deck = deckRef.current;
-    const hand = handRef.current;
-    console.log("deckRect", deck?.getBoundingClientRect());
-    console.log("handRect", hand?.getBoundingClientRect());
+  const [botHandSize, setBotHandSize] = useState(0);
+
+  const handleSelectCard = (id: string) => {
+    if (gameState !== "SELECT_CARD") return;
+    console.log(id);
+    setPlayerHand((prevHand) => prevHand.filter((card) => card.id !== id));
+    setBotHandSize(botHandSize - 1); // actual add
+    //setGameState("CARD_SELECTED");
+    setSelectedPlayerCard(playerHand.find((card) => card.id === id) || null);
+    console.log(selectedPlayerCard);
+    fetch("http://localhost:8080/api/battle/play", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId: 1, cardId: id }), // ส่ง userId ไป
+    })
+      .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
+      .then((data) => {
+        setSelectedBotCard(data.botCard);
+        setUpdatedData(data); // เก็บผลไว้ก่อน
+        console.log(data);
+      })
+      .catch((err) => {
+        console.error("Error starting battle:", err);
+      });
+  };
+
+  const findNewCard = (updatedCard: CardProps[]) => {
+    const currentIds = playerHand.map((card) => card.id);
+    const filteredNewCards = updatedCard.filter(
+      (card) => !currentIds.includes(card.id)
+    );
+    const newCard = filteredNewCards[0];
+    return newCard;
+  };
+  //---
+  // const drawCard = (newCard: CardProps, side: string) => {
+  //   console.log(side, newCard);
+  //   // const deck = playerDeckRef.current;
+  //   // const hand = playerHandRef.current;
+  //   const deck =
+  //     side === "player"
+  //       ? playerDeckRef.current
+  //       : side === "enemy"
+  //       ? enemyDeckRef.current
+  //       : null;
+  //   const hand =
+  //     side === "player"
+  //       ? playerHandRef.current
+  //       : side === "enemy"
+  //       ? enemyHandRef.current
+  //       : null;
+  //   if (!deck || !hand) {
+  //     console.log("deck or hand maybe empty");
+  //     return;
+  //   }
+
+  //   console.log(side, "deckRect", deck?.getBoundingClientRect());
+  //   console.log(side, "handRect", hand?.getBoundingClientRect());
+  //   if (!deck || !hand) return;
+
+  //   const deckRect = deck.getBoundingClientRect();
+  //   const handRect = hand.getBoundingClientRect();
+
+  //   if (side === "player") setAnimatingPlayerCard(newCard);
+  //   else if (side === "enemy") setAnimatingEnemyCard(newCard); // show the flying card
+
+  //   // start at deck
+  //   setPlayerDrawStyle({
+  //     position: "fixed",
+  //     left: deckRect.left,
+  //     top: deckRect.top,
+  //     width: deckRect.width,
+  //     height: deckRect.height,
+  //     transition: "all 0.5s ease",
+  //     zIndex: 1000,
+  //   });
+
+  //   // trigger animation in next tick
+  //   setTimeout(() => {
+  //     setPlayerDrawStyle((prev) => ({
+  //       ...prev,
+  //       left: handRect.left + handRect.width - deckRect.width / 2,
+  //       top: handRect.top + handRect.height / 2 - deckRect.height / 2,
+  //     }));
+  //   }, 50);
+
+  //   // after animation ends
+  //   setTimeout(() => {
+  //     if (side === "player") {
+  //       setPlayerHand((prev) => [...prev, newCard]); // actual add
+  //     } else if (side === "enemy") setBotHandSize(botHandSize + 1); // actual add
+  //     setAnimatingPlayerCard(null); // remove floating card
+  //     setAnimatingEnemyCard(null); // remove floating card
+  //   }, 600); // slightly longer than transition
+  // };
+
+  const drawPlayerCard = (newCard: CardProps, side: string) => {
+    console.log(side, newCard);
+
+    const deck = playerDeckRef.current;
+    const hand = playerHandRef.current;
     if (!deck || !hand) return;
-
     const deckRect = deck.getBoundingClientRect();
     const handRect = hand.getBoundingClientRect();
 
-    setAnimatingCard(card); // show the flying card
+    setAnimatingPlayerCard(newCard);
 
     // start at deck
-    setAnimStyle({
+    setPlayerDrawStyle({
       position: "fixed",
       left: deckRect.left,
       top: deckRect.top,
@@ -78,17 +184,51 @@ const BotBattle = () => {
 
     // trigger animation in next tick
     setTimeout(() => {
-      setAnimStyle((prev) => ({
+      setPlayerDrawStyle((prev) => ({
         ...prev,
-        left: handRect.left + handRect.width / 2 - deckRect.width / 2,
-        top: handRect.top,
+        left: handRect.left + handRect.width - deckRect.width / 2,
+        top: handRect.top + handRect.height / 2 - deckRect.height / 2,
       }));
     }, 50);
 
     // after animation ends
     setTimeout(() => {
-      setPlayerHand((prev) => [...prev, card]); // actual add
-      setAnimatingCard(null); // remove floating card
+      setPlayerHand((prev) => [...prev, newCard]); // actual add
+      setAnimatingPlayerCard(null); // remove floating card
+    }, 600); // slightly longer than transition
+  };
+
+  const drawEnemyCard = () => {
+    const deck = enemyDeckRef.current;
+    const hand = enemyHandRef.current;
+    if (!deck || !hand) return;
+    const deckRect = deck.getBoundingClientRect();
+    const handRect = hand.getBoundingClientRect();
+    setAnimatingEnemyCard({ id: "temp", type: "hidden" });
+    // start at deck
+    setEnemyDrawStyle({
+      position: "fixed",
+      left: deckRect.left,
+      top: deckRect.top,
+      width: deckRect.width,
+      height: deckRect.height,
+      transition: "all 0.5s ease",
+      zIndex: 1000,
+    });
+
+    // trigger animation in next tick
+    setTimeout(() => {
+      setEnemyDrawStyle((prev) => ({
+        ...prev,
+        left: handRect.left + handRect.width - deckRect.width / 2,
+        top: handRect.top + handRect.height / 2 - deckRect.height / 2,
+      }));
+    }, 50);
+
+    // after animation ends
+    setTimeout(() => {
+      setBotHandSize((prev) => prev + 1); // actual add
+      setAnimatingEnemyCard(null); // remove floating card
     }, 600); // slightly longer than transition
   };
 
@@ -106,8 +246,10 @@ const BotBattle = () => {
     })
       .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
       .then((data) => {
+        setMaxEnemyHP(Number(data.botHP));
         setCurrentEnemyHP(Number(data.botHP));
         setPlayerHand(data.playerHand);
+        setBotHandSize(data.botHandSize);
         console.log("Data:", data);
       })
       .catch((err) => {
@@ -160,8 +302,11 @@ const BotBattle = () => {
         break;
 
       case "DRAW_CARD":
-        if (updatedData) findNewCardAndDraw(updatedData?.playerHand);
-
+        if (updatedData && playerHandRef.current && enemyHandRef) {
+          drawPlayerCard(findNewCard(updatedData?.playerHand), "player");
+          drawEnemyCard();
+        }
+        setGameState("SELECT_CARD");
         break;
 
       default:
@@ -169,82 +314,33 @@ const BotBattle = () => {
     }
   }, [gameState]);
 
-  const findNewCardAndDraw = (updatedCard: CardProps[]) => {
-    const currentIds = playerHand.map((card) => card.id);
-    const filteredNewCards = updatedCard.filter(
-      (card) => !currentIds.includes(card.id)
-    );
-    animateDrawCard(filteredNewCards[0]);
-  };
-  const handleSelectCard = (id: string) => {
-    console.log(id);
-    setPlayerHand((prevHand) => prevHand.filter((card) => card.id !== id));
-
-    //setGameState("CARD_SELECTED");
-    setSelectedPlayerCard(playerHand.find((card) => card.id === id) || null);
-    console.log(selectedPlayerCard);
-    fetch("http://localhost:8080/api/battle/play", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId: 1, cardId: id }), // ส่ง userId ไป
-    })
-      .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
-      .then((data) => {
-        setSelectedBotCard(data.botCard);
-        setUpdatedData(data); // เก็บผลไว้ก่อน
-        console.log(data);
-      })
-      .catch((err) => {
-        console.error("Error starting battle:", err);
-      });
-  };
-
-  if (!playerData) return <div>Loading user data...</div>;
-
   return (
     <div>
-      <div>
-        <h2>
-          Player: {playerData?.username} (Level {playerData?.level})
-        </h2>
-        <div>
-          <HealthBar currentHP={currentPlayerHP} maxHP={playerData.stat.hp} />
-          <p>HP: {playerData?.stat.hp}</p>
-          <p>ATK: {playerData?.stat.atk}</p>
-          <p>DEF: {playerData?.stat.def}</p>
-          <p>SPD: {playerData?.stat.spd}</p>
+      <div className="BotBattle__hud">
+        <div className="BotBattle__enemy-bar">
+          ? : Enemy <HealthBar currentHP={currentEnemyHP} maxHP={maxEnemyHP} />
         </div>
       </div>
 
-      <div>
-        <h2>Enemy: BotTest (Level 999)</h2>
-        <div>
-          <HealthBar currentHP={currentEnemyHP} maxHP={playerData.stat.hp} />
-          <p>HP: {playerData?.stat.hp}</p>
-          <p>ATK: {playerData?.stat.atk}</p>
-          <p>DEF: {playerData?.stat.def}</p>
-          <p>SPD: {playerData?.stat.spd}</p>
-        </div>
-      </div>
-
-      <div className="BotBattle__card-layer">
-        <div className="BotBattle__card-layer_deck" ref={deckRef}>
-          DECK
-        </div>
-        <div className="hand" ref={handRef}>
+      <div className="BotBattle__board-player">
+        <div style={{ width: 150, height: 250, visibility: "hidden" }} />
+        <div className="hand" ref={playerHandRef}>
           {playerHand?.map((card, index) => {
             const total = playerHand.length;
             const angleStep = 10; // ค่าที่ควบคุมความเอียง
             const mid = (total - 1) / 2;
             const angle = (index - mid) * angleStep;
-            const xOffset = (index - mid) * -10; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
+            const xOffset = (index - mid) * -30; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
             const yOffset = Math.abs(index - mid) * 20; // ยิ่งห่างจากตรงกลาง ยิ่งต่ำลง
             const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
-
             return (
-              <div key={card.id} style={{ transform }}>
+              <div
+                key={card.id}
+                style={{
+                  transform,
+                  transition: "transform 0.5s ease", // 👈 ใส่ transition ตรงนี้
+                }}
+              >
                 <div className="card-wrapper">
                   <Card
                     id={card.id}
@@ -256,14 +352,60 @@ const BotBattle = () => {
             );
           })}
         </div>
-        {animatingCard && (
-          <div style={animStyle}>
-            <Card id={animatingCard.id} type={animatingCard.type} />
+        <div className="BotBattle__card-layer_deck" ref={playerDeckRef}>
+          <img src="/BackOfCard.svg" width={150} height={250} />
+        </div>
+        {animatingPlayerCard && (
+          <div style={playerDrawStyle}>
+            <Card id={animatingPlayerCard.id} type={animatingPlayerCard.type} />
           </div>
         )}
       </div>
 
-      <div className="BotBattle__show-winner">
+      <div className="BotBattle__board-enemy">
+        <div className="BotBattle__card-layer_deck" ref={enemyDeckRef}>
+          <img src="/BackOfCard.svg" width={150} height={250} />
+        </div>
+        <div className="hand" ref={enemyHandRef}>
+          {Array.from({ length: botHandSize }).map((_, index) => {
+            const total = botHandSize;
+            const angleStep = 10; // ค่าที่ควบคุมความเอียง
+            const mid = (total - 1) / 2;
+            const angle = (index - mid) * angleStep;
+            const xOffset = (index - mid) * -30;
+            const yOffset = Math.abs(index - mid) * 20;
+            const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
+
+            return (
+              <div
+                style={{
+                  transform,
+                  transition: "transform 0.5s ease",
+                }}
+              >
+                <div className="card-wrapper">
+                  <Card
+                    id={"id here"}
+                    type="hidden" // เปลี่ยน type ได้ตามที่ต้องการ
+                    flipped
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div style={{ width: 150, height: 250, visibility: "hidden" }} />
+        {animatingEnemyCard &&
+          (console.log("Animating enemy card triggered", animatingEnemyCard),
+          (
+            <div style={enemyDrawStyle}>
+              <Card id={animatingEnemyCard.id} type={animatingEnemyCard.type} flipped/>
+            </div>
+          ))}
+      </div>
+
+      <div className="BotBattle__arena">
         {selectedPlayerCard && (
           <div
             className={
@@ -299,6 +441,12 @@ const BotBattle = () => {
             />
           </div>
         )}
+      </div>
+      <div className="BotBattle__hud">
+        <div className="BotBattle__player-bar">
+          {playerData?.level} : {playerData?.username}{" "}
+          <HealthBar currentHP={currentPlayerHP} maxHP={playerData.stat.hp} />
+        </div>
       </div>
     </div>
   );

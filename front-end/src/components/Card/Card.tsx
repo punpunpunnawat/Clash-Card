@@ -16,12 +16,12 @@ const Card = (props: CardProps & { flipped?: boolean }) => {
     >
       <div className="Card__inner">
         <div className="Card__front">
-          <img src='/BackOfCard.svg' width={175} height={300} />
+          <img src='/BackOfCard.svg' width={150} height={250} />
         </div>
         <div className="Card__back">
-          {type == "rock" ? <img src='/RockCard.svg' width={175} height={300} /> :
-           type == "paper" ? <img src='/PaperCard.svg' width={175} height={300} /> :
-           type == "scissors" && <img src='/ScissorsCard.svg' width={175} height={300} />}
+          {type == "rock" ? <img src='/RockCard.svg' width={150} height={250} /> :
+           type == "paper" ? <img src='/PaperCard.svg' width={150} height={250} /> :
+           type == "scissors" && <img src='/ScissorsCard.svg' width={150} height={250} />}
         </div>
       </div>
       {id}

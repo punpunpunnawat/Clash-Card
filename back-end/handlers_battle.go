@@ -218,9 +218,10 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 		gameStatesMutex.Unlock()
 
 		res := map[string]interface{}{
-			"playerHand": playerHand,
-			"playerHP":   gameState.PlayerCurrentHP,
-			"botHP":      gameState.BotCurrentHP,
+			"playerHand":  playerHand,
+			"playerHP":    gameState.PlayerCurrentHP,
+			"botHandSize": len(botHand),
+			"botHP":       gameState.BotCurrentHP,
 			"playerStats": map[string]int{
 				"ATK": user.Stat.Atk,
 				"DEF": user.Stat.Def,
