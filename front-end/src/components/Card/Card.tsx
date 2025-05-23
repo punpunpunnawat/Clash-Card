@@ -2,8 +2,8 @@
 
 import type { CardProps } from "../../types/Card"; // ปรับ path ตามจริง
 import "./Card.css";
-const Card = (props: CardProps & { flipped?: boolean }) => {
-  const { id, type, onClick, flipped = false } = props;
+const Card = (props: CardProps & { flipped?: boolean } & { className?: string}) => {
+  const { id, type, onClick, flipped = false, className="" } = props;
 
   const handleOnClick = () => {
     onClick?.(id);
@@ -11,7 +11,8 @@ const Card = (props: CardProps & { flipped?: boolean }) => {
 
   return (
     <div
-      className={`Card ${!flipped ? "flipped" : ""}`}
+      className={`Card ${!flipped ? "flipped" : ""} ${className}`}
+
       onClick={handleOnClick}
     >
       <div className="Card__inner">

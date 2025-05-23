@@ -23,8 +23,27 @@ type UpdatedData = {
   playerHand: CardProps[];
   result: string;
   winner: string;
+  cardRemaining: {
+    player: {
+      paper: number;
+      rock: number;
+      scissors: number;
+    };
+    bot: {
+      paper: number;
+      rock: number;
+      scissors: number;
+    };
+  };
+};
+type CardCount = {
+  [CardType: string]: number; // เช่น { rock: 2, paper: 1 }
 };
 
+type CardRemaining = {
+  player: CardCount;
+  bot: CardCount;
+};
 type GameState =
   | "SELECT_CARD"
   | "CARD_SELECTED"
@@ -34,8 +53,8 @@ type GameState =
 
 const BotBattle = () => {
   const { levelId } = useParams<{ levelId: string }>();
-    const player = useSelector((state: RootState) => state.player.player);
-  
+  const player = useSelector((state: RootState) => state.player.player);
+
   const dispatch: AppDispatch = useDispatch();
   useEffect(() => {
     dispatch(fetchPlayer(1));
@@ -43,16 +62,16 @@ const BotBattle = () => {
   }, [dispatch]);
   const [gameState, setGameState] = useState<GameState>("SELECT_CARD");
 
-useEffect(() => {
-  if (player?.stat?.hp) {
-    setCurrentPlayerHP(Number(player.stat.hp));
-  }
-}, [player]);
+  useEffect(() => {
+    if (player?.stat?.hp) {
+      setCurrentPlayerHP(Number(player.stat.hp));
+    }
+  }, [player]);
 
   const [currentPlayerHP, setCurrentPlayerHP] = useState<number>(
     Number(player?.stat.hp)
   );
-  
+
   const [maxEnemyHP, setMaxEnemyHP] = useState<number>(0);
   const [currentEnemyHP, setCurrentEnemyHP] = useState<number>(0);
 
@@ -70,6 +89,11 @@ useEffect(() => {
 
   const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
   const [botHandSize, setBotHandSize] = useState(0);
+  const [cardRemaining, setCardRemaining] = useState<CardRemaining>({
+    player: {},
+    bot: {},
+  });
+
   //Animate
   const [animatingPlayerCard, setAnimatingPlayerCard] =
     useState<CardProps | null>(null);
@@ -191,9 +215,11 @@ useEffect(() => {
     }, 600); // slightly longer than transition
   };
 
-  useEffect(() => {
-    console.log("selectedPlayerCard changed to:", selectedPlayerCard);
-  }, [selectedPlayerCard]);
+  // useEffect(() => {
+  //   console.log("updatedData changed to:", updatedData);
+  //   console.log("rem changed to:", cardRemaining);
+  //   if (updatedData?.cardRemaining) setCardRemaining(updatedData.cardRemaining);
+  // }, [updatedData]);
 
   useEffect(() => {
     fetch("http://localhost:8080/api/battle/start", {
@@ -205,6 +231,7 @@ useEffect(() => {
     })
       .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
       .then((data) => {
+        setCardRemaining(data.cardRemaining);
         setMaxEnemyHP(Number(data.botHP));
         setCurrentEnemyHP(Number(data.botHP));
         setPlayerHand(data.playerHand);
@@ -261,9 +288,10 @@ useEffect(() => {
         break;
 
       case "DRAW_CARD":
-        if (updatedData && playerHandRef.current && enemyHandRef) {
+        if (updatedData) {
           drawPlayerCard(findNewCard(updatedData?.playerHand), "player");
           drawEnemyCard();
+          setCardRemaining(updatedData.cardRemaining);
         }
         setGameState("SELECT_CARD");
         break;
@@ -273,153 +301,156 @@ useEffect(() => {
     }
   }, [gameState]);
 
-
-
-  if(!player) return <div>loading</div>
+  if (!player) return <div>loading</div>;
   return (
-    <div>
-      <div className="BotBattle__hud">
+    <div className="BotBattle">
+      <div className="BotBattle__arena">
         <div className="BotBattle__enemy-bar">
-          ? : Enemy <HealthBar currentHP={currentEnemyHP} maxHP={maxEnemyHP} />
+          ? : Enemy <HealthBar currentHP={currentEnemyHP} maxHP={maxEnemyHP}/> ROCK:{cardRemaining.bot.rock} PAPER:{cardRemaining.bot.paper} SCISSORS{cardRemaining.bot.scissors}
         </div>
-      </div>
-
-      <div className="BotBattle__board-player">
-        <div style={{ width: 150, height: 250, visibility: "hidden" }} />
-        <div className="hand" ref={playerHandRef}>
-          {playerHand?.map((card, index) => {
-            const total = playerHand.length;
-            const angleStep = 10; // ค่าที่ควบคุมความเอียง
-            const mid = (total - 1) / 2;
-            const angle = (index - mid) * angleStep;
-            const xOffset = (index - mid) * -30; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
-            const yOffset = Math.abs(index - mid) * 20; // ยิ่งห่างจากตรงกลาง ยิ่งต่ำลง
-            const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
-            return (
-              <div
-                key={card.id}
-                style={{
-                  transform,
-                  transition: "transform 0.5s ease", // 👈 ใส่ transition ตรงนี้
-                }}
-              >
-                <div className="card-wrapper">
-                  <Card
-                    id={card.id}
-                    type={card.type}
-                    onClick={handleSelectCard}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="BotBattle__card-layer_deck" ref={playerDeckRef}>
-          <img src="/BackOfCard.svg" width={150} height={250} />
-        </div>
-        {animatingPlayerCard && (
-          <div style={playerDrawStyle}>
-            <Card id={animatingPlayerCard.id} type={animatingPlayerCard.type} />
-          </div>
-        )}
-      </div>
-
-      <div className="BotBattle__board-enemy">
-        <div
-          className="BotBattle__card-layer_deck"
-          ref={enemyDeckRef}
-          style={{ transform: "scaleY(-1)" }}
-        >
-          <img src="/BackOfCard.svg" width={150} height={250} />
-        </div>
-        <div className="hand" ref={enemyHandRef}>
-          {Array.from({ length: botHandSize }).map((_, index) => {
-            const total = botHandSize;
-            const angleStep = 10; // ค่าที่ควบคุมความเอียง
-            const mid = (total - 1) / 2;
-            const angle = -(index - mid) * angleStep;
-            const xOffset = (index - mid) * -30;
-            const yOffset = Math.abs(index - mid) * -20;
-            const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
-
-            return (
-              <div
-                style={{
-                  transform,
-                  transition: "transform 0.5s ease",
-                }}
-              >
+        <div className="BotBattle__board-player">
+          <div style={{ width: 150, height: 250, visibility: "hidden" }} />
+          <div className="hand" ref={playerHandRef}>
+            {playerHand?.map((card, index) => {
+              const total = playerHand.length;
+              const angleStep = 10; // ค่าที่ควบคุมความเอียง
+              const mid = (total - 1) / 2;
+              const angle = (index - mid) * angleStep;
+              const xOffset = (index - mid) * -30; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
+              const yOffset = Math.abs(index - mid) * 20; // ยิ่งห่างจากตรงกลาง ยิ่งต่ำลง
+              const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
+              return (
                 <div
-                  className="card-wrapper"
-                  style={{ transform: "scaleY(-1)" }}
+                  key={card.id}
+                  style={{
+                    transform,
+                    transition: "transform 0.5s ease", // 👈 ใส่ transition ตรงนี้
+                  }}
                 >
-                  <Card
-                    id={"id here"}
-                    type="hidden" // เปลี่ยน type ได้ตามที่ต้องการ
-                    flipped
-                  />
+                  <div className="card-wrapper">
+                    <Card
+                      id={card.id}
+                      type={card.type}
+                      onClick={handleSelectCard}
+                    />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ width: 150, height: 250, visibility: "hidden" }} />
-        {animatingEnemyCard &&
-          (console.log("Animating enemy card triggered", animatingEnemyCard),
-          (
-            <div style={enemyDrawStyle}>
+              );
+            })}
+          </div>
+          <div className="BotBattle__card-layer_deck" ref={playerDeckRef}>
+            <img src="/BackOfCard.svg" width={150} height={250} />
+          </div>
+          {animatingPlayerCard && (
+            <div style={playerDrawStyle}>
               <Card
-                id={animatingEnemyCard.id}
-                type={animatingEnemyCard.type}
-                flipped
+                id={animatingPlayerCard.id}
+                type={animatingPlayerCard.type}
               />
             </div>
-          ))}
-      </div>
+          )}
+        </div>
 
-      <div className="BotBattle__arena">
-        {selectedPlayerCard && (
-          <div
-            className={
-              winner === "player"
-                ? "card card-attack-right"
-                : winner === "bot"
-                ? "card card-fly-left"
-                : "card"
-            }
-          >
-            <Card
-              type={selectedPlayerCard.type}
-              id={selectedPlayerCard.id}
-              flipped={showCard}
-            />
-          </div>
-        )}
+        <div className="BotBattle__board">
 
-        {selectedBotCard && (
-          <div
-            className={
-              winner === "bot"
-                ? "card card-attack-left"
-                : winner === "player"
-                ? "card card-fly-right"
-                : "card"
-            }
-          >
-            <Card
-              type={selectedBotCard.type}
-              id={selectedBotCard.id}
-              flipped={showCard}
-            />
+          <div className="BotBattle__board_card-placer">
+            <img src="/CardPlacer-Player.svg" width={170} height={270} />
+            {selectedPlayerCard && (
+              <Card
+                type={selectedPlayerCard.type}
+                id={selectedPlayerCard.id}
+                flipped={showCard}
+                className={
+                  (winner === "player"
+                    ? "card card-attack-right"
+                    : winner === "bot"
+                    ? "card card-fly-left"
+                    : "card") + " xxx"
+                }
+              />
+            )}
           </div>
-        )}
-      </div>
-      <div className="BotBattle__hud">
+          <div className="BotBattle__board_card-placer">
+            <img src="/CardPlacer-Enemy.svg" width={170} height={270} />
+            {selectedBotCard && (
+              <Card
+                type={selectedBotCard.type}
+                id={selectedBotCard.id}
+                flipped={showCard}
+                className={
+                  winner === "bot"
+                    ? "card card-attack-left"
+                    : winner === "player"
+                    ? "card card-fly-right"
+                    : "card"
+                }
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="BotBattle__board-enemy">
+          <div
+            className="BotBattle__card-layer_deck"
+            ref={enemyDeckRef}
+            style={{ transform: "scaleY(-1)" }}
+          >
+            <img src="/BackOfCard.svg" width={150} height={250} />
+          </div>
+          <div className="hand" ref={enemyHandRef}>
+            {Array.from({ length: botHandSize }).map((_, index) => {
+              const total = botHandSize;
+              const angleStep = 10; // ค่าที่ควบคุมความเอียง
+              const mid = (total - 1) / 2;
+              const angle = -(index - mid) * angleStep;
+              const xOffset = (index - mid) * -30;
+              const yOffset = Math.abs(index - mid) * -20;
+              const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
+
+              return (
+                <div
+                  style={{
+                    transform,
+                    transition: "transform 0.5s ease",
+                  }}
+                >
+                  <div
+                    className="card-wrapper"
+                    style={{ transform: "scaleY(-1)" }}
+                  >
+                    <Card
+                      id={"id here"}
+                      type="hidden" // เปลี่ยน type ได้ตามที่ต้องการ
+                      flipped
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ width: 150, height: 250, visibility: "hidden" }} />
+          {animatingEnemyCard &&
+            (console.log("Animating enemy card triggered", animatingEnemyCard),
+            (
+              <div style={enemyDrawStyle}>
+                <Card
+                  id={animatingEnemyCard.id}
+                  type={animatingEnemyCard.type}
+                  flipped
+                />
+              </div>
+            ))}
+        </div>
         <div className="BotBattle__player-bar">
           {player?.level} : {player?.username}{" "}
-          {player && <HealthBar currentHP={currentPlayerHP} maxHP={player?.stat.hp} />}
+            <HealthBar currentHP={currentPlayerHP} maxHP={player?.stat.hp} /> 
+          ROCK:{cardRemaining.bot.rock} PAPER:{cardRemaining.player.paper} SCISSORS{cardRemaining.player.scissors}
         </div>
+      </div>
+
+      <div className="relative group">
+        <button className="p-2 bg-blue-500 text-white rounded">Hover me</button>
       </div>
     </div>
   );

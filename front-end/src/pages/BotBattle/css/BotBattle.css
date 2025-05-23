@@ -1,14 +1,55 @@
+.BotBattle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
 
 
 .BotBattle__arena {
   display: flex;
-  gap: 4rem;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background-color: rgb(40, 40, 40);
+  /* position: absolute; */
+}
 
+.BotBattle__board {
+  display: flex;
+  gap: 40px;
+  width: 100%;
+  height: 100%;
   position: absolute;
+  align-items: center;
+  justify-content: center;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+
+.BotBattle__board_card-placer {
+  position: relative; /* ต้องใช้ relative เพื่อให้ลูก absolute ยึดตำแหน่งจากพ่อ */
+  width: 170px;
+  height: 270px;
+  gap: 40px;
+  z-index: 1;
+}
+
+.BotBattle__board_card-placer > * {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: fit-content;
+  height: fit-content;
+  transform: translate(-50%, -50%); /* ให้ซ้อนตรงกลาง */
+  z-index: 2;
+}
+
+
 .BotBattle__hud {
   position: fixed;
   top: 0;
@@ -25,28 +66,38 @@
   left: 0;
   width: 100%;
   height: 40px;
-  background: rgba(20, 20, 20, 1);
+  background: rgba(30, 30, 30, 1);
   display: flex;
   justify-content: center;
   align-items: center;
   pointer-events: auto; /* ถ้าต้องการให้คลิกได้ */
   z-index: 1000;
   color: white;
-  border-bottom: 2px solid #444;
+  box-shadow: 0 0px 10px rgba(0, 0, 0, 0.25); /* เบสิคมากๆ */
+
 }
 
-.BotBattle__player-bar {
+.BotBattle__player-bar,.BotBattle__enemy-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
   height: 40px;
-  background: rgba(20, 20, 20, 1);
+  background: rgba(30, 30, 30, 1);
   display: flex;
   justify-content: center;
   align-items: center;
   pointer-events: auto;
   z-index: 1000;
   color: white;
-  border-top: 2px solid #444;
+  box-shadow: 0 0px 10px rgba(0, 0, 0, 0.25); /* เบสิคมากๆ */
+
+}
+
+.BotBattle__player-bar {
+  bottom: 0;
+}
+
+.BotBattle__enemy-bar {
+  top: 0;
 }

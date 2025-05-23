@@ -18,25 +18,6 @@ type Card struct {
 	Type string `json:"type"`
 }
 
-// type DeckCard struct {
-// 	CardType string `json:"cardType"`
-// }
-
-// type User struct {
-// 	ID           int    `json:"id"`
-// 	Username     string `json:"username"`
-// 	Email        string `json:"email"`
-// 	ATK          int    `json:"atk"`
-// 	DEF          int    `json:"def"`
-// 	HP           int    `json:"hp"`
-// 	SPD          int    `json:"spd"`
-// 	Level        int    `json:"level"`
-// 	CurrentLevel int    `json:"currentLevel"`
-// 	Exp          int    `json:"exp"`
-// 	Money        int    `json:"money"`
-// 	CreatedAt    string `json:"createdAt"`
-// }
-
 type GameState struct {
 	PlayerDeck      []Card
 	BotDeck         []Card
@@ -180,6 +161,16 @@ func generateBotStats(level int) (atk, def, spd, hp int) {
 	return
 }
 
+func countCardLeft(deck []Card, hand []Card) map[string]int {
+	allCards := append(deck, hand...) // รวม deck และ hand เข้าด้วยกัน
+
+	countByType := make(map[string]int)
+	for _, card := range allCards {
+		countByType[card.Type]++
+	}
+	return countByType
+}
+
 // ----------- Handlers -----------
 
 func StartBattleHandler(db *sql.DB) http.HandlerFunc {
@@ -233,6 +224,9 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 		gameStates[req.UserID] = gameState
 		gameStatesMutex.Unlock()
 
+		botTypes := countCardLeft(gameState.BotDeck, gameState.BotHand)
+		playerTypes := countCardLeft(gameState.PlayerDeck, gameState.PlayerHand)
+
 		res := map[string]interface{}{
 			"playerHand":  playerHand,
 			"playerHP":    gameState.PlayerCurrentHP,
@@ -247,6 +241,10 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 				"ATK": user.Stat.Atk,
 				"DEF": user.Stat.Def,
 				"SPD": user.Stat.Def,
+			},
+			"cardRemaining": map[string]interface{}{
+				"player": playerTypes,
+				"bot":    botTypes,
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -357,6 +355,9 @@ func PlayCardHandler(w http.ResponseWriter, r *http.Request) {
 	playerOutOfCards := len(gs.PlayerHand) == 0 && len(gs.PlayerDeck) == 0
 	botOutOfCards := len(gs.BotHand) == 0 && len(gs.BotDeck) == 0
 
+	botTypes := countCardLeft(gs.BotDeck, gs.BotHand)
+	playerTypes := countCardLeft(gs.PlayerDeck, gs.PlayerHand)
+
 	gameResult := "onGoing"
 	if gs.PlayerCurrentHP == 0 || playerOutOfCards {
 		gameResult = "botWin"
@@ -381,6 +382,10 @@ func PlayCardHandler(w http.ResponseWriter, r *http.Request) {
 		},
 		"playerHand": gs.PlayerHand,
 		"botHand":    gs.BotHand,
+		"cardRemaining": map[string]interface{}{
+			"player": playerTypes, // ส่งเป็น map[string]int ของ playerTypes
+			"bot":    botTypes,    // ส่งเป็น map[string]int ของ botTypes
+		},
 	}
 	logGameState(gs)
 
