@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 // ----------- Models -----------
@@ -19,6 +22,7 @@ type Card struct {
 }
 
 type GameState struct {
+	sync.Mutex      // ล็อกภายใน state เอง
 	PlayerDeck      []Card
 	BotDeck         []Card
 	PlayerHand      []Card
@@ -27,16 +31,17 @@ type GameState struct {
 	BotATK          int
 	PlayerDEF       int
 	BotDEF          int
+	PlayerSPD       int
+	BotSPD          int
 	PlayerMaxHP     int
 	BotMaxHP        int
 	PlayerCurrentHP int
 	BotCurrentHP    int
-	PlayerSPD       int
-	BotSPD          int
-	mutex           sync.Mutex
+	PlayingLevel    int
 }
 
-var gameStates = make(map[int]*GameState)
+// map เก็บสถานะเกมทุกแมตช์
+var gameStates = make(map[string]*GameState)
 var gameStatesMutex sync.Mutex
 
 // ----------- Utilities -----------
@@ -62,7 +67,7 @@ func formatHand(hand []Card) string {
 
 func getUserByIDFromDB(db *sql.DB, userID int) (*User, error) {
 	var user User
-	query := `SELECT id, username, email, atk, def, hp, spd, level, current_level, exp, money, created_at FROM users WHERE id = ?`
+	query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at FROM users WHERE id = ?`
 	row := db.QueryRow(query, userID)
 	err := row.Scan(
 		&user.ID,
@@ -142,11 +147,6 @@ func drawCards(deck *[]Card, n int) []Card {
 	return hand
 }
 
-func endGame(userID int, winner string) {
-	fmt.Printf("Game ended for user %d. Winner: %s\n", userID, winner)
-	// TODO: อัปเดต DB, เพิ่มเงิน, เก็บ log, ลบ game state ฯลฯ
-}
-
 func generateBotStats(level int) (atk, def, spd, hp int) {
 	baseATK := 10
 	baseDEF := 5
@@ -171,12 +171,32 @@ func countCardLeft(deck []Card, hand []Card) map[string]int {
 	return countByType
 }
 
+// func handlePlayerWin(userID int, db *sql.DB) error {
+
+// 	gs
+// 	// เพิ่ม EXP และเงิน (อาจขึ้นอยู่กับระบบของเกม)
+// 	const expReward = 10 * PlayingLevel
+// 	const moneyReward = 10 * PlayingLevel
+
+// 	// อัปเดต user
+// 	query := `
+// 		UPDATE users
+// 		SET exp = exp + ?,
+// 			money = money + ?,
+// 			current_campaign_level = current_campaign_level + 1
+// 		WHERE id = ?
+// 	`
+// 	_, err := db.Exec(query, expReward, moneyReward, userID)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to update user on win: %v", err)
+// 	}
+// 	return nil
+// }
+
 // ----------- Handlers -----------
 
 func StartBattleHandler(db *sql.DB) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("start call")
 		var req struct {
 			UserID   int `json:"userId"`
 			BotLevel int `json:"levelId"`
@@ -202,7 +222,7 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 		playerHand := drawCards(&deck, 3)
 		botHand := drawCards(&botDeck, 3)
 		botATK, botDEF, botSPD, botHP := generateBotStats(req.BotLevel)
-		fmt.Println("bot stat ", botATK, botDEF, botSPD, botHP)
+
 		gameState := &GameState{
 			PlayerDeck:      deck,
 			BotDeck:         botDeck,
@@ -218,63 +238,68 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 			BotMaxHP:        botHP,
 			PlayerCurrentHP: user.Stat.HP,
 			BotCurrentHP:    botHP,
+			PlayingLevel:    req.BotLevel,
 		}
 
+		matchID := uuid.New().String() // สร้าง match id ใหม่
+
 		gameStatesMutex.Lock()
-		gameStates[req.UserID] = gameState
+		gameStates[matchID] = gameState
 		gameStatesMutex.Unlock()
 
-		botTypes := countCardLeft(gameState.BotDeck, gameState.BotHand)
-		playerTypes := countCardLeft(gameState.PlayerDeck, gameState.PlayerHand)
-
 		res := map[string]interface{}{
-			"playerHand":  playerHand,
-			"playerHP":    gameState.PlayerCurrentHP,
-			"botHandSize": len(botHand),
-			"botHP":       gameState.BotCurrentHP,
+			"matchId":       matchID,
+			"playerHand":    playerHand,
+			"playerHP":      gameState.PlayerCurrentHP,
+			"enemyHandSize": len(botHand),
+			"enemyHP":       gameState.BotCurrentHP,
 			"playerStats": map[string]int{
 				"ATK": user.Stat.Atk,
 				"DEF": user.Stat.Def,
-				"SPD": user.Stat.Def,
+				"SPD": user.Stat.Spd,
 			},
-			"botStats": map[string]int{
-				"ATK": user.Stat.Atk,
-				"DEF": user.Stat.Def,
-				"SPD": user.Stat.Def,
+			"enemyStats": map[string]int{
+				"ATK": botATK,
+				"DEF": botDEF,
+				"SPD": botSPD,
 			},
 			"cardRemaining": map[string]interface{}{
-				"player": playerTypes,
-				"bot":    botTypes,
+				"player": countCardLeft(gameState.PlayerDeck, gameState.PlayerHand),
+				"enemy":  countCardLeft(gameState.BotDeck, gameState.BotHand),
 			},
 		}
+		fmt.Println("[DEBUG] Created matchID:", matchID)
+		fmt.Printf("[DEBUG] Stored gameState for matchID: %s | PlayerHand: %+v\n", matchID, playerHand)
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(res)
 	}
 }
 
 func PlayCardHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("play call")
-	// fmt.Println(PlayerDeck)
+	vars := mux.Vars(r)
+	matchID := vars["matchID"]
+
 	var req struct {
-		UserID int    `json:"userId"`
 		CardID string `json:"cardId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UserID == 0 {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	fmt.Println("card id = ", req.CardID)
 	gameStatesMutex.Lock()
-	gs, ok := gameStates[req.UserID]
+	gs, ok := gameStates[matchID]
 	gameStatesMutex.Unlock()
 	if !ok {
 		http.Error(w, "Game not started", http.StatusBadRequest)
 		return
 	}
 
-	gs.mutex.Lock()
-	defer gs.mutex.Unlock()
-
+	gs.Lock()
+	defer gs.Unlock()
 	var playerCard *Card
 	var newHand []Card
 	for _, c := range gs.PlayerHand {
@@ -306,7 +331,7 @@ func PlayCardHandler(w http.ResponseWriter, r *http.Request) {
 			winner = "player"
 			damageToBot = gs.PlayerATK - gs.BotDEF
 		} else if botCard.Type == "paper" {
-			winner = "bot"
+			winner = "enemy"
 			damageToPlayer = gs.BotATK - gs.PlayerDEF
 		} else {
 			winner = "draw"
@@ -316,7 +341,7 @@ func PlayCardHandler(w http.ResponseWriter, r *http.Request) {
 			winner = "player"
 			damageToBot = gs.PlayerATK - gs.BotDEF
 		} else if botCard.Type == "scissors" {
-			winner = "bot"
+			winner = "enemy"
 			damageToPlayer = gs.BotATK - gs.PlayerDEF
 		} else {
 			winner = "draw"
@@ -326,7 +351,7 @@ func PlayCardHandler(w http.ResponseWriter, r *http.Request) {
 			winner = "player"
 			damageToBot = gs.PlayerATK - gs.BotDEF
 		} else if botCard.Type == "rock" {
-			winner = "bot"
+			winner = "enemy"
 			damageToPlayer = gs.BotATK - gs.PlayerDEF
 		} else {
 			winner = "draw"
@@ -361,33 +386,33 @@ func PlayCardHandler(w http.ResponseWriter, r *http.Request) {
 	gameResult := "onGoing"
 	if gs.PlayerCurrentHP == 0 || playerOutOfCards {
 		gameResult = "botWin"
-		endGame(req.UserID, "bot")
 	} else if gs.BotCurrentHP == 0 || botOutOfCards {
 		gameResult = "playerWin"
-		endGame(req.UserID, "player")
+		//handlePlayerWin(req.UserID, db)
 	}
 
 	res := map[string]interface{}{
 		"winner":     winner,
 		"result":     gameResult,
 		"playerCard": playerCard,
-		"botCard":    botCard,
+		"enemyCard":  botCard,
 		"damage": map[string]int{
-			"playerToBot": damageToBot,
-			"botToPlayer": damageToPlayer,
+			"playerToEnemy": damageToBot,
+			"enemyToPlayer": damageToPlayer,
 		},
 		"hp": map[string]int{
 			"player": gs.PlayerCurrentHP,
-			"bot":    gs.BotCurrentHP,
+			"enemy":  gs.BotCurrentHP,
 		},
 		"playerHand": gs.PlayerHand,
-		"botHand":    gs.BotHand,
+		"enemyHand":  gs.BotHand,
 		"cardRemaining": map[string]interface{}{
 			"player": playerTypes, // ส่งเป็น map[string]int ของ playerTypes
-			"bot":    botTypes,    // ส่งเป็น map[string]int ของ botTypes
+			"enemy":  botTypes,    // ส่งเป็น map[string]int ของ botTypes
 		},
 	}
 	logGameState(gs)
+	fmt.Println("Received card play for match:", matchID, "CardID:", req.CardID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)

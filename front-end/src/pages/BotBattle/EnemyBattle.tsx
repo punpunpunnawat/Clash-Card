@@ -3,20 +3,19 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store";
 import Card from "../../components/Card";
 import type { CardProps } from "../../types/Card";
-import "./css/BotBattle.css";
+import "./css/enemyBattle.css";
 import "./css/CardAttack.css";
-import "./css/CardLayer.css";
 import HealthBar from "../../components/HealthBar";
 import { fetchDeck } from "../../store/slices/deckSlice";
 import { fetchPlayer } from "../../store/slices/playerSlice";
 import { useParams } from "react-router-dom";
 
 type UpdatedData = {
-  botCard: CardProps;
-  botHand: CardProps[]; //อย่าลืมเอาออก
+  enemyCard: CardProps;
+  enemyHand: CardProps[]; //อย่าลืมเอาออก
   damage: string[];
   hp: {
-    bot: number;
+    enemy: number;
     player: number;
   };
   playerCard: CardProps;
@@ -29,7 +28,7 @@ type UpdatedData = {
       rock: number;
       scissors: number;
     };
-    bot: {
+    enemy: {
       paper: number;
       rock: number;
       scissors: number;
@@ -42,7 +41,7 @@ type CardCount = {
 
 type CardRemaining = {
   player: CardCount;
-  bot: CardCount;
+  enemy: CardCount;
 };
 type GameState =
   | "SELECT_CARD"
@@ -51,7 +50,7 @@ type GameState =
   | "DO_DAMAGE"
   | "DRAW_CARD";
 
-const BotBattle = () => {
+const EnemyBattle = () => {
   const { levelId } = useParams<{ levelId: string }>();
   const player = useSelector((state: RootState) => state.player.player);
 
@@ -80,7 +79,7 @@ const BotBattle = () => {
   //Arena
   const [selectedPlayerCard, setSelectedPlayerCard] =
     useState<CardProps | null>(null);
-  const [selectedBotCard, setSelectedBotCard] = useState<CardProps | null>(
+  const [selectedEnemyCard, setSelectedEnemyCard] = useState<CardProps | null>(
     null
   );
   const [showCard, setShowCard] = useState(true);
@@ -88,10 +87,10 @@ const BotBattle = () => {
   const [winner, setWinner] = useState("");
 
   const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
-  const [botHandSize, setBotHandSize] = useState(0);
+  const [enemyHandSize, setEnemyHandSize] = useState(0);
   const [cardRemaining, setCardRemaining] = useState<CardRemaining>({
     player: {},
-    bot: {},
+    enemy: {},
   });
 
   //Animate
@@ -108,31 +107,7 @@ const BotBattle = () => {
   const enemyDeckRef = useRef<HTMLDivElement>(null);
   const enemyHandRef = useRef<HTMLDivElement>(null);
 
-  const handleSelectCard = (id: string) => {
-    if (gameState !== "SELECT_CARD") return;
-    console.log(id);
-    setPlayerHand((prevHand) => prevHand.filter((card) => card.id !== id));
-    setBotHandSize(botHandSize - 1);
-    //setGameState("CARD_SELECTED");
-    setSelectedPlayerCard(playerHand.find((card) => card.id === id) || null);
-    console.log(selectedPlayerCard);
-    fetch("http://localhost:8080/api/battle/play", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId: 1, cardId: id }), // ส่ง userId ไป
-    })
-      .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
-      .then((data) => {
-        setSelectedBotCard(data.botCard);
-        setUpdatedData(data); // เก็บผลไว้ก่อน
-        console.log(data);
-      })
-      .catch((err) => {
-        console.error("Error starting battle:", err);
-      });
-  };
+  
 
   const findNewCard = (updatedCard: CardProps[]) => {
     const currentIds = playerHand.map((card) => card.id);
@@ -210,7 +185,7 @@ const BotBattle = () => {
 
     // after animation ends
     setTimeout(() => {
-      setBotHandSize((prev) => prev + 1); // actual add
+      setEnemyHandSize((prev) => prev + 1); // actual add
       setAnimatingEnemyCard(null); // remove floating card
     }, 600); // slightly longer than transition
   };
@@ -232,10 +207,14 @@ const BotBattle = () => {
       .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
       .then((data) => {
         setCardRemaining(data.cardRemaining);
-        setMaxEnemyHP(Number(data.botHP));
-        setCurrentEnemyHP(Number(data.botHP));
+        setMaxEnemyHP(Number(data.enemyHP));
+        console.log("emhp:", data.enemyHP);
+        setCurrentEnemyHP(Number(data.enemyHP));
         setPlayerHand(data.playerHand);
-        setBotHandSize(data.botHandSize);
+        setEnemyHandSize(data.enemyHandSize);
+        sessionStorage.setItem("matchId", data.matchId);
+        
+
         console.log("Data:", data);
       })
       .catch((err) => {
@@ -243,11 +222,38 @@ const BotBattle = () => {
       });
   }, []);
 
+  const handleSelectCard = (id: string) => {
+    if (gameState !== "SELECT_CARD") return;
+    console.log(id);
+    const matchId = sessionStorage.getItem("matchId");
+    setPlayerHand((prevHand) => prevHand.filter((card) => card.id !== id));
+    setEnemyHandSize(enemyHandSize - 1);
+    //setGameState("CARD_SELECTED");
+    setSelectedPlayerCard(playerHand.find((card) => card.id === id) || null);
+    console.log(selectedPlayerCard);
+    fetch(`http://localhost:8080/api/battle/${matchId}/play`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ cardId: id }), // ส่ง userId ไป
+    })
+      .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
+      .then((data) => {
+        setSelectedEnemyCard(data.enemyCard);
+        setUpdatedData(data); // เก็บผลไว้ก่อน
+        console.log(data);
+      })
+      .catch((err) => {
+        console.error("Error starting battle:", err);
+      });
+  };
+
   useEffect(() => {
-    if (selectedBotCard && selectedBotCard) {
+    if (selectedEnemyCard && selectedEnemyCard) {
       setGameState("SHOW_WINNER");
     }
-  }, [selectedPlayerCard, selectedBotCard]);
+  }, [selectedPlayerCard, selectedEnemyCard]);
 
   useEffect(() => {
     switch (gameState) {
@@ -265,13 +271,14 @@ const BotBattle = () => {
           setShowCard(false);
           setTimeout(() => {
             if (updatedData) {
+              console.log(updatedData.winner)
               setWinner(updatedData.winner);
             }
             setTimeout(() => {
               setShowCard(true);
               setWinner("");
               setSelectedPlayerCard(null);
-              setSelectedBotCard(null);
+              setSelectedEnemyCard(null);
               setGameState("DO_DAMAGE");
             }, 1000);
           }, 1000);
@@ -282,7 +289,7 @@ const BotBattle = () => {
       case "DO_DAMAGE":
         if (updatedData) {
           setCurrentPlayerHP(Number(updatedData.hp.player));
-          setCurrentEnemyHP(Number(updatedData.hp.bot));
+          setCurrentEnemyHP(Number(updatedData.hp.enemy));
           setGameState("DRAW_CARD");
         }
         break;
@@ -301,14 +308,16 @@ const BotBattle = () => {
     }
   }, [gameState]);
 
-  if (!player) return <div>loading</div>;
+  if (!player || !maxEnemyHP) return <div>loading</div>;
   return (
-    <div className="BotBattle">
-      <div className="BotBattle__arena">
-        <div className="BotBattle__enemy-bar">
-          ? : Enemy <HealthBar currentHP={currentEnemyHP} maxHP={maxEnemyHP}/> ROCK:{cardRemaining.bot.rock} PAPER:{cardRemaining.bot.paper} SCISSORS{cardRemaining.bot.scissors}
+    <div className="EnemyBattle">
+      <div className="EnemyBattle__arena">
+        <div className="EnemyBattle__enemy-bar">
+          ? : Enemy <HealthBar currentHP={currentEnemyHP} maxHP={maxEnemyHP} />{" "}
+          ROCK:{cardRemaining.enemy.rock} PAPER:{cardRemaining.enemy.paper}{" "}
+          SCISSORS{cardRemaining.enemy.scissors}
         </div>
-        <div className="BotBattle__board-player">
+        <div className="EnemyBattle__board-player">
           <div style={{ width: 150, height: 250, visibility: "hidden" }} />
           <div className="hand" ref={playerHandRef}>
             {playerHand?.map((card, index) => {
@@ -338,7 +347,7 @@ const BotBattle = () => {
               );
             })}
           </div>
-          <div className="BotBattle__card-layer_deck" ref={playerDeckRef}>
+          <div className="EnemyBattle__card-layer_deck" ref={playerDeckRef}>
             <img src="/BackOfCard.svg" width={150} height={250} />
           </div>
           {animatingPlayerCard && (
@@ -351,9 +360,8 @@ const BotBattle = () => {
           )}
         </div>
 
-        <div className="BotBattle__board">
-
-          <div className="BotBattle__board_card-placer">
+        <div className="EnemyBattle__board">
+          <div className="EnemyBattle__board_card-placer">
             <img src="/CardPlacer-Player.svg" width={170} height={270} />
             {selectedPlayerCard && (
               <Card
@@ -363,22 +371,22 @@ const BotBattle = () => {
                 className={
                   (winner === "player"
                     ? "card card-attack-right"
-                    : winner === "bot"
+                    : winner === "enemy"
                     ? "card card-fly-left"
                     : "card") + " xxx"
                 }
               />
             )}
           </div>
-          <div className="BotBattle__board_card-placer">
+          <div className="EnemyBattle__board_card-placer">
             <img src="/CardPlacer-Enemy.svg" width={170} height={270} />
-            {selectedBotCard && (
+            {selectedEnemyCard && (
               <Card
-                type={selectedBotCard.type}
-                id={selectedBotCard.id}
+                type={selectedEnemyCard.type}
+                id={selectedEnemyCard.id}
                 flipped={showCard}
                 className={
-                  winner === "bot"
+                  winner === "enemy"
                     ? "card card-attack-left"
                     : winner === "player"
                     ? "card card-fly-right"
@@ -389,17 +397,17 @@ const BotBattle = () => {
           </div>
         </div>
 
-        <div className="BotBattle__board-enemy">
+        <div className="EnemyBattle__board-enemy">
           <div
-            className="BotBattle__card-layer_deck"
+            className="EnemyBattle__card-layer_deck"
             ref={enemyDeckRef}
             style={{ transform: "scaleY(-1)" }}
           >
             <img src="/BackOfCard.svg" width={150} height={250} />
           </div>
           <div className="hand" ref={enemyHandRef}>
-            {Array.from({ length: botHandSize }).map((_, index) => {
-              const total = botHandSize;
+            {Array.from({ length: enemyHandSize }).map((_, index) => {
+              const total = enemyHandSize;
               const angleStep = 10; // ค่าที่ควบคุมความเอียง
               const mid = (total - 1) / 2;
               const angle = -(index - mid) * angleStep;
@@ -442,10 +450,11 @@ const BotBattle = () => {
               </div>
             ))}
         </div>
-        <div className="BotBattle__player-bar">
+        <div className="EnemyBattle__player-bar">
           {player?.level} : {player?.username}{" "}
-            <HealthBar currentHP={currentPlayerHP} maxHP={player?.stat.hp} /> 
-          ROCK:{cardRemaining.bot.rock} PAPER:{cardRemaining.player.paper} SCISSORS{cardRemaining.player.scissors}
+          <HealthBar currentHP={currentPlayerHP} maxHP={player?.stat.hp} />
+          ROCK:{cardRemaining.player.rock} PAPER:{cardRemaining.player.paper}{" "}
+          SCISSORS{cardRemaining.player.scissors}
         </div>
       </div>
 
@@ -456,4 +465,4 @@ const BotBattle = () => {
   );
 };
 
-export default BotBattle;
+export default EnemyBattle;

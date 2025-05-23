@@ -20,7 +20,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 
 		var user User
 		var atk, def, hp, spd int // temp stat fields
-		query := `SELECT id, username, email, atk, def, hp, spd, level, current_level, exp, money, created_at FROM users WHERE id = ?`
+		query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at FROM users WHERE id = ?`
 		row := db.QueryRow(query, id)
 		err = row.Scan(
 			&user.ID,

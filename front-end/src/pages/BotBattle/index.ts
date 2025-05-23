@@ -1,2 +1,2 @@
-import BotBattle from "./BotBattle";
-export default BotBattle
+import EnemyBattle from "./EnemyBattle";
+export default EnemyBattle

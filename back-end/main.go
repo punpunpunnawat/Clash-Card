@@ -20,7 +20,7 @@ func main() {
 	r.HandleFunc("/api/user/{id}/deck", GetUserDeckHandler(db)).Methods("GET")
 
 	r.HandleFunc("/api/battle/start", StartBattleHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/battle/play", PlayCardHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/battle/{matchID}/play", PlayCardHandler).Methods("POST", "OPTIONS")
 
 	log.Println("Server running at :8080")
 	http.ListenAndServe(":8080", r)
