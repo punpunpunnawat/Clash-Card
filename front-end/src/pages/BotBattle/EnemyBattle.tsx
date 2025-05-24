@@ -236,7 +236,7 @@ const EnemyBattle = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ cardId: id }), // ส่ง userId ไป
+      body: JSON.stringify({ userID:player?.id, cardId: id }), // ส่ง userId ไป
     })
       .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
       .then((data) => {
