@@ -1,33 +1,38 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { fetchPlayer } from "../../store/slices/playerSlice";
-import { fetchDeck  } from "../../store/slices/deckSlice";
+import { fetchDeck } from "../../store/slices/deckSlice";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../store"; // import AppDispatch ด้วย
 
-
 function Home() {
-  
   const player = useSelector((state: RootState) => state.player.player);
   const deck = useSelector((state: RootState) => state.deck.deck);
+  const [lobbyID, setLobbyID] = useState("");
   const navigate = useNavigate();
 
   const dispatch: AppDispatch = useDispatch();
   useEffect(() => {
-    dispatch(fetchPlayer(1));
+    dispatch(fetchPlayer());
     dispatch(fetchDeck(1));
   }, [dispatch]);
 
-  const handleClickPlayWithBot = () => {
-    navigate("/bot-battle");
+  const handleClickLobby = () => {
+    if (lobbyID.trim()) {
+      navigate(`/lobby/${lobbyID.trim()}`);
+    }
   };
 
   const handleClickSelectLevel = () => {
     navigate("/level");
   };
 
-  if (!player) return <div>กำลังโหลดข้อมูลผู้เล่น...</div>;
+  const handleChangeLobbyID = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLobbyID(e.target.value);
+  };
 
+  if (!player) return <div>กำลังโหลดข้อมูลผู้เล่น...</div>;
+  console.log(player)
   return (
     <div>
       <h1>ยินดีต้อนรับ {player.username}</h1>
@@ -44,10 +49,16 @@ function Home() {
           </li>
         ))}
       </ul>
-      <button onClick={handleClickPlayWithBot}>Play with Bot</button>
+      <input
+        placeholder="Enter Lobby ID"
+        value={lobbyID}
+        onChange={handleChangeLobbyID}
+      />
+
+      <button onClick={handleClickLobby}>Lobby</button>
       <button onClick={handleClickSelectLevel}>Select Level</button>
     </div>
   );
 }
 
-export default Home
+export default Home;

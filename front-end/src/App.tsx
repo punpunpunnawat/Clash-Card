@@ -4,6 +4,8 @@ import BotBattle from "./pages/BotBattle";
 import { useSelector } from "react-redux";
 import type { RootState } from "./store";
 import SelectLevel from "./pages/SelectLevel";
+import Lobby from "./pages/PVPLobby/Lobby";
+import Login from "./pages/Login/Login";
 
 function App() {
   const userId = useSelector((state: RootState) => state.player.player?.id);
@@ -14,6 +16,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/bot-battle/:levelId" element={<BotBattle />} />
         <Route path="/level" element={<SelectLevel />} />
+        <Route path="/lobby/:id" element={<Lobby />} />
+        <Route path="/login" element={<Login />} />
         {/* <Route path="/bot-battle" element={userId ? <BotBattle userId={userId} /> : <div>กรุณาเข้าสู่ระบบก่อน</div>} /> */}
       </Routes>
     </Router>

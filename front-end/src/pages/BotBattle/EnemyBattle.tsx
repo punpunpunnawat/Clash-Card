@@ -10,7 +10,7 @@ import { fetchDeck } from "../../store/slices/deckSlice";
 import { fetchPlayer } from "../../store/slices/playerSlice";
 import { useParams } from "react-router-dom";
 
-type UpdatedData = {
+type turnResult = {
   enemyCard: CardProps;
   enemyHand: CardProps[]; //อย่าลืมเอาออก
   damage: string[];
@@ -45,10 +45,13 @@ type CardRemaining = {
 };
 type GameState =
   | "SELECT_CARD"
-  | "CARD_SELECTED"
-  | "SHOW_WINNER"
+  | "WAIT_ENEMY"
+  | "BOTH_SELECTED"
+  | "SHOW_RESULT"
   | "DO_DAMAGE"
-  | "DRAW_CARD";
+  | "DRAW_CARD"
+  | "GAME_END_WIN"
+  | "GAME_END_LOSE";
 
 const EnemyBattle = () => {
   const { levelId } = useParams<{ levelId: string }>();
@@ -56,7 +59,7 @@ const EnemyBattle = () => {
 
   const dispatch: AppDispatch = useDispatch();
   useEffect(() => {
-    dispatch(fetchPlayer(1));
+    dispatch(fetchPlayer());
     dispatch(fetchDeck(1));
   }, [dispatch]);
   const [gameState, setGameState] = useState<GameState>("SELECT_CARD");
@@ -74,8 +77,8 @@ const EnemyBattle = () => {
   const [maxEnemyHP, setMaxEnemyHP] = useState<number>(0);
   const [currentEnemyHP, setCurrentEnemyHP] = useState<number>(0);
 
-  const [updatedData, setUpdatedData] = useState<UpdatedData>();
-
+  const [turnResult, setTurnResult] = useState<turnResult | null>(null);
+  const [matchID, setMatchID] = useState<string | null>("");
   //Arena
   const [selectedPlayerCard, setSelectedPlayerCard] =
     useState<CardProps | null>(null);
@@ -106,8 +109,6 @@ const EnemyBattle = () => {
   const playerHandRef = useRef<HTMLDivElement>(null);
   const enemyDeckRef = useRef<HTMLDivElement>(null);
   const enemyHandRef = useRef<HTMLDivElement>(null);
-
-  
 
   const findNewCard = (updatedCard: CardProps[]) => {
     const currentIds = playerHand.map((card) => card.id);
@@ -190,12 +191,6 @@ const EnemyBattle = () => {
     }, 600); // slightly longer than transition
   };
 
-  // useEffect(() => {
-  //   console.log("updatedData changed to:", updatedData);
-  //   console.log("rem changed to:", cardRemaining);
-  //   if (updatedData?.cardRemaining) setCardRemaining(updatedData.cardRemaining);
-  // }, [updatedData]);
-
   useEffect(() => {
     fetch("http://localhost:8080/api/battle/start", {
       method: "POST",
@@ -213,8 +208,7 @@ const EnemyBattle = () => {
         setPlayerHand(data.playerHand);
         setEnemyHandSize(data.enemyHandSize);
         sessionStorage.setItem("matchId", data.matchId);
-        
-
+        setMatchID(sessionStorage.getItem("matchId"));
         console.log("Data:", data);
       })
       .catch((err) => {
@@ -224,24 +218,30 @@ const EnemyBattle = () => {
 
   const handleSelectCard = (id: string) => {
     if (gameState !== "SELECT_CARD") return;
-    console.log(id);
-    const matchId = sessionStorage.getItem("matchId");
     setPlayerHand((prevHand) => prevHand.filter((card) => card.id !== id));
-    setEnemyHandSize(enemyHandSize - 1);
-    //setGameState("CARD_SELECTED");
     setSelectedPlayerCard(playerHand.find((card) => card.id === id) || null);
-    console.log(selectedPlayerCard);
-    fetch(`http://localhost:8080/api/battle/${matchId}/play`, {
+    setSelectedEnemyCard({ id: "enemy", type: "hidden" });
+    setEnemyHandSize(enemyHandSize - 1);
+    console.log(playerHand.find((card) => card.id === id));
+    setGameState("WAIT_ENEMY");
+  };
+
+  const callPlayAPI = () => {
+    console.log({ userID: player?.id, cardId: selectedPlayerCard?.id });
+    console.log(matchID);
+    fetch(`http://localhost:8080/api/battle/${matchID}/play`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ userID:player?.id, cardId: id }), // ส่ง userId ไป
+      body: JSON.stringify({
+        userID: player?.id,
+        cardID: selectedPlayerCard?.id,
+      }), // ส่ง userId ไป
     })
       .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
       .then((data) => {
-        setSelectedEnemyCard(data.enemyCard);
-        setUpdatedData(data); // เก็บผลไว้ก่อน
+        setTurnResult(data); // เก็บผลไว้ก่อน
         console.log(data);
       })
       .catch((err) => {
@@ -250,29 +250,34 @@ const EnemyBattle = () => {
   };
 
   useEffect(() => {
-    if (selectedEnemyCard && selectedEnemyCard) {
-      setGameState("SHOW_WINNER");
-    }
-  }, [selectedPlayerCard, selectedEnemyCard]);
-
-  useEffect(() => {
+    console.log("cur gs " + gameState);
     switch (gameState) {
       case "SELECT_CARD":
-        // ยังไม่ทำอะไร รอผู้เล่นเลือกการ์ด
         break;
 
-      case "CARD_SELECTED":
-        // ถ้าคุณมี logic ที่จะทำหลังจากเลือกการ์ด เช่น แสดงการ์ดที่เลือก ฯลฯ ก็ใส่ตรงนี้
+      case "WAIT_ENEMY":
+        if (selectedPlayerCard && selectedEnemyCard) {
+          setGameState("BOTH_SELECTED");
+        }
         break;
 
-      case "SHOW_WINNER":
+      case "BOTH_SELECTED":
+        callPlayAPI();
+        if (turnResult?.enemyCard) {
+          setSelectedEnemyCard(turnResult?.enemyCard);
+          setGameState("SHOW_RESULT");
+        }
+
+        break;
+
+      case "SHOW_RESULT":
         console.log("showing winner");
         setTimeout(() => {
           setShowCard(false);
           setTimeout(() => {
-            if (updatedData) {
-              console.log(updatedData.winner)
-              setWinner(updatedData.winner);
+            if (turnResult) {
+              console.log(turnResult.winner);
+              setWinner(turnResult.winner);
             }
             setTimeout(() => {
               setShowCard(true);
@@ -287,18 +292,30 @@ const EnemyBattle = () => {
         break;
 
       case "DO_DAMAGE":
-        if (updatedData) {
-          setCurrentPlayerHP(Number(updatedData.hp.player));
-          setCurrentEnemyHP(Number(updatedData.hp.enemy));
+        if (turnResult) {
+          console.log("test labob");
+          console.log(turnResult)
+          setCurrentPlayerHP(Number(turnResult.hp.player));
+          setCurrentEnemyHP(Number(turnResult.hp.enemy));
+          if(turnResult.result === "playerWin") {
+            setGameState("GAME_END_WIN");
+            break;
+          }
+          if(turnResult.result === "botWin") {
+            setGameState("GAME_END_LOSE");
+            break;
+          }
           setGameState("DRAW_CARD");
         }
         break;
 
       case "DRAW_CARD":
-        if (updatedData) {
-          drawPlayerCard(findNewCard(updatedData?.playerHand), "player");
+        console.log("draw");
+        if (turnResult) {
+          drawPlayerCard(findNewCard(turnResult?.playerHand), "player");
           drawEnemyCard();
-          setCardRemaining(updatedData.cardRemaining);
+          setCardRemaining(turnResult.cardRemaining);
+          setTurnResult(null);
         }
         setGameState("SELECT_CARD");
         break;
@@ -306,9 +323,11 @@ const EnemyBattle = () => {
       default:
         break;
     }
-  }, [gameState]);
+  }, [gameState, selectedEnemyCard, turnResult]);
 
   if (!player || !maxEnemyHP) return <div>loading</div>;
+  if (gameState==="GAME_END_WIN") return <div>You win</div>;
+  if (gameState==="GAME_END_LOSE") return <div>You lose</div>;
   return (
     <div className="EnemyBattle">
       <div className="EnemyBattle__arena">
@@ -454,7 +473,7 @@ const EnemyBattle = () => {
           {player?.level} : {player?.username}{" "}
           <HealthBar currentHP={currentPlayerHP} maxHP={player?.stat.hp} />
           ROCK:{cardRemaining.player.rock} PAPER:{cardRemaining.player.paper}{" "}
-          SCISSORS{cardRemaining.player.scissors}
+          SCISSORS{cardRemaining.player.scissors} {gameState}
         </div>
       </div>
 

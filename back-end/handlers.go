@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -11,42 +12,69 @@ import (
 
 func GetUserHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		id, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			http.Error(w, "Invalid ID", http.StatusBadRequest)
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
 			return
 		}
 
-		var user User
-		var atk, def, hp, spd int // temp stat fields
+		// Bearer token
+		tokenStr := ""
+		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
+		if tokenStr == "" {
+			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		userID, err := extractUserIDFromToken(tokenStr)
+		if err != nil {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
 		query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at FROM users WHERE id = ?`
-		row := db.QueryRow(query, id)
+		row := db.QueryRow(query, userID)
+
+		type Stat struct {
+			Atk int `json:"atk"`
+			Def int `json:"def"`
+			Hp  int `json:"hp"`
+			Spd int `json:"spd"`
+		}
+
+		var user struct {
+			ID                   int    `json:"id"`
+			Username             string `json:"username"`
+			Email                string `json:"email"`
+			Stat                 Stat   `json:"stat"`
+			Level                int    `json:"level"`
+			CurrentCampaignLevel int    `json:"currentCampaignLevel"`
+			Exp                  int    `json:"exp"`
+			Money                int    `json:"money"`
+			CreatedAt            string `json:"created_at"`
+		}
+
 		err = row.Scan(
 			&user.ID,
 			&user.Username,
 			&user.Email,
-			&atk,
-			&def,
-			&hp,
-			&spd,
+			&user.Stat.Atk,
+			&user.Stat.Def,
+			&user.Stat.Hp,
+			&user.Stat.Spd,
 			&user.Level,
 			&user.CurrentCampaignLevel,
 			&user.Exp,
 			&user.Money,
 			&user.CreatedAt,
 		)
-		if err != nil {
-			http.Error(w, "ไม่สามารถโหลดผู้เล่น: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
 
-		// assign nested Stat
-		user.Stat = UnitStat{
-			Atk: atk,
-			Def: def,
-			HP:  hp,
-			Spd: spd,
+		if err == sql.ErrNoRows {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		} else if err != nil {
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")

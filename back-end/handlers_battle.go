@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -125,7 +127,7 @@ func newShuffledDeck() []Card {
 	types := []string{"rock", "paper", "scissors"}
 	idCounter := 1
 	for _, t := range types {
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 1; i++ {
 			cards = append(cards, Card{ID: "bot" + strconv.Itoa(idCounter), Type: t})
 			idCounter++
 		}
@@ -315,13 +317,23 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		vars := mux.Vars(r)
 		matchID := vars["matchID"]
 
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			fmt.Println("❌ Failed to read body:", err)
+			http.Error(w, "Failed to read body", http.StatusBadRequest)
+			return
+		}
+		fmt.Println("📥 Raw request body:", string(bodyBytes))
+		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
 		var req struct {
 			UserID int    `json:"userID"`
-			CardID string `json:"cardId"`
+			CardID string `json:"cardID"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			fmt.Println("❌ Failed to decode JSON:", err)
 			return
 		}
 
@@ -336,6 +348,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 
 		gs.Lock()
 		defer gs.Unlock()
+
 		var playerCard *Card
 		var newHand []Card
 		for _, c := range gs.PlayerHand {
@@ -419,13 +432,28 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		playerTypes := countCardLeft(gs.PlayerDeck, gs.PlayerHand)
 
 		gameResult := "onGoing"
-		if gs.PlayerCurrentHP == 0 || playerOutOfCards {
+
+		// ✅ เช็คผลจาก HP ก่อน
+		if gs.PlayerCurrentHP == 0 && gs.BotCurrentHP == 0 {
+			gameResult = "draw"
+		} else if gs.PlayerCurrentHP == 0 {
 			gameResult = "botWin"
-		} else if gs.BotCurrentHP == 0 || botOutOfCards {
+		} else if gs.BotCurrentHP == 0 {
 			gameResult = "playerWin"
-			// ✅ เรียกฟังก์ชันที่ใช้ DB พร้อมส่ง db เข้าไป
 			if err := handlePlayerWin(req.UserID, db, gs.PlayingLevel); err != nil {
 				fmt.Println("Failed to update player after win:", err)
+			}
+		} else {
+			// 🃏 เช็คจากการ์ดถ้าเลือดยังเหลือ
+			if playerOutOfCards && botOutOfCards {
+				gameResult = "draw"
+			} else if playerOutOfCards {
+				gameResult = "botWin"
+			} else if botOutOfCards {
+				gameResult = "playerWin"
+				if err := handlePlayerWin(req.UserID, db, gs.PlayingLevel); err != nil {
+					fmt.Println("Failed to update player after win:", err)
+				}
 			}
 		}
 

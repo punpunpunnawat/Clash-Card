@@ -15,12 +15,14 @@ func main() {
 
 	// เพิ่ม middleware CORS
 	r.Use(middlewareCORS)
-
-	r.HandleFunc("/api/user/{id}", GetUserHandler(db)).Methods("GET")
+	r.HandleFunc("/api/login", loginHandler(db)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/user", GetUserHandler(db)).Methods("GET", "OPTIONS")
 	r.HandleFunc("/api/user/{id}/deck", GetUserDeckHandler(db)).Methods("GET")
 
 	r.HandleFunc("/api/battle/start", StartBattleHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/battle/{matchID}/play", PlayCardHandler(db)).Methods("POST", "OPTIONS")
+
+	r.HandleFunc("/ws/pvp", HandlePVPWebSocket)
 
 	log.Println("Server running at :8080")
 	http.ListenAndServe(":8080", r)
@@ -28,9 +30,10 @@ func main() {
 
 func middlewareCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*") // อนุญาตทุกโดเมน
-		w.Header().Set("Access-Control-Allow-Methods", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "*") // หรือเจาะจง origin ที่ใช้
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Vary", "Origin")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)

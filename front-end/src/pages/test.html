@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><title>WebSocket PvP Test</title></head>
+<body>
+  <h2>WebSocket PvP Test</h2>
+  <input type="text" id="msg" placeholder="พิมพ์ข้อความ" />
+  <button onclick="sendMessage()">ส่ง</button>
+  <pre id="log"></pre>
+
+  <script>
+    const room = "test-room-001"; // เปลี่ยนชื่อห้องได้
+    const ws = new WebSocket("ws://localhost:8080/ws/pvp?room=" + room);
+
+    ws.onopen = () => {
+      log("🟢 Connected");
+    };
+
+    ws.onmessage = (e) => {
+      log("📨 ได้รับ: " + e.data);
+    };
+
+    function sendMessage() {
+      const msg = document.getElementById("msg").value;
+      ws.send(msg);
+      log("📤 ส่ง: " + msg);
+    }
+
+    function log(msg) {
+      document.getElementById("log").textContent += msg + "\n";
+    }
+  </script>
+</body>
+</html>
