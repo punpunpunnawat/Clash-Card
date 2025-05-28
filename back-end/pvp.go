@@ -226,10 +226,12 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 				clientB, okB := match.Clients["B"]
 				pvpManager.lock.Unlock()
 
+				state.A_Hand = drawCards(&state.A_Deck, 3)
+				state.B_Hand = drawCards(&state.B_Deck, 3)
 				if okA {
 					response := map[string]interface{}{
-						"type": "A_hand",
-						"slot": "testa",
+						"type":       "player_hand",
+						"playerHand": state.A_Hand,
 					}
 					respJSON, err := json.Marshal(response)
 					if err == nil {
@@ -238,8 +240,8 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 				}
 				if okB {
 					response := map[string]interface{}{
-						"type": "B_Hand",
-						"slot": "testb",
+						"type":       "player_hand",
+						"playerHand": state.B_Hand,
 					}
 					respJSON, err := json.Marshal(response)
 					if err == nil {
