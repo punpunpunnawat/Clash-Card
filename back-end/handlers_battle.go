@@ -233,22 +233,42 @@ func handlePlayerWin(userID int, db *sql.DB, wonLevel int) error {
 func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
-			UserID   int `json:"userId"`
+			//UserID   int `json:"userId"`
 			BotLevel int `json:"levelId"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UserID == 0 {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		var tokenStr string
+		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
+		if tokenStr == "" {
+			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		userID, err := extractUserIDFromToken(tokenStr)
+
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || userID == 0 {
 			fmt.Println("T T")
 			http.Error(w, "Invalid or missing userId", http.StatusBadRequest)
 			return
 		}
 
-		user, err := getUserByIDFromDB(db, req.UserID)
+		user, err := getUserByIDFromDB(db, userID)
 		if err != nil {
 			http.Error(w, "User not found", http.StatusNotFound)
 			return
 		}
 
-		deck, err := getDeckByUserIDFromDB(db, req.UserID)
+		deck, err := getDeckByUserIDFromDB(db, userID)
 		if err != nil {
 			http.Error(w, "Deck not found", http.StatusNotFound)
 			return
@@ -317,6 +337,20 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		vars := mux.Vars(r)
 		matchID := vars["matchID"]
 
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		var tokenStr string
+		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
+		if tokenStr == "" {
+			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		userID, err := extractUserIDFromToken(tokenStr)
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			fmt.Println("❌ Failed to read body:", err)
@@ -440,7 +474,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 			gameResult = "botWin"
 		} else if gs.BotCurrentHP == 0 {
 			gameResult = "playerWin"
-			if err := handlePlayerWin(req.UserID, db, gs.PlayingLevel); err != nil {
+			if err := handlePlayerWin(userID, db, gs.PlayingLevel); err != nil {
 				fmt.Println("Failed to update player after win:", err)
 			}
 		} else {
@@ -451,7 +485,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 				gameResult = "botWin"
 			} else if botOutOfCards {
 				gameResult = "playerWin"
-				if err := handlePlayerWin(req.UserID, db, gs.PlayingLevel); err != nil {
+				if err := handlePlayerWin(userID, db, gs.PlayingLevel); err != nil {
 					fmt.Println("Failed to update player after win:", err)
 				}
 			}

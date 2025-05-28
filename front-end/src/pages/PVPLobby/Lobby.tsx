@@ -3,60 +3,72 @@ import { useEffect, useRef, useState } from "react";
 import type { CardProps, CardType } from "../../types/Card";
 
 const Lobby = () => {
+  type ServerMessage =
+  | { type: "slot_assigned"; slot: "A" | "B" }
+  | {
+      type: "selection_status";
+      Aselected: boolean;
+      Bselected: boolean;
+    };
+
   const { id: roomID } = useParams();
   const ws = useRef<WebSocket | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
   const [input, setInput] = useState("");
 
-  const [playerSelectedCard, setPlayerSelectedCard] =
-    useState<CardProps | null>(null);
-  const [opponentSelectedCard, setOpponentSelectedCard] =
-    useState<CardProps | null>(null);
-
-    const [playerSlot, setPlayerSlot] = useState<"A" | "B" | null>(null);
+  //const [playerSelected, setPlayerSelected] = useState<boolean>(false);
+  const [opponentSelected, setOpponentSelected] = useState<boolean>(false);
+  const [selectedCard, setSelectedCard] = useState<CardProps | null>(null);
+  const [playerSlot, setPlayerSlot] = useState<"A" | "B" | null>(null);
 
   useEffect(() => {
     if (!roomID) return;
 
-    ws.current = new WebSocket(`ws://localhost:8080/ws/pvp?room=${roomID}`);
+    const token = localStorage.getItem("authToken")!;
+
+    ws.current = new WebSocket(`ws://localhost:8080/ws/pvp?room=${roomID}`, [token]);
 
     ws.current.onopen = () => setMessages((m) => [...m, "🟢 Connected"]);
 
     ws.current.onmessage = (e) => {
-  setMessages((m) => [...m, `📨 ${e.data}`]);
+      setMessages((m) => [...m, `📨 ${e.data}`]);
 
-  try {
-    const msg = JSON.parse(e.data);
+      try {
+        const msg = JSON.parse(e.data) as ServerMessage;
 
-    if (msg.type === "slot_assigned") {
-      setPlayerSlot(msg.slot);
-    } else if (msg.type === "selection_status") {
-      const playerIsA = playerSlot === "A";
-
-      if (playerIsA) {
-        if (msg.Bselected) {
-          setOpponentSelectedCard({ id: "opponent", type: "hidden" });
-        } else {
-          setOpponentSelectedCard(null);
+        if (msg.type === "slot_assigned") {
+          
+          setPlayerSlot(msg.slot);
+        } else if (msg.type === "selection_status") {
+          console.log("A "+msg.Aselected);
+          console.log("B "+msg.Bselected);
+          const playerIsA = playerSlot === "A";
+          console.log(msg);
+          if (playerIsA) {
+            if (msg.Bselected) {
+              console.log("b enemy set");
+              setOpponentSelected(true);
+            } else {
+              setOpponentSelected(false);
+            }
+          } else if (playerSlot === "B") {
+            if (msg.Aselected) {
+              console.log("a enemy set");
+              setOpponentSelected(true);
+            } else {
+              setOpponentSelected(false);
+            }
+          }
         }
-      } else if (playerSlot === "B") {
-        if (msg.Aselected) {
-          setOpponentSelectedCard({ id: "opponent", type: "hidden" });
-        } else {
-          setOpponentSelectedCard(null);
-        }
+      } catch (err) {
+        console.error("Invalid message", err);
       }
-    }
-  } catch (err) {
-    console.error("Invalid message", err);
-  }
-};
-
+    };
 
     ws.current.onclose = () => setMessages((m) => [...m, "🔴 Disconnected"]);
 
     return () => ws.current?.close();
-  }, [roomID]);
+  }, [playerSlot, roomID]);
 
   const handleCardSelect = (type: CardType) => {
     if (ws.current?.readyState !== WebSocket.OPEN) return;
@@ -73,7 +85,7 @@ const Lobby = () => {
       })
     );
 
-    setPlayerSelectedCard(card);
+    setSelectedCard(card);
     setMessages((m) => [...m, `📤 You selected: ${type}`]);
   };
 
@@ -112,11 +124,9 @@ const Lobby = () => {
 
       <div>
         <p>
-          🧍‍♂️ You selected: <b>{playerSelectedCard?.type ?? "-"}</b>
+          🧍‍♂️ You selected: <b>{selectedCard?.type ?? "-"}</b>
         </p>
-        <p>
-          🧍‍♀️ Opponent: {opponentSelectedCard ? "✅ Selected" : "❌ Not yet"}
-        </p>
+        <p>🧍‍♀️ Opponent: {opponentSelected ? "✅ Selected" : "❌ Not yet"}</p>
       </div>
 
       <div className="mt-4">

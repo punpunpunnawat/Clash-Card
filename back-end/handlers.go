@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func GetUserHandler(db *sql.DB) http.HandlerFunc {
@@ -84,10 +81,22 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 
 func GetUserDeckHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		userID, err := strconv.Atoi(vars["id"])
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		var tokenStr string
+		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
+		if tokenStr == "" {
+			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		userID, err := extractUserIDFromToken(tokenStr)
 		if err != nil {
-			http.Error(w, "Invalid user ID", http.StatusBadRequest)
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
 

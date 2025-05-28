@@ -16,8 +16,23 @@ const initialState: DeckState = {
 
 export const fetchDeck = createAsyncThunk(
   "deck/fetchDeck",
-  async (id: number) => {
-    const res = await fetch(`http://localhost:8080/api/user/${id}/deck`);
+  async () => {
+    const token = localStorage.getItem("authToken");
+    console.log(token)
+    if (!token) {
+      throw new Error("No auth token");
+    }
+
+    const res = await fetch("http://localhost:8080/api/deck", {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch user data");
+    }
+
     return await res.json();
   }
 );

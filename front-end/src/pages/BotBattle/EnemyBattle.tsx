@@ -60,7 +60,7 @@ const EnemyBattle = () => {
   const dispatch: AppDispatch = useDispatch();
   useEffect(() => {
     dispatch(fetchPlayer());
-    dispatch(fetchDeck(1));
+    dispatch(fetchDeck());
   }, [dispatch]);
   const [gameState, setGameState] = useState<GameState>("SELECT_CARD");
 
@@ -196,8 +196,9 @@ const EnemyBattle = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("authToken")}`, // ใส่ token ตรงนี้
       },
-      body: JSON.stringify({ userId: 1, levelId: Number(levelId) }), // ส่ง userId ไป
+      body: JSON.stringify({ levelId: Number(levelId) })
     })
       .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
       .then((data) => {
@@ -230,14 +231,20 @@ const EnemyBattle = () => {
     console.log({ userID: player?.id, cardId: selectedPlayerCard?.id });
     console.log(matchID);
     fetch(`http://localhost:8080/api/battle/${matchID}/play`, {
+      // method: "POST",
+      // headers: {
+      //   "Content-Type": "application/json",
+      // },
+      // body: JSON.stringify({
+      //   userID: player?.id,
+      //   cardID: selectedPlayerCard?.id,
+      // }), // ส่ง userId ไป
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("authToken")}`, // ใส่ token ตรงนี้
       },
-      body: JSON.stringify({
-        userID: player?.id,
-        cardID: selectedPlayerCard?.id,
-      }), // ส่ง userId ไป
+      body: JSON.stringify({ cardID: selectedPlayerCard?.id })
     })
       .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
       .then((data) => {
@@ -294,14 +301,14 @@ const EnemyBattle = () => {
       case "DO_DAMAGE":
         if (turnResult) {
           console.log("test labob");
-          console.log(turnResult)
+          console.log(turnResult);
           setCurrentPlayerHP(Number(turnResult.hp.player));
           setCurrentEnemyHP(Number(turnResult.hp.enemy));
-          if(turnResult.result === "playerWin") {
+          if (turnResult.result === "playerWin") {
             setGameState("GAME_END_WIN");
             break;
           }
-          if(turnResult.result === "botWin") {
+          if (turnResult.result === "botWin") {
             setGameState("GAME_END_LOSE");
             break;
           }
@@ -326,8 +333,8 @@ const EnemyBattle = () => {
   }, [gameState, selectedEnemyCard, turnResult]);
 
   if (!player || !maxEnemyHP) return <div>loading</div>;
-  if (gameState==="GAME_END_WIN") return <div>You win</div>;
-  if (gameState==="GAME_END_LOSE") return <div>You lose</div>;
+  if (gameState === "GAME_END_WIN") return <div>You win</div>;
+  if (gameState === "GAME_END_LOSE") return <div>You lose</div>;
   return (
     <div className="EnemyBattle">
       <div className="EnemyBattle__arena">

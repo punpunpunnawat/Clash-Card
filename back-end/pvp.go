@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -30,6 +32,7 @@ type PVPClient struct {
 	conn   *websocket.Conn
 	roomID string
 	slot   string // "A" หรือ "B"
+	userID int    // เก็บ userID ที่ถอดจาก token
 	send   chan []byte
 }
 
@@ -47,64 +50,221 @@ var pvpManager = PVPManager{
 	rooms: make(map[string]*PVPMatch),
 }
 
-func HandlePVPWebSocket(w http.ResponseWriter, r *http.Request) {
-	roomID := r.URL.Query().Get("room")
-	if roomID == "" {
-		http.Error(w, "room required", http.StatusBadRequest)
-		return
-	}
+// pvpStates เก็บสถานะเกมจริง (Deck, Stat, HP...) ของแต่ละห้อง
+var (
+	pvpStates   = make(map[string]*PVPState)
+	pvpStatesMu sync.Mutex
+)
 
-	conn, err := upgrader.Upgrade(w, r, nil)
+type PVPState struct {
+	sync.Mutex  // ล็อกภายใน state เอง
+	A_Deck      []Card
+	B_Deck      []Card
+	A_Hand      []Card
+	B_Hand      []Card
+	A_ATK       int
+	B_ATK       int
+	A_DEF       int
+	B_DEF       int
+	A_SPD       int
+	B_SPD       int
+	A_MaxHP     int
+	B_MaxHP     int
+	A_CurrentHP int
+	B_CurrentHP int
+}
+
+func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
+	userA, err := getUserByIDFromDB(db, userAID)
 	if err != nil {
-		log.Println("WebSocket upgrade error:", err)
-		return
+		return nil, err
+	}
+	userB, err := getUserByIDFromDB(db, userBID)
+	if err != nil {
+		return nil, err
 	}
 
-	pvpManager.lock.Lock()
-	match, exists := pvpManager.rooms[roomID]
-	if !exists {
-		match = &PVPMatch{
-			Clients:  make(map[string]*PVPClient),
-			Selected: make(map[string]CardType),
+	deckA, err := getDeckByUserIDFromDB(db, userAID)
+	if err != nil {
+		return nil, err
+	}
+	deckB, err := getDeckByUserIDFromDB(db, userBID)
+	if err != nil {
+		return nil, err
+	}
+
+	state := &PVPState{
+		A_Deck:      deckA,
+		B_Deck:      deckB,
+		A_Hand:      []Card{}, // เริ่มมือว่าง
+		B_Hand:      []Card{},
+		A_ATK:       userA.Stat.Atk,
+		B_ATK:       userB.Stat.Atk,
+		A_DEF:       userA.Stat.Def,
+		B_DEF:       userB.Stat.Def,
+		A_SPD:       userA.Stat.Spd,
+		B_SPD:       userB.Stat.Spd,
+		A_MaxHP:     userA.Stat.HP,
+		B_MaxHP:     userB.Stat.HP,
+		A_CurrentHP: userA.Stat.HP,
+		B_CurrentHP: userB.Stat.HP,
+	}
+	return state, nil
+}
+
+func logPVPState(roomID string, ps *PVPState) {
+	ps.Lock()
+	defer ps.Unlock()
+
+	fmt.Println("====== PVP STATE ======")
+	fmt.Println("Room ID:", roomID)
+
+	fmt.Println("--- Player A ---")
+	fmt.Println("Deck:", len(ps.A_Deck), "cards left")
+	fmt.Println("Hand:", formatHand(ps.A_Hand))
+	fmt.Println("ATK:", ps.A_ATK, "HP:", ps.A_CurrentHP, "DEF:", ps.A_DEF, "SPD:", ps.A_SPD)
+
+	fmt.Println("--- Player B ---")
+	fmt.Println("Deck:", len(ps.B_Deck), "cards left")
+	fmt.Println("Hand:", formatHand(ps.B_Hand))
+	fmt.Println("ATK:", ps.B_ATK, "HP:", ps.B_CurrentHP, "DEF:", ps.B_DEF, "SPD:", ps.B_SPD)
+
+	fmt.Println("========================")
+}
+
+// Handler
+func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		tokenStr := r.Header.Get("Sec-WebSocket-Protocol")
+		if tokenStr == "" {
+			http.Error(w, "missing token", http.StatusUnauthorized)
+			return
 		}
-		pvpManager.rooms[roomID] = match
-	}
 
-	var slot string
-	if _, ok := match.Clients["A"]; !ok {
-		slot = "A"
-	} else if _, ok := match.Clients["B"]; !ok {
-		slot = "B"
-	} else {
+		header := http.Header{}
+		header.Add("Sec-WebSocket-Protocol", tokenStr) // ส่งกลับ client ด้วย
+
+		userID, err := extractUserIDFromToken(tokenStr)
+		if err != nil {
+			http.Error(w, "invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		conn, err := upgrader.Upgrade(w, r, header) // ต้องใส่ header กลับไป
+		if err != nil {
+			log.Println("WebSocket upgrade error:", err)
+			return
+		}
+
+		roomID := r.URL.Query().Get("room")
+		if roomID == "" {
+			http.Error(w, "room required", http.StatusBadRequest)
+			return
+		}
+
+		pvpManager.lock.Lock()
+		match, exists := pvpManager.rooms[roomID]
+		if !exists {
+			match = &PVPMatch{
+				Clients:  make(map[string]*PVPClient),
+				Selected: make(map[string]CardType),
+			}
+			pvpManager.rooms[roomID] = match
+		}
+
+		var slot string
+		if _, ok := match.Clients["A"]; !ok {
+			slot = "A"
+		} else if _, ok := match.Clients["B"]; !ok {
+			slot = "B"
+		} else {
+			pvpManager.lock.Unlock()
+			http.Error(w, "room full", http.StatusForbidden)
+			return
+		}
+
+		client := &PVPClient{
+			conn:   conn,
+			roomID: roomID,
+			slot:   slot,
+			userID: userID,
+			send:   make(chan []byte, 256),
+		}
+
+		match.Clients[slot] = client
+
+		// ปลดล็อกก่อนเลย ถ้าจะทำงานหนักหรือเรียก DB ข้างนอก
 		pvpManager.lock.Unlock()
-		http.Error(w, "room full", http.StatusForbidden)
-		return
-	}
 
-	client := &PVPClient{
-		conn:   conn,
-		roomID: roomID,
-		slot:   slot,
-		send:   make(chan []byte, 256),
-	}
+		// โหลดสถานะ DB เฉพาะเมื่อครบ 2 คน
+		if len(match.Clients) == 2 {
+			clientA := match.Clients["A"]
+			clientB := match.Clients["B"]
 
-	match.Clients[slot] = client
-	pvpManager.lock.Unlock()
+			go func() {
+				state, err := loadPVPStateFromDB(db, clientA.userID, clientB.userID)
+				if err != nil {
+					log.Println("loadPVPStateFromDB error:", err)
+					return
+				}
 
-	// ส่ง slot assigned กลับ client ทันที
-	go func() {
-		response := map[string]interface{}{
-			"type": "slot_assigned",
-			"slot": slot,
+				pvpStatesMu.Lock()
+				pvpStates[roomID] = state
+				pvpStatesMu.Unlock()
+
+				logPVPState(roomID, state)
+
+				// ส่งข้อมูลกลับ client ต้องล็อกก่อนดึง client ใหม่
+				pvpManager.lock.Lock()
+				match, ok := pvpManager.rooms[roomID]
+				if !ok {
+					pvpManager.lock.Unlock()
+					return
+				}
+				clientA, okA := match.Clients["A"]
+				clientB, okB := match.Clients["B"]
+				pvpManager.lock.Unlock()
+
+				if okA {
+					response := map[string]interface{}{
+						"type": "A_hand",
+						"slot": "testa",
+					}
+					respJSON, err := json.Marshal(response)
+					if err == nil {
+						clientA.send <- respJSON
+					}
+				}
+				if okB {
+					response := map[string]interface{}{
+						"type": "B_Hand",
+						"slot": "testb",
+					}
+					respJSON, err := json.Marshal(response)
+					if err == nil {
+						clientB.send <- respJSON
+					}
+				}
+			}()
 		}
-		respJSON, err := json.Marshal(response)
-		if err == nil {
-			client.send <- respJSON
-		}
-	}()
 
-	go pvpRead(client)
-	go pvpWrite(client)
+		// ส่ง slot assigned ทันทีหลัง unlock
+		go func() {
+			response := map[string]interface{}{
+				"type": "slot_assigned",
+				"slot": slot,
+			}
+			respJSON, err := json.Marshal(response)
+			if err == nil {
+				client.send <- respJSON
+			}
+		}()
+
+		go pvpRead(client)
+		go pvpWrite(client)
+
+	}
 }
 
 func pvpRead(c *PVPClient) {
@@ -134,8 +294,9 @@ func pvpRead(c *PVPClient) {
 				continue
 			}
 			match.Selected[c.slot] = m.Card
+			pvpManager.lock.Unlock()
 
-			// สร้างสถานะเลือกไพ่
+			// ส่งสถานะเลือกไพ่ให้ client ทั้งห้อง (แบบเดิม)
 			response := map[string]interface{}{
 				"type":      "selection_status",
 				"Aselected": false,
@@ -150,16 +311,89 @@ func pvpRead(c *PVPClient) {
 
 			respJSON, err := json.Marshal(response)
 			if err == nil {
-				// ส่งให้ทุก client ในห้อง
 				for _, client := range match.Clients {
 					select {
 					case client.send <- respJSON:
 					default:
-						// ถ้า send channel เต็ม ให้ข้าม
+						// channel เต็ม ข้ามไป
 					}
 				}
 			}
-			pvpManager.lock.Unlock()
+
+			// เช็คว่าเลือกครบ 2 คนยัง
+			if len(match.Selected) == 2 {
+				// do something เช่น คำนวณผล
+				var resultA, resultB string
+				// สมมติ result แบบง่ายๆ
+				if match.Selected["A"] == match.Selected["B"] {
+					resultA = "draw"
+					resultB = "draw"
+				} else if match.Selected["A"] == "rock" && match.Selected["B"] == "scissors" {
+					resultA = "win"
+					resultB = "lose"
+				} else if match.Selected["A"] == "scissors" && match.Selected["B"] == "paper" {
+					resultA = "win"
+					resultB = "lose"
+				} else if match.Selected["A"] == "paper" && match.Selected["B"] == "rock" {
+					resultA = "win"
+					resultB = "lose"
+				} else {
+					resultA = "lose"
+					resultB = "win"
+				}
+
+				// ส่งผลลัพธ์แยกกัน
+				respA := map[string]interface{}{
+					"type":   "round_result",
+					"result": resultA,
+				}
+				respB := map[string]interface{}{
+					"type":   "round_result",
+					"result": resultB,
+				}
+
+				respAJSON, _ := json.Marshal(respA)
+				respBJSON, _ := json.Marshal(respB)
+
+				// ส่งกลับ client A และ B
+				if clientA, ok := match.Clients["A"]; ok {
+					select {
+					case clientA.send <- respAJSON:
+					default:
+					}
+				}
+				if clientB, ok := match.Clients["B"]; ok {
+					select {
+					case clientB.send <- respBJSON:
+					default:
+					}
+				}
+
+				// ล้างสถานะเลือกไพ่เพื่อรอรอบใหม่
+				pvpManager.lock.Lock()
+				match.Selected = make(map[string]CardType)
+				pvpManager.lock.Unlock()
+			}
+
+			// ตัวอย่างแก้ HP ใน state ตามเดิม (ถ้ามี)
+			pvpStatesMu.Lock()
+			state, ok := pvpStates[c.roomID]
+			pvpStatesMu.Unlock()
+			if ok {
+				state.Lock()
+				if c.slot == "A" {
+					state.B_CurrentHP -= 10
+					if state.B_CurrentHP < 0 {
+						state.B_CurrentHP = 0
+					}
+				} else if c.slot == "B" {
+					state.A_CurrentHP -= 10
+					if state.A_CurrentHP < 0 {
+						state.A_CurrentHP = 0
+					}
+				}
+				state.Unlock()
+			}
 		}
 	}
 }
@@ -187,5 +421,9 @@ func pvpRemoveClient(c *PVPClient) {
 
 	if len(match.Clients) == 0 {
 		delete(pvpManager.rooms, c.roomID)
+		// ลบสถานะเกมถ้าไม่มีคนในห้องแล้ว
+		pvpStatesMu.Lock()
+		delete(pvpStates, c.roomID)
+		pvpStatesMu.Unlock()
 	}
 }

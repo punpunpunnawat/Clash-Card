@@ -4,6 +4,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -78,15 +79,27 @@ func loginHandler(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(map[string]string{"token": token})
 	}
 }
+
 func extractUserIDFromToken(tokenStr string) (int, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		// ถ้าต้องการเช็ค alg เพิ่มเติมก็บอกได้ที่นี่
 		return jwtSecret, nil
 	})
 	if err != nil || !token.Valid {
 		return 0, err
 	}
-	claims := token.Claims.(jwt.MapClaims)
-	userID := int(claims["user_id"].(float64))
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, errors.New("invalid token claims")
+	}
+
+	userIDFloat, ok := claims["user_id"].(float64)
+	if !ok {
+		return 0, errors.New("user_id claim missing or invalid")
+	}
+
+	userID := int(userIDFloat)
 	return userID, nil
 }
 

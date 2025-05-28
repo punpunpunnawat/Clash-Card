@@ -14,7 +14,7 @@ function Home() {
   const dispatch: AppDispatch = useDispatch();
   useEffect(() => {
     dispatch(fetchPlayer());
-    dispatch(fetchDeck(1));
+    dispatch(fetchDeck());
   }, [dispatch]);
 
   const handleClickLobby = () => {
@@ -30,6 +30,10 @@ function Home() {
   const handleChangeLobbyID = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLobbyID(e.target.value);
   };
+
+  useEffect(() => (
+    console.log(deck)
+  ),[deck])
 
   if (!player) return <div>กำลังโหลดข้อมูลผู้เล่น...</div>;
   console.log(player)

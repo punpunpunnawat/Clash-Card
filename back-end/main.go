@@ -7,6 +7,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// var db *sql.DB
+
 func main() {
 	db := ConnectDB()
 	defer db.Close()
@@ -17,12 +19,13 @@ func main() {
 	r.Use(middlewareCORS)
 	r.HandleFunc("/api/login", loginHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/user", GetUserHandler(db)).Methods("GET", "OPTIONS")
-	r.HandleFunc("/api/user/{id}/deck", GetUserDeckHandler(db)).Methods("GET")
+	r.HandleFunc("/api/deck", GetUserDeckHandler(db)).Methods("GET", "OPTIONS")
 
 	r.HandleFunc("/api/battle/start", StartBattleHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/battle/{matchID}/play", PlayCardHandler(db)).Methods("POST", "OPTIONS")
 
-	r.HandleFunc("/ws/pvp", HandlePVPWebSocket)
+	r.HandleFunc("/ws/pvp", HandlePVPWebSocket(db))
+	//r.HandleFunc("/ws/pvp", HandlePVPWebSocket)
 
 	log.Println("Server running at :8080")
 	http.ListenAndServe(":8080", r)
