@@ -1,0 +1,39 @@
+@keyframes flyRight {
+  0% { transform: translateX(0) rotate(0); opacity: 1; }
+  100% { transform: translateX(400px) rotate(720deg); opacity: 0; }
+}
+
+@keyframes flyLeft {
+  0% { transform: translateX(0) rotate(0); opacity: 1; }
+  100% { transform: translateX(-400px) rotate(-720deg); opacity: 0; }
+}
+
+.card-fly-right {
+  animation: flyRight 1s ease forwards;
+}
+
+.card-fly-left {
+  animation: flyLeft 1s ease forwards;
+}
+
+.card-attack-right {
+  animation: attackBounceRight 0.6s ease forwards;
+}
+
+.card-attack-left {
+  animation: attackBounceLeft 0.6s ease forwards;
+}
+
+@keyframes attackBounceRight {
+  0% { transform: translateX(0) scale(1); }
+  30% { transform: translateX(20px) scale(1.1); }
+  60% { transform: translateX(-10px) scale(0.95); }
+  100% { transform: translateX(0) scale(1); }
+}
+
+@keyframes attackBounceLeft {
+  0% { transform: translateX(0) scale(1); }
+  30% { transform: translateX(-20px) scale(1.1); }
+  60% { transform: translateX(10px) scale(0.95); }
+  100% { transform: translateX(0) scale(1); }
+}

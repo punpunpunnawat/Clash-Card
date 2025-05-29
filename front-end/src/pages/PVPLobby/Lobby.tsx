@@ -2,37 +2,280 @@ import { useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import type { CardProps, CardType } from "../../types/Card";
 import Card from "./../../components/Card/Card";
-
+import HealthBar from "../../components/HealthBar";
+import "./css/enemyBattle.css";
+import "./css/CardAttack.css";
 const Lobby = () => {
   type ServerMessage =
     | { type: "slot_assigned"; slot: "A" | "B" }
     | {
         type: "selection_status";
-        Aselected: boolean;
-        Bselected: boolean;
+        opponentSelected: boolean;
       }
     | {
         type: "player_hand";
         playerHand: CardProps[];
+      }
+    | {
+        type: "round_result";
+        gameStatus: string;
+        roundWinner: string;
+        opponentPlayed: CardType;
+        playerPlayed: CardProps;
+        playerHand: CardProps[];
+        damage: {
+          enemyToPlayer: number;
+          playerToEnemy: number;
+        };
+        hp: {
+          enemy: number;
+          player: number;
+        };
+        cardRemaining: {
+          player: {
+            paper: number;
+            rock: number;
+            scissors: number;
+          };
+          opponent: {
+            paper: number;
+            rock: number;
+            scissors: number;
+          };
+        };
       };
+  type RoundResult = {
+    type: "round_result";
+    gameStatus: string;
+    roundWinner: string;
+    opponentPlayed: CardType;
+    playerPlayed: CardProps;
+    playerHand: CardProps[];
+    damage: {
+      enemyToPlayer: number;
+      playerToEnemy: number;
+    };
+    hp: {
+      enemy: number;
+      player: number;
+    };
+    cardRemaining: {
+      player: {
+        paper: number;
+        rock: number;
+        scissors: number;
+      };
+      opponent: {
+        paper: number;
+        rock: number;
+        scissors: number;
+      };
+    };
+  };
 
+  type CardCount = {
+    [CardType: string]: number; // เช่น { rock: 2, paper: 1 }
+  };
+  type CardRemaining = {
+    player: CardCount;
+    opponent: CardCount;
+  };
   const { id: roomID } = useParams();
   const ws = useRef<WebSocket | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
-  const [input, setInput] = useState("");
+
+  // const [input, setInput] = useState("");
 
   //const [playerSelected, setPlayerSelected] = useState<boolean>(false);
-  const [opponentSelected, setOpponentSelected] = useState<boolean>(false);
-  const [selectedCard, setSelectedCard] = useState<CardProps | null>(null);
+  //const [opponentSelected, setOpponentSelected] = useState<boolean>(false);
+  const [opponentHandSize, setOpponentHandSize] = useState<number>(0);
+
+  const [selectedPlayerCard, setSelectedPlayerCard] =
+    useState<CardProps | null>(null);
+  const [selectedOpponentCard, setSelectedOpponentCard] =
+    useState<CardProps | null>(null);
   const [playerSlot, setPlayerSlot] = useState<"A" | "B" | null>(null);
+  const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
 
-  const [playerHand, setPlayerHand] = useState<CardProps[] | null>(null);
+  const [currentPlayerHP, setCurrentPlayerHP] = useState(0);
+  const [currentOpponentHP, setCurrentOpponentHP] = useState(0);
+  const [maxPlayerHP, setMaxPlayerHP] = useState(0);
+  const [maxOpponentHP, setMaxOpponentHP] = useState(0);
+  const [winner, setWinner] = useState("");
 
+  const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
 
-    const playerDeckRef = useRef<HTMLDivElement>(null);
+  //Animated
+  const [showCard, setShowCard] = useState(false);
+  //Animate
+  const [animatingPlayerCard, setAnimatingPlayerCard] =
+    useState<CardProps | null>(null);
+  const [animatingOpponentCard, setAnimatingOpponentCard] =
+    useState<CardProps | null>(null);
+  const [playerDrawStyle, setPlayerDrawStyle] = useState<React.CSSProperties>(
+    {}
+  );
+  const [enemyDrawStyle, setEnemyDrawStyle] = useState<React.CSSProperties>({});
+  const [cardRemaining, setCardRemaining] = useState<CardRemaining>({
+    player: {},
+    opponent: {},
+  });
+
+  const playerDeckRef = useRef<HTMLDivElement>(null);
   const playerHandRef = useRef<HTMLDivElement>(null);
   const enemyDeckRef = useRef<HTMLDivElement>(null);
   const enemyHandRef = useRef<HTMLDivElement>(null);
+
+  //GAME STATE
+  type GameState =
+    | "SELECT_CARD"
+    | "WAIT_ENEMY"
+    | "BOTH_SELECTED"
+    | "SHOW_RESULT"
+    | "DO_DAMAGE"
+    | "DRAW_CARD"
+    | "GAME_END_WIN"
+    | "GAME_END_LOSE";
+  const [gameState, setGameState] = useState<GameState>("SELECT_CARD");
+
+  //CARD FUNC
+  const findNewCard = (updatedCard: CardProps[]) => {
+    const currentIds = playerHand.map((card) => card.id);
+    const filteredNewCards = updatedCard.filter(
+      (card) => !currentIds.includes(card.id)
+    );
+    const newCard = filteredNewCards[0];
+    return newCard;
+  };
+
+  const drawPlayerCard = (newCard: CardProps, side: string) => {
+    console.log(side, newCard);
+
+    const deck = playerDeckRef.current;
+    const hand = playerHandRef.current;
+    if (!deck || !hand) return;
+    const deckRect = deck.getBoundingClientRect();
+    const handRect = hand.getBoundingClientRect();
+
+    setAnimatingPlayerCard(newCard);
+
+    // start at deck
+    setPlayerDrawStyle({
+      position: "fixed",
+      left: deckRect.left,
+      top: deckRect.top,
+      width: deckRect.width,
+      height: deckRect.height,
+      transition: "all 0.5s ease",
+      zIndex: 1000,
+    });
+
+    // trigger animation in next tick
+    setTimeout(() => {
+      setPlayerDrawStyle((prev) => ({
+        ...prev,
+        left: handRect.left + handRect.width - deckRect.width / 2,
+        top: handRect.top + handRect.height / 2 - deckRect.height / 2,
+      }));
+    }, 50);
+
+    // after animation ends
+    setTimeout(() => {
+      setPlayerHand((prev) => [...prev, newCard]); // actual add
+      setAnimatingPlayerCard(null); // remove floating card
+    }, 600); // slightly longer than transition
+  };
+
+  const drawOpponentCard = () => {
+    const deck = enemyDeckRef.current;
+    const hand = enemyHandRef.current;
+    if (!deck || !hand) return;
+    const deckRect = deck.getBoundingClientRect();
+    const handRect = hand.getBoundingClientRect();
+    setAnimatingOpponentCard({ id: "temp", type: "hidden" });
+    // start at deck
+    setEnemyDrawStyle({
+      position: "fixed",
+      left: deckRect.left,
+      top: deckRect.top,
+      width: deckRect.width,
+      height: deckRect.height,
+      transition: "all 0.5s ease",
+      zIndex: 1000,
+    });
+
+    // trigger animation in next tick
+    setTimeout(() => {
+      setEnemyDrawStyle((prev) => ({
+        ...prev,
+        left: handRect.left + handRect.width - deckRect.width / 2,
+        top: handRect.top + handRect.height / 2 - deckRect.height / 2,
+      }));
+    }, 50);
+
+    // after animation ends
+    setTimeout(() => {
+      setOpponentHandSize((prev) => prev + 1); // actual add
+      setAnimatingOpponentCard(null); // remove floating card
+    }, 600); // slightly longer than transition
+  };
+
+  useEffect(() => {
+    console.log("result isss");
+    console.log(roundResult);
+    if (roundResult) {
+      switch (gameState) {
+        case "BOTH_SELECTED":
+          setSelectedOpponentCard({ id: "enemy", type: roundResult.opponentPlayed });
+          console.log(roundResult.opponentPlayed)
+          //setOpponentHandSize(opponentHandSize - 1);
+          setGameState("SHOW_RESULT")
+          break;
+        case "SHOW_RESULT":
+          setTimeout(() => {
+            setShowCard(false);
+            setTimeout(() => {
+              console.log(roundResult.roundWinner);
+              setWinner(roundResult.roundWinner);
+
+              setTimeout(() => {
+                setShowCard(true);
+                setWinner("");
+                setSelectedPlayerCard(null);
+                setSelectedOpponentCard(null);
+                setGameState("DO_DAMAGE");
+              }, 1000);
+            }, 1000);
+          }, 2000);
+          break;
+
+        case "DO_DAMAGE":
+          if (roundResult) {
+            setCurrentPlayerHP(Number(roundResult.hp.player));
+            setCurrentOpponentHP(Number(roundResult.hp.enemy));
+            if (roundResult.gameStatus === "playerWin") {
+              setGameState("GAME_END_WIN");
+            } else if (roundResult.gameStatus === "botWin") {
+              setGameState("GAME_END_LOSE");
+            }
+            setGameState("DRAW_CARD");
+          }
+
+          break;
+
+        case "DRAW_CARD":
+          drawPlayerCard(findNewCard(roundResult.playerHand), "player");
+          drawOpponentCard();
+          setCardRemaining(roundResult.cardRemaining);
+          setRoundResult(null);
+
+          setGameState("SELECT_CARD");
+          break;
+        default:
+          break;
+      }
+    }
+  }, [gameState, roundResult]);
 
   useEffect(() => {
     if (!roomID) return;
@@ -44,39 +287,45 @@ const Lobby = () => {
     ]);
 
     ws.current.onopen = () => setMessages((m) => [...m, "🟢 Connected"]);
-
     ws.current.onmessage = (e) => {
       setMessages((m) => [...m, `📨 ${e.data}`]);
 
       try {
         const msg = JSON.parse(e.data) as ServerMessage;
 
-        if (msg.type === "slot_assigned") {
-          setPlayerSlot(msg.slot);
-        } else if (msg.type === "selection_status") {
-          console.log("A " + msg.Aselected);
-          console.log("B " + msg.Bselected);
-          const playerIsA = playerSlot === "A";
-          console.log(msg);
-          if (playerIsA) {
-            if (msg.Bselected) {
-              console.log("b enemy set");
-              setOpponentSelected(true);
-            } else {
-              setOpponentSelected(false);
+        switch (msg.type) {
+          case "slot_assigned":
+            setPlayerSlot(msg.slot);
+            console.log(msg.slot);
+            setPlayerSlot(msg.slot);
+            console.log(playerSlot);
+            break;
+
+          case "selection_status":
+            console.log(msg.opponentSelected);
+            if(msg.opponentSelected){
+              setSelectedOpponentCard({ id: "enemy", type: "hidden" });
+              //setOpponentHandSize(opponentHandSize-1);
             }
-          } else if (playerSlot === "B") {
-            if (msg.Aselected) {
-              console.log("a enemy set");
-              setOpponentSelected(true);
-            } else {
-              setOpponentSelected(false);
-            }
-          }
-        } else if (msg.type === "player_hand") {
-          setPlayerHand(msg.playerHand);
-          console.log(msg)
-          console.log(playerHand)
+            
+            break;
+
+          case "player_hand":
+            setPlayerHand(msg.playerHand);
+            //setOpponentHandSize(3);
+            console.log(msg);
+            console.log(playerHand);
+            break;
+
+          case "round_result":
+            console.log(msg);
+            setRoundResult(msg);
+          setGameState("BOTH_SELECTED")
+            break;
+
+          default:
+            console.warn("⚠️ Unknown message type:", msg);
+            break;
         }
       } catch (err) {
         console.error("Invalid message", err);
@@ -88,115 +337,188 @@ const Lobby = () => {
     return () => ws.current?.close();
   }, [roomID]);
 
-  const handleCardSelect = (type: CardType) => {
+  const handleCardSelect = (cardID: string) => {
+    if (gameState !== "SELECT_CARD") return;
     if (ws.current?.readyState !== WebSocket.OPEN) return;
-
-    const card: CardProps = {
-      id: "player",
-      type,
-    };
-
+    setPlayerHand((prevHand) => prevHand.filter((card) => card.id !== cardID));
+    setSelectedPlayerCard(
+      playerHand.find((card) => card.id === cardID) || null
+    );
+    
     ws.current.send(
       JSON.stringify({
         type: "selected_card",
-        card: type,
+        cardID: cardID,
       })
     );
-
-    setSelectedCard(card);
-    setMessages((m) => [...m, `📤 You selected: ${type}`]);
+    setGameState("WAIT_ENEMY");
+    // setMessages((m) => [...m, `📤 You selected: ${cardID}`]);
   };
 
-  const sendMessage = () => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(input);
-      setMessages((m) => [...m, `📤 ${input}`]);
-      setInput("");
-    }
-  };
+  useEffect(() => {
+    console.log(roundResult);
+  }, [roundResult]);
+
+  useEffect(() => {
+    console.log(selectedOpponentCard);
+  }, [selectedOpponentCard]);
 
   return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-xl font-bold">ห้อง: {roomID}</h2>
-
-      <div className="space-x-2">
-        <button
-          onClick={() => handleCardSelect("rock")}
-          className="px-4 py-2 bg-gray-200 rounded"
-        >
-          ✊ Rock
-        </button>
-        <button
-          onClick={() => handleCardSelect("paper")}
-          className="px-4 py-2 bg-gray-200 rounded"
-        >
-          ✋ Paper
-        </button>
-        <button
-          onClick={() => handleCardSelect("scissors")}
-          className="px-4 py-2 bg-gray-200 rounded"
-        >
-          ✌️ Scissors
-        </button>
-      </div>
-
-      <div>
-        <p>
-          🧍‍♂️ You selected: <b>{selectedCard?.type ?? "-"}</b>
-        </p>
-        <p>🧍‍♀️ Opponent: {opponentSelected ? "✅ Selected" : "❌ Not yet"}</p>
-      </div>
-
-      <div className="mt-4">
-        <input
-          className="border p-1 mr-2"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <button
-          onClick={sendMessage}
-          className="bg-blue-400 text-white px-3 py-1 rounded"
-        >
-          ส่ง
-        </button>
-      </div>
-
-      <div className="EnemyBattle__board-player">
-        <div style={{ width: 150, height: 250, visibility: "hidden" }} />
-        <div className="hand" ref={playerHandRef}>
-          {playerHand?.map((card, index) => {
-            const total = playerHand.length;
-            const angleStep = 10; // ค่าที่ควบคุมความเอียง
-            const mid = (total - 1) / 2;
-            const angle = (index - mid) * angleStep;
-            const xOffset = (index - mid) * -30; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
-            const yOffset = Math.abs(index - mid) * 20; // ยิ่งห่างจากตรงกลาง ยิ่งต่ำลง
-            const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
-            return (
-              <div
-                key={card.id}
-                style={{
-                  transform,
-                  transition: "transform 0.5s ease", // 👈 ใส่ transition ตรงนี้
-                }}
-              >
-                <div className="card-wrapper">
-                  <Card
-                    id={card.id}
-                    type={card.type}
-                    // onClick={handleSelectCard}
-                  />
+    <div className="EnemyBattle">
+      <div className="EnemyBattle__arena">
+        <div className="EnemyBattle__enemy-bar">
+          ? : Enemy{" "}
+          <HealthBar currentHP={currentOpponentHP} maxHP={maxOpponentHP} />{" "}
+          ROCK:{cardRemaining.opponent.rock} PAPER:
+          {cardRemaining.opponent.paper} SCISSORS
+          {cardRemaining.opponent.scissors}
+        </div>
+        <div className="EnemyBattle__board-player">
+          <div style={{ width: 150, height: 250, visibility: "hidden" }} />
+          <div className="hand" ref={playerHandRef}>
+            {playerHand?.map((card, index) => {
+              const total = playerHand.length;
+              const angleStep = 10; // ค่าที่ควบคุมความเอียง
+              const mid = (total - 1) / 2;
+              const angle = (index - mid) * angleStep;
+              const xOffset = (index - mid) * -30; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
+              const yOffset = Math.abs(index - mid) * 20; // ยิ่งห่างจากตรงกลาง ยิ่งต่ำลง
+              const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
+              return (
+                <div
+                  key={card.id}
+                  style={{
+                    transform,
+                    transition: "transform 0.5s ease", // 👈 ใส่ transition ตรงนี้
+                  }}
+                >
+                  <div className="card-wrapper">
+                    <Card
+                      id={card.id}
+                      type={card.type}
+                      onClick={handleCardSelect}
+                    />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          <div className="EnemyBattle__card-layer_deck" ref={playerDeckRef}>
+            <img src="/BackOfCard.svg" width={150} height={250} />
+          </div>
+          {animatingPlayerCard && (
+            <div style={playerDrawStyle}>
+              <Card
+                id={animatingPlayerCard.id}
+                type={animatingPlayerCard.type}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="text-sm text-gray-600 space-y-1">
-          {messages.map((msg, idx) => (
-            <div key={idx}>{msg}</div>
-          ))}
+        <div className="EnemyBattle__board">
+          <div className="EnemyBattle__board_card-placer">
+            <img src="/CardPlacer-Player.svg" width={170} height={270} />
+            {selectedPlayerCard && (
+              <Card
+                type={selectedPlayerCard.type}
+                id={selectedPlayerCard.id}
+                flipped={showCard}
+                className={
+                  (winner === "player"
+                    ? "card card-attack-right"
+                    : winner === "enemy"
+                    ? "card card-fly-left"
+                    : "card") + " xxx"
+                }
+              />
+            )}
+          </div>
+          <div className="EnemyBattle__board_card-placer">
+            <img src="/CardPlacer-Enemy.svg" width={170} height={270} />
+            {selectedOpponentCard &&(
+              <Card
+                type={selectedOpponentCard.type}
+                id={selectedOpponentCard.id}
+                flipped={showCard}
+                className={
+                  winner === "enemy"
+                    ? "card card-attack-left"
+                    : winner === "player"
+                    ? "card card-fly-right"
+                    : "card"
+                }
+              />
+            )}
+          </div>
         </div>
+
+        <div className="EnemyBattle__board-enemy">
+          <div
+            className="EnemyBattle__card-layer_deck"
+            ref={enemyDeckRef}
+            style={{ transform: "scaleY(-1)" }}
+          >
+            <img src="/BackOfCard.svg" width={150} height={250} />
+          </div>
+          <div className="hand" ref={enemyHandRef}>
+            {Array.from({ length: opponentHandSize }).map((_, index) => {
+              const total = opponentHandSize;
+              const angleStep = 10; // ค่าที่ควบคุมความเอียง
+              const mid = (total - 1) / 2;
+              const angle = -(index - mid) * angleStep;
+              const xOffset = (index - mid) * -30;
+              const yOffset = Math.abs(index - mid) * -20;
+              const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
+
+              return (
+                <div
+                  style={{
+                    transform,
+                    transition: "transform 0.5s ease",
+                  }}
+                >
+                  <div
+                    className="card-wrapper"
+                    style={{ transform: "scaleY(-1)" }}
+                  >
+                    <Card
+                      id={"id here"}
+                      type="hidden" // เปลี่ยน type ได้ตามที่ต้องการ
+                      flipped
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ width: 150, height: 250, visibility: "hidden" }} />
+          {animatingOpponentCard &&
+            (console.log(
+              "Animating enemy card triggered",
+              animatingOpponentCard
+            ),
+            (
+              <div style={enemyDrawStyle}>
+                <Card
+                  id={animatingOpponentCard.id}
+                  type={animatingOpponentCard.type}
+                  flipped
+                />
+              </div>
+            ))}
+        </div>
+        <div className="EnemyBattle__player-bar">
+          ? : {playerSlot}{" "}
+          <HealthBar currentHP={currentPlayerHP} maxHP={maxPlayerHP} />
+          ROCK:{cardRemaining.player.rock} PAPER:{cardRemaining.player.paper}{" "}
+          SCISSORS{cardRemaining.player.scissors} {gameState}
+        </div>
+      </div>
+
+      <div className="relative group">
+        <button className="p-2 bg-blue-500 text-white rounded">Hover me</button>
       </div>
     </div>
   );

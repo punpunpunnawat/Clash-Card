@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"sync"
 
@@ -24,8 +25,8 @@ const (
 )
 
 type Message struct {
-	Type string   `json:"type"`
-	Card CardType `json:"card,omitempty"` // ใช้เมื่อ Type = "selected_card"
+	Type   string `json:"type"`
+	CardID string `json:"cardID,omitempty"` // ใช้เมื่อ Type = "selected_card"
 }
 
 type PVPClient struct {
@@ -121,6 +122,7 @@ func logPVPState(roomID string, ps *PVPState) {
 
 	fmt.Println("--- Player A ---")
 	fmt.Println("Deck:", len(ps.A_Deck), "cards left")
+	fmt.Println("Hand:", ps.A_Hand)
 	fmt.Println("Hand:", formatHand(ps.A_Hand))
 	fmt.Println("ATK:", ps.A_ATK, "HP:", ps.A_CurrentHP, "DEF:", ps.A_DEF, "SPD:", ps.A_SPD)
 
@@ -209,12 +211,6 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 					return
 				}
 
-				pvpStatesMu.Lock()
-				pvpStates[roomID] = state
-				pvpStatesMu.Unlock()
-
-				logPVPState(roomID, state)
-
 				// ส่งข้อมูลกลับ client ต้องล็อกก่อนดึง client ใหม่
 				pvpManager.lock.Lock()
 				match, ok := pvpManager.rooms[roomID]
@@ -248,6 +244,10 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 						clientB.send <- respJSON
 					}
 				}
+				logPVPState(roomID, state)
+				pvpStatesMu.Lock()
+				pvpStates[roomID] = state
+				pvpStatesMu.Unlock()
 			}()
 		}
 
@@ -289,69 +289,199 @@ func pvpRead(c *PVPClient) {
 
 		switch m.Type {
 		case "selected_card":
+			// ตรวจสอบและดึง state กับ match
+			pvpStatesMu.Lock()
+			state, ok := pvpStates[c.roomID]
+			pvpStatesMu.Unlock()
+			if !ok {
+				fmt.Println("Error PvP State")
+				return
+			}
+
 			pvpManager.lock.Lock()
 			match, ok := pvpManager.rooms[c.roomID]
 			if !ok {
 				pvpManager.lock.Unlock()
-				continue
+				return
 			}
-			match.Selected[c.slot] = m.Card
+
 			pvpManager.lock.Unlock()
 
-			// ส่งสถานะเลือกไพ่ให้ client ทั้งห้อง (แบบเดิม)
-			response := map[string]interface{}{
-				"type":      "selection_status",
-				"Aselected": false,
-				"Bselected": false,
-			}
-			if _, ok := match.Selected["A"]; ok {
-				response["Aselected"] = true
-			}
-			if _, ok := match.Selected["B"]; ok {
-				response["Bselected"] = true
+			// แก้ไขมือผู้เล่น
+			state.Lock()
+
+			var hand []Card
+			if c.slot == "A" {
+				hand = state.A_Hand
+			} else if c.slot == "B" {
+				hand = state.B_Hand
+			} else {
+				state.Unlock()
+				fmt.Println("Invalid slot:", c.slot)
+				return
 			}
 
-			respJSON, err := json.Marshal(response)
-			if err == nil {
-				for _, client := range match.Clients {
-					select {
-					case client.send <- respJSON:
-					default:
-						// channel เต็ม ข้ามไป
-					}
+			var playerCard *Card
+			for _, card := range hand {
+				if card.ID == m.CardID {
+					playerCard = &card
 				}
 			}
 
-			// เช็คว่าเลือกครบ 2 คนยัง
-			if len(match.Selected) == 2 {
+			if playerCard == nil {
+				state.Unlock()
+				fmt.Println("Card not found in hand")
+				return
+			}
+
+			// อัปเดต selected card ของฝั่งนั้น
+			fmt.Println("CT " + CardType(playerCard.Type))
+			match.Selected[c.slot] = CardType(playerCard.Type)
+
+			state.Unlock()
+
+			// สร้าง response ที่แยกฝั่ง
+			responseForA := map[string]interface{}{
+				"type":             "selection_status",
+				"opponentSelected": match.Selected["B"] != "",
+			}
+			responseForB := map[string]interface{}{
+				"type":             "selection_status",
+				"opponentSelected": match.Selected["A"] != "",
+			}
+
+			respAJSON, _ := json.Marshal(responseForA)
+			respBJSON, _ := json.Marshal(responseForB)
+
+			// ส่งให้ client A
+			if clientA, ok := match.Clients["A"]; ok {
+				select {
+				case clientA.send <- respAJSON:
+				default:
+				}
+			}
+
+			// ส่งให้ client B
+			if clientB, ok := match.Clients["B"]; ok {
+				select {
+				case clientB.send <- respBJSON:
+				default:
+				}
+			}
+
+			//เช็คว่าเลือกครบ 2 คนยัง
+			if match.Selected["A"] != "" && match.Selected["B"] != "" {
 				// do something เช่น คำนวณผล
-				var resultA, resultB string
+				var winner string
 				// สมมติ result แบบง่ายๆ
 				if match.Selected["A"] == match.Selected["B"] {
-					resultA = "draw"
-					resultB = "draw"
+					winner = "draw"
 				} else if match.Selected["A"] == "rock" && match.Selected["B"] == "scissors" {
-					resultA = "win"
-					resultB = "lose"
+					winner = "A"
 				} else if match.Selected["A"] == "scissors" && match.Selected["B"] == "paper" {
-					resultA = "win"
-					resultB = "lose"
+					winner = "A"
 				} else if match.Selected["A"] == "paper" && match.Selected["B"] == "rock" {
-					resultA = "win"
-					resultB = "lose"
+					winner = "A"
 				} else {
-					resultA = "lose"
-					resultB = "win"
+					winner = "B"
 				}
 
-				// ส่งผลลัพธ์แยกกัน
+				gameStatus := "onGoing"
+				damageToB := 0
+				damageToA := 0
+				// caldamage
+				if winner == "A" {
+					damageToB = int(math.Max(float64(state.A_ATK-state.B_DEF), 1))
+					state.B_CurrentHP = int(math.Max(float64(state.B_CurrentHP-damageToB), 0))
+				} else if winner == "B" {
+					damageToA = int(math.Max(float64(state.B_ATK-state.A_DEF), 1))
+					state.A_CurrentHP = int(math.Max(float64(state.A_CurrentHP-damageToA), 0))
+				} else if winner == "draw" {
+					//logic
+				}
+
+				//check winner if hp = 0
+				if state.A_CurrentHP == 0 {
+					gameStatus = "Bwin"
+				} else if state.B_CurrentHP == 0 {
+					gameStatus = "Awin"
+				} else {
+					if len(state.A_Deck)+len(state.A_Hand) == 0 && len(state.A_Deck)+len(state.B_Hand) == 0 {
+						gameStatus = "draw"
+					} else if len(state.A_Deck)+len(state.A_Hand) == 0 {
+						gameStatus = "Bwin"
+					} else if len(state.B_Deck)+len(state.B_Hand) == 0 {
+						gameStatus = "Awin"
+					}
+				}
+
+				//draw card
+				if gameStatus == "onGoing" {
+					if len(state.A_Deck) > 0 && len(state.A_Hand) < 3 {
+						state.A_Hand = append(state.A_Hand, drawCards(&state.A_Deck, 1)...)
+					}
+					if len(state.B_Deck) > 0 && len(state.B_Hand) < 3 {
+						state.B_Hand = append(state.B_Hand, drawCards(&state.B_Deck, 1)...)
+					}
+				}
+
+				A_CardLeft := countCardLeft(state.A_Deck, state.A_Hand)
+				B_CardLeft := countCardLeft(state.B_Deck, state.B_Hand)
+
+				//ส่งผลลัพธ์แยกกัน
 				respA := map[string]interface{}{
-					"type":   "round_result",
-					"result": resultA,
+					"type":       "round_result",
+					"gameStatus": gameStatus,
+					"roundWinner": func() string {
+						if winner == "A" {
+							return "player"
+						} else if winner == "B" {
+							return "opponent"
+						}
+						return "draw"
+					}(),
+					"opponentPlayed": match.Selected["B"],
+					"playerPlayed":   match.Selected["A"],
+					"playerHand":     state.A_Hand,
+					"damage": map[string]interface{}{
+						"opponent": damageToB,
+						"player":   damageToA,
+					},
+					"hp": map[string]interface{}{
+						"opponent": state.B_CurrentHP,
+						"player":   state.A_CurrentHP,
+					},
+					"cardRemaining": map[string]interface{}{
+						"player":   A_CardLeft,
+						"opponent": B_CardLeft,
+					},
 				}
 				respB := map[string]interface{}{
-					"type":   "round_result",
-					"result": resultB,
+					"type":       "round_result",
+					"gameStatus": gameStatus,
+					"roundWinner": func() string {
+						if winner == "B" {
+							return "player"
+						} else if winner == "A" {
+							return "opponent"
+						}
+						return "draw"
+					}(),
+					"opponentPlayed": match.Selected["A"],
+					"playerPlayed":   match.Selected["B"],
+					"playerHand":     state.B_Hand,
+					"damage": map[string]interface{}{
+						"opponent": damageToA,
+						"player":   damageToB,
+					},
+					"hp": map[string]interface{}{
+						"opponent": state.A_CurrentHP,
+						"player":   state.B_CurrentHP,
+					},
+					"cardRemaining": map[string]interface{}{
+						"player":   B_CardLeft,
+						"opponent": A_CardLeft,
+					},
 				}
 
 				respAJSON, _ := json.Marshal(respA)
@@ -377,25 +507,6 @@ func pvpRead(c *PVPClient) {
 				pvpManager.lock.Unlock()
 			}
 
-			// ตัวอย่างแก้ HP ใน state ตามเดิม (ถ้ามี)
-			pvpStatesMu.Lock()
-			state, ok := pvpStates[c.roomID]
-			pvpStatesMu.Unlock()
-			if ok {
-				state.Lock()
-				if c.slot == "A" {
-					state.B_CurrentHP -= 10
-					if state.B_CurrentHP < 0 {
-						state.B_CurrentHP = 0
-					}
-				} else if c.slot == "B" {
-					state.A_CurrentHP -= 10
-					if state.A_CurrentHP < 0 {
-						state.A_CurrentHP = 0
-					}
-				}
-				state.Unlock()
-			}
 		}
 	}
 }

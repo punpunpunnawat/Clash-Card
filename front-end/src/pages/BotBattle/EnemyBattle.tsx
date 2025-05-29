@@ -13,7 +13,10 @@ import { useParams } from "react-router-dom";
 type turnResult = {
   enemyCard: CardProps;
   enemyHand: CardProps[]; //อย่าลืมเอาออก
-  damage: string[];
+  damage: {
+    enemyToPlayer: number;
+    playerToEnemy: number;
+  };
   hp: {
     enemy: number;
     player: number;
@@ -198,7 +201,7 @@ const EnemyBattle = () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("authToken")}`, // ใส่ token ตรงนี้
       },
-      body: JSON.stringify({ levelId: Number(levelId) })
+      body: JSON.stringify({ levelId: Number(levelId) }),
     })
       .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
       .then((data) => {
@@ -217,7 +220,7 @@ const EnemyBattle = () => {
       });
   }, []);
 
-  const handleSelectCard = (id: string) => {
+  const handleCardSelect = (id: string) => {
     if (gameState !== "SELECT_CARD") return;
     setPlayerHand((prevHand) => prevHand.filter((card) => card.id !== id));
     setSelectedPlayerCard(playerHand.find((card) => card.id === id) || null);
@@ -244,7 +247,7 @@ const EnemyBattle = () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("authToken")}`, // ใส่ token ตรงนี้
       },
-      body: JSON.stringify({ cardID: selectedPlayerCard?.id })
+      body: JSON.stringify({ cardID: selectedPlayerCard?.id }),
     })
       .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
       .then((data) => {
@@ -366,7 +369,7 @@ const EnemyBattle = () => {
                     <Card
                       id={card.id}
                       type={card.type}
-                      onClick={handleSelectCard}
+                      onClick={handleCardSelect}
                     />
                   </div>
                 </div>
