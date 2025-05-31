@@ -128,15 +128,16 @@ const Lobby = () => {
 
   //GAME STATE
   type GameState =
+    | "WAITT_OPPONENT"
     | "SELECT_CARD"
-    | "WAIT_ENEMY"
+    | "CARD_SELECTED"
     | "BOTH_SELECTED"
     | "SHOW_RESULT"
     | "DO_DAMAGE"
     | "DRAW_CARD"
     | "GAME_END_WIN"
     | "GAME_END_LOSE";
-  const [gameState, setGameState] = useState<GameState>("SELECT_CARD");
+  const [gameState, setGameState] = useState<GameState>("WAITT_OPPONENT");
 
   //CARD FUNC
   const findNewCard = (updatedCard: CardProps[]) => {
@@ -226,10 +227,13 @@ const Lobby = () => {
     if (roundResult) {
       switch (gameState) {
         case "BOTH_SELECTED":
-          setSelectedOpponentCard({ id: "enemy", type: roundResult.opponentPlayed });
-          console.log(roundResult.opponentPlayed)
+          setSelectedOpponentCard({
+            id: "enemy",
+            type: roundResult.opponentPlayed,
+          });
+          console.log(roundResult.opponentPlayed);
           //setOpponentHandSize(opponentHandSize - 1);
-          setGameState("SHOW_RESULT")
+          setGameState("SHOW_RESULT");
           break;
         case "SHOW_RESULT":
           setTimeout(() => {
@@ -303,11 +307,11 @@ const Lobby = () => {
 
           case "selection_status":
             console.log(msg.opponentSelected);
-            if(msg.opponentSelected){
+            if (msg.opponentSelected) {
               setSelectedOpponentCard({ id: "enemy", type: "hidden" });
               //setOpponentHandSize(opponentHandSize-1);
             }
-            
+
             break;
 
           case "player_hand":
@@ -320,7 +324,7 @@ const Lobby = () => {
           case "round_result":
             console.log(msg);
             setRoundResult(msg);
-          setGameState("BOTH_SELECTED")
+            setGameState("BOTH_SELECTED");
             break;
 
           default:
@@ -344,14 +348,14 @@ const Lobby = () => {
     setSelectedPlayerCard(
       playerHand.find((card) => card.id === cardID) || null
     );
-    
+
     ws.current.send(
       JSON.stringify({
         type: "selected_card",
         cardID: cardID,
       })
     );
-    setGameState("WAIT_ENEMY");
+    setGameState("CARD_SELECTED");
     // setMessages((m) => [...m, `📤 You selected: ${cardID}`]);
   };
 
@@ -436,7 +440,7 @@ const Lobby = () => {
           </div>
           <div className="EnemyBattle__board_card-placer">
             <img src="/CardPlacer-Enemy.svg" width={170} height={270} />
-            {selectedOpponentCard &&(
+            {selectedOpponentCard && (
               <Card
                 type={selectedOpponentCard.type}
                 id={selectedOpponentCard.id}

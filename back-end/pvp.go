@@ -17,6 +17,12 @@ var upgrader = websocket.Upgrader{
 }
 
 type CardType string
+type Stat struct {
+	ATK int
+	DEF int
+	SPD int
+	HP  int
+}
 
 const (
 	Rock     CardType = "rock"
@@ -226,8 +232,14 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 				state.B_Hand = drawCards(&state.B_Deck, 3)
 				if okA {
 					response := map[string]interface{}{
-						"type":       "player_hand",
-						"playerHand": state.A_Hand,
+						"type":             "player_hand",
+						"playerHand":       state.A_Hand,
+						"opponentHandSize": len(state.B_Hand),
+						"playerMaxHP":      state.A_MaxHP,
+						"playerCurrentHP":  state.A_MaxHP,
+						"playerATK":        state.A_MaxHP,
+						"playerDEF":        state.A_MaxHP,
+						"playerSPD":        state.A_MaxHP,
 					}
 					respJSON, err := json.Marshal(response)
 					if err == nil {
@@ -236,8 +248,14 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 				}
 				if okB {
 					response := map[string]interface{}{
-						"type":       "player_hand",
-						"playerHand": state.B_Hand,
+						"type":             "player_hand",
+						"playerHand":       state.B_Hand,
+						"opponentHandSize": len(state.A_Hand),
+						"playerMaxHP":      state.B_MaxHP,
+						"playerCurrentHP":  state.B_MaxHP,
+						"playerATK":        state.B_MaxHP,
+						"playerDEF":        state.B_MaxHP,
+						"playerSPD":        state.B_MaxHP,
 					}
 					respJSON, err := json.Marshal(response)
 					if err == nil {
