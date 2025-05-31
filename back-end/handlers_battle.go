@@ -276,7 +276,8 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 
 		gameState := &GameState{
 			Player: PlayerData{
-				Name:      user.ID,
+				//ID:        user.ID,
+				Name:      user.Username,
 				Level:     user.Level,
 				CurrentHP: user.Stat.HP,
 				Deck:      deck,
@@ -289,7 +290,8 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 				},
 			},
 			Bot: PlayerData{
-				Name:      -1, // หรือจะใส่ bot ID ก็ได้ถ้ามี
+				//ID:        -1, // หรือจะใส่ bot ID ก็ได้ถ้ามี
+				Name:      "Mad Bot",
 				Level:     req.BotLevel,
 				CurrentHP: botHP,
 				Deck:      botDeck,

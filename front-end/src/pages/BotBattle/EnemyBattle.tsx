@@ -207,7 +207,6 @@ const EnemyBattle = () => {
       .then((data) => {
         setCardRemaining(data.cardRemaining);
         setMaxEnemyHP(Number(data.enemyHP));
-        console.log("emhp:", data.enemyHP);
         setCurrentEnemyHP(Number(data.enemyHP));
         setPlayerHand(data.playerHand);
         setEnemyHandSize(data.enemyHandSize);
@@ -234,14 +233,6 @@ const EnemyBattle = () => {
     console.log({ userID: player?.id, cardId: selectedPlayerCard?.id });
     console.log(matchID);
     fetch(`http://localhost:8080/api/battle/${matchID}/play`, {
-      // method: "POST",
-      // headers: {
-      //   "Content-Type": "application/json",
-      // },
-      // body: JSON.stringify({
-      //   userID: player?.id,
-      //   cardID: selectedPlayerCard?.id,
-      // }), // ส่ง userId ไป
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -259,6 +250,7 @@ const EnemyBattle = () => {
       });
   };
 
+  
   useEffect(() => {
     console.log("cur gs " + gameState);
     switch (gameState) {
@@ -396,7 +388,7 @@ const EnemyBattle = () => {
               <Card
                 type={selectedPlayerCard.type}
                 id={selectedPlayerCard.id}
-                flipped={showCard}
+                isHidden={showCard}
                 className={
                   (winner === "player"
                     ? "card card-attack-right"
@@ -413,7 +405,7 @@ const EnemyBattle = () => {
               <Card
                 type={selectedEnemyCard.type}
                 id={selectedEnemyCard.id}
-                flipped={showCard}
+                isHidden={showCard}
                 className={
                   winner === "enemy"
                     ? "card card-attack-left"
@@ -458,7 +450,7 @@ const EnemyBattle = () => {
                     <Card
                       id={"id here"}
                       type="hidden" // เปลี่ยน type ได้ตามที่ต้องการ
-                      flipped
+                      isHidden
                     />
                   </div>
                 </div>
@@ -474,7 +466,7 @@ const EnemyBattle = () => {
                 <Card
                   id={animatingEnemyCard.id}
                   type={animatingEnemyCard.type}
-                  flipped
+                  isHidden
                 />
               </div>
             ))}

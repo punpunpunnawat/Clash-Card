@@ -1,7 +1,7 @@
 .Card {
   perspective: 1000px;
-  width: 175px;
-  height: 300px;
+  width: 150px;
+  height: 250px;
   cursor: pointer;
 }
 
@@ -13,7 +13,7 @@
   transform-style: preserve-3d;
 }
 
-.Card.flipped .Card__inner {
+.Card.isHidden .Card__inner {
   transform: rotateY(180deg);
 }
 

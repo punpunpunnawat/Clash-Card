@@ -71,7 +71,8 @@ type Stat struct {
 }
 
 type PlayerData struct {
-	Name      int
+	//ID        int
+	Name      string
 	Level     int
 	CurrentHP int
 	Deck      []Card
@@ -100,7 +101,7 @@ func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
 
 	state := &PVPState{
 		PlayerA: PlayerData{
-			Name:      userA.ID, // หรือ userA.Name ถ้าเป็น string
+			Name:      userA.Username, // หรือ userA.Name ถ้าเป็น string
 			Level:     userA.Level,
 			Deck:      deckA,
 			CurrentHP: userA.Stat.HP,
@@ -113,7 +114,7 @@ func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
 			},
 		},
 		PlayerB: PlayerData{
-			Name:      userB.ID, // หรือ userB.Name ถ้าเป็น string
+			Name:      userB.Username, // หรือ userB.Name ถ้าเป็น string
 			Level:     userB.Level,
 			Deck:      deckB,
 			Hand:      []Card{},
@@ -413,32 +414,39 @@ func pvpRead(c *PVPClient) {
 
 			state.Unlock()
 
-			// สร้าง response ที่แยกฝั่ง
-			responseForA := map[string]interface{}{
-				"type":             "selection_status",
-				"opponentSelected": match.Selected["B"] != "",
-			}
-			responseForB := map[string]interface{}{
-				"type":             "selection_status",
-				"opponentSelected": match.Selected["A"] != "",
-			}
-
-			respAJSON, _ := json.Marshal(responseForA)
-			respBJSON, _ := json.Marshal(responseForB)
-
-			// ส่งให้ client A
-			if clientA, ok := match.Clients["A"]; ok {
-				select {
-				case clientA.send <- respAJSON:
-				default:
+			// ส่งให้ฝั่งตรงข้ามเท่านั้น
+			if c.slot == "A" {
+				responseForB := map[string]interface{}{
+					"type":             "selection_status",
+					"playerSelected":   match.Selected["B"] != "",
+					"opponentSelected": match.Selected["A"] != "",
 				}
-			}
 
-			// ส่งให้ client B
-			if clientB, ok := match.Clients["B"]; ok {
-				select {
-				case clientB.send <- respBJSON:
-				default:
+				fmt.Println("sent to B")
+				respBJSON, _ := json.Marshal(responseForB)
+				// A เป็นคนเลือก → ส่งให้ B
+				if clientB, ok := match.Clients["B"]; ok {
+					select {
+					case clientB.send <- respBJSON:
+					default:
+					}
+				}
+			} else if c.slot == "B" {
+				// สร้าง response ที่แยกฝั่ง
+				responseForA := map[string]interface{}{
+					"type":             "selection_status",
+					"playerSelected":   match.Selected["A"] != "",
+					"opponentSelected": match.Selected["B"] != "",
+				}
+				fmt.Println("sent to A")
+				respAJSON, _ := json.Marshal(responseForA)
+
+				// B เป็นคนเลือก → ส่งให้ A
+				if clientA, ok := match.Clients["A"]; ok {
+					select {
+					case clientA.send <- respAJSON:
+					default:
+					}
 				}
 			}
 
@@ -503,15 +511,22 @@ func pvpRead(c *PVPClient) {
 
 				//ส่งผลลัพธ์แยกกัน
 				respA := map[string]interface{}{
-					"type":       "round_result",
-					"gameStatus": gameStatus,
+					"type": "round_result",
+					"gameStatus": func() string {
+						if gameStatus == "Awin" {
+							return "playerWin"
+						} else if gameStatus == "Bwin" {
+							return "opponentWin"
+						}
+						return gameStatus
+					}(),
 					"roundWinner": func() string {
 						if winner == "A" {
 							return "player"
 						} else if winner == "B" {
 							return "opponent"
 						}
-						return "draw"
+						return "onGoing"
 					}(),
 					"opponentPlayed": match.Selected["B"],
 					"playerPlayed":   match.Selected["A"],
@@ -530,8 +545,15 @@ func pvpRead(c *PVPClient) {
 					},
 				}
 				respB := map[string]interface{}{
-					"type":       "round_result",
-					"gameStatus": gameStatus,
+					"type": "round_result",
+					"gameStatus": func() string {
+						if gameStatus == "Bwin" {
+							return "playerWin"
+						} else if gameStatus == "Awin" {
+							return "opponentWin"
+						}
+						return gameStatus
+					}(),
 					"roundWinner": func() string {
 						if winner == "B" {
 							return "player"
