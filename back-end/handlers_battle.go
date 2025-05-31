@@ -24,22 +24,10 @@ type Card struct {
 }
 
 type GameState struct {
-	sync.Mutex      // ล็อกภายใน state เอง
-	PlayerDeck      []Card
-	BotDeck         []Card
-	PlayerHand      []Card
-	BotHand         []Card
-	PlayerATK       int
-	BotATK          int
-	PlayerDEF       int
-	BotDEF          int
-	PlayerSPD       int
-	BotSPD          int
-	PlayerMaxHP     int
-	BotMaxHP        int
-	PlayerCurrentHP int
-	BotCurrentHP    int
-	PlayingLevel    int
+	sync.Mutex   // ล็อกภายใน state เอง
+	Player       PlayerData
+	Bot          PlayerData
+	PlayingLevel int
 }
 
 // map เก็บสถานะเกมทุกแมตช์
@@ -48,13 +36,20 @@ var gameStatesMutex sync.Mutex
 
 // ----------- Utilities -----------
 func logGameState(gs *GameState) {
+	gs.Lock()
+	defer gs.Unlock()
+
 	fmt.Println("------ GAME STATE ------")
 
-	fmt.Println("PlayerDeck:", len(gs.PlayerDeck), "cards left")
-	fmt.Println("PlayerHand:", formatHand(gs.PlayerHand))
+	fmt.Println("PlayerDeck:", len(gs.Player.Deck), "cards left")
+	fmt.Println("PlayerHand:", formatHand(gs.Player.Hand))
+	fmt.Printf("Player - HP: %d/%d | ATK: %d | DEF: %d | SPD: %d\n",
+		gs.Player.CurrentHP, gs.Player.Stat.HP, gs.Player.Stat.ATK, gs.Player.Stat.DEF, gs.Player.Stat.SPD)
 
-	fmt.Println("BotDeck:", len(gs.BotDeck), "cards left")
-	fmt.Println("BotHand:", formatHand(gs.BotHand))
+	fmt.Println("BotDeck:", len(gs.Bot.Deck), "cards left")
+	fmt.Println("BotHand:", formatHand(gs.Bot.Hand))
+	fmt.Printf("Bot - HP: %d/%d | ATK: %d | DEF: %d | SPD: %d\n",
+		gs.Bot.CurrentHP, gs.Bot.Stat.HP, gs.Bot.Stat.ATK, gs.Bot.Stat.DEF, gs.Bot.Stat.SPD)
 
 	fmt.Println("------------------------")
 }
@@ -163,7 +158,7 @@ func generateBotStats(level int) (atk, def, spd, hp int) {
 	return
 }
 
-func countCardLeft(deck []Card, hand []Card) map[string]int {
+func countCardRemaining(deck []Card, hand []Card) map[string]int {
 	allCards := append(deck, hand...) // รวม deck และ hand เข้าด้วยกัน
 
 	countByType := make(map[string]int)
@@ -280,21 +275,33 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 		botATK, botDEF, botSPD, botHP := generateBotStats(req.BotLevel)
 
 		gameState := &GameState{
-			PlayerDeck:      deck,
-			BotDeck:         botDeck,
-			PlayerHand:      playerHand,
-			BotHand:         botHand,
-			PlayerATK:       user.Stat.Atk,
-			BotATK:          botATK,
-			PlayerDEF:       user.Stat.Def,
-			BotDEF:          botDEF,
-			PlayerSPD:       user.Stat.Spd,
-			BotSPD:          botSPD,
-			PlayerMaxHP:     user.Stat.HP,
-			BotMaxHP:        botHP,
-			PlayerCurrentHP: user.Stat.HP,
-			BotCurrentHP:    botHP,
-			PlayingLevel:    req.BotLevel,
+			Player: PlayerData{
+				Name:      user.ID,
+				Level:     user.Level,
+				CurrentHP: user.Stat.HP,
+				Deck:      deck,
+				Hand:      playerHand,
+				Stat: Stat{
+					ATK: user.Stat.Atk,
+					DEF: user.Stat.Def,
+					SPD: user.Stat.Spd,
+					HP:  user.Stat.HP,
+				},
+			},
+			Bot: PlayerData{
+				Name:      -1, // หรือจะใส่ bot ID ก็ได้ถ้ามี
+				Level:     req.BotLevel,
+				CurrentHP: botHP,
+				Deck:      botDeck,
+				Hand:      botHand,
+				Stat: Stat{
+					ATK: botATK,
+					DEF: botDEF,
+					SPD: botSPD,
+					HP:  botHP,
+				},
+			},
+			PlayingLevel: req.BotLevel,
 		}
 
 		matchID := uuid.New().String() // สร้าง match id ใหม่
@@ -305,25 +312,26 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 
 		res := map[string]interface{}{
 			"matchId":       matchID,
-			"playerHand":    playerHand,
-			"playerHP":      gameState.PlayerCurrentHP,
-			"enemyHandSize": len(botHand),
-			"enemyHP":       gameState.BotCurrentHP,
+			"playerHand":    gameState.Player.Hand,
+			"playerHP":      gameState.Player.CurrentHP,
+			"enemyHandSize": len(gameState.Bot.Hand),
+			"enemyHP":       gameState.Bot.CurrentHP,
 			"playerStats": map[string]int{
-				"ATK": user.Stat.Atk,
-				"DEF": user.Stat.Def,
-				"SPD": user.Stat.Spd,
+				"ATK": gameState.Player.Stat.ATK,
+				"DEF": gameState.Player.Stat.DEF,
+				"SPD": gameState.Player.Stat.SPD,
 			},
 			"enemyStats": map[string]int{
-				"ATK": botATK,
-				"DEF": botDEF,
-				"SPD": botSPD,
+				"ATK": gameState.Bot.Stat.ATK,
+				"DEF": gameState.Bot.Stat.DEF,
+				"SPD": gameState.Bot.Stat.SPD,
 			},
 			"cardRemaining": map[string]interface{}{
-				"player": countCardLeft(gameState.PlayerDeck, gameState.PlayerHand),
-				"enemy":  countCardLeft(gameState.BotDeck, gameState.BotHand),
+				"player": countCardRemaining(gameState.Player.Deck, gameState.Player.Hand),
+				"enemy":  countCardRemaining(gameState.Bot.Deck, gameState.Bot.Hand),
 			},
 		}
+
 		fmt.Println("[DEBUG] Created matchID:", matchID)
 		fmt.Printf("[DEBUG] Stored gameState for matchID: %s | PlayerHand: %+v\n", matchID, playerHand)
 
@@ -385,7 +393,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 
 		var playerCard *Card
 		var newHand []Card
-		for _, c := range gs.PlayerHand {
+		for _, c := range gs.Player.Hand {
 			if c.ID == req.CardID {
 				playerCard = &c
 			} else {
@@ -393,16 +401,16 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 			}
 		}
 		if playerCard == nil {
-			fmt.Println("Hand ", gs.PlayerHand)
+			fmt.Println("Hand ", gs.Player.Hand)
 			fmt.Println("Card select ", playerCard)
 			http.Error(w, "Card not found in hand", http.StatusBadRequest)
 			return
 		}
-		gs.PlayerHand = newHand
+		gs.Player.Hand = newHand
 
-		botIndex := rand.Intn(len(gs.BotHand))
-		botCard := gs.BotHand[botIndex]
-		gs.BotHand = append(gs.BotHand[:botIndex], gs.BotHand[botIndex+1:]...)
+		botIndex := rand.Intn(len(gs.Bot.Hand))
+		botCard := gs.Bot.Hand[botIndex]
+		gs.Bot.Hand = append(gs.Bot.Hand[:botIndex], gs.Bot.Hand[botIndex+1:]...)
 
 		winner := ""
 		damageToBot := 0
@@ -412,30 +420,30 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		case "rock":
 			if botCard.Type == "scissors" {
 				winner = "player"
-				damageToBot = gs.PlayerATK - gs.BotDEF
+				damageToBot = gs.Player.Stat.ATK - gs.Bot.Stat.DEF
 			} else if botCard.Type == "paper" {
 				winner = "enemy"
-				damageToPlayer = gs.BotATK - gs.PlayerDEF
+				damageToPlayer = gs.Bot.Stat.ATK - gs.Player.Stat.DEF
 			} else {
 				winner = "draw"
 			}
 		case "paper":
 			if botCard.Type == "rock" {
 				winner = "player"
-				damageToBot = gs.PlayerATK - gs.BotDEF
+				damageToBot = gs.Player.Stat.ATK - gs.Bot.Stat.DEF
 			} else if botCard.Type == "scissors" {
 				winner = "enemy"
-				damageToPlayer = gs.BotATK - gs.PlayerDEF
+				damageToPlayer = gs.Bot.Stat.ATK - gs.Player.Stat.DEF
 			} else {
 				winner = "draw"
 			}
 		case "scissors":
 			if botCard.Type == "paper" {
 				winner = "player"
-				damageToBot = gs.PlayerATK - gs.BotDEF
+				damageToBot = gs.Player.Stat.ATK - gs.Bot.Stat.DEF
 			} else if botCard.Type == "rock" {
 				winner = "enemy"
-				damageToPlayer = gs.BotATK - gs.PlayerDEF
+				damageToPlayer = gs.Bot.Stat.ATK - gs.Player.Stat.DEF
 			} else {
 				winner = "draw"
 			}
@@ -443,42 +451,42 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 			winner = "draw"
 		}
 
-		gs.BotCurrentHP -= damageToBot
-		if gs.BotCurrentHP < 0 {
-			gs.BotCurrentHP = 0
+		gs.Bot.CurrentHP -= damageToBot
+		if gs.Bot.CurrentHP < 0 {
+			gs.Bot.CurrentHP = 0
 		}
-		gs.PlayerCurrentHP -= damageToPlayer
-		if gs.PlayerCurrentHP < 0 {
-			gs.PlayerCurrentHP = 0
-		}
-
-		if len(gs.PlayerDeck) > 0 && len(gs.PlayerHand) < 3 {
-			gs.PlayerHand = append(gs.PlayerHand, drawCards(&gs.PlayerDeck, 1)...)
-		}
-		if len(gs.BotDeck) > 0 && len(gs.BotHand) < 3 {
-			gs.BotHand = append(gs.BotHand, drawCards(&gs.BotDeck, 1)...)
+		gs.Player.CurrentHP -= damageToPlayer
+		if gs.Player.CurrentHP < 0 {
+			gs.Player.CurrentHP = 0
 		}
 
-		playerOutOfCards := len(gs.PlayerHand) == 0 && len(gs.PlayerDeck) == 0
-		botOutOfCards := len(gs.BotHand) == 0 && len(gs.BotDeck) == 0
+		if len(gs.Player.Deck) > 0 && len(gs.Player.Hand) < 3 {
+			gs.Player.Hand = append(gs.Player.Hand, drawCards(&gs.Player.Deck, 1)...)
+		}
+		if len(gs.Bot.Deck) > 0 && len(gs.Bot.Hand) < 3 {
+			gs.Bot.Hand = append(gs.Bot.Hand, drawCards(&gs.Bot.Deck, 1)...)
+		}
 
-		botTypes := countCardLeft(gs.BotDeck, gs.BotHand)
-		playerTypes := countCardLeft(gs.PlayerDeck, gs.PlayerHand)
+		playerOutOfCards := len(gs.Player.Hand) == 0 && len(gs.Player.Deck) == 0
+		botOutOfCards := len(gs.Bot.Hand) == 0 && len(gs.Bot.Deck) == 0
+
+		botTypes := countCardRemaining(gs.Bot.Deck, gs.Bot.Hand)
+		playerTypes := countCardRemaining(gs.Player.Deck, gs.Player.Hand)
 
 		gameResult := "onGoing"
 
-		// ✅ เช็คผลจาก HP ก่อน
-		if gs.PlayerCurrentHP == 0 && gs.BotCurrentHP == 0 {
+		// เช็คผลจาก HP ก่อน
+		if gs.Player.CurrentHP == 0 && gs.Bot.CurrentHP == 0 {
 			gameResult = "draw"
-		} else if gs.PlayerCurrentHP == 0 {
+		} else if gs.Player.CurrentHP == 0 {
 			gameResult = "botWin"
-		} else if gs.BotCurrentHP == 0 {
+		} else if gs.Bot.CurrentHP == 0 {
 			gameResult = "playerWin"
 			if err := handlePlayerWin(userID, db, gs.PlayingLevel); err != nil {
 				fmt.Println("Failed to update player after win:", err)
 			}
 		} else {
-			// 🃏 เช็คจากการ์ดถ้าเลือดยังเหลือ
+			// เช็คจากการ์ดถ้าเลือดยังเหลือ
 			if playerOutOfCards && botOutOfCards {
 				gameResult = "draw"
 			} else if playerOutOfCards {
@@ -501,11 +509,11 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 				"enemyToPlayer": damageToPlayer,
 			},
 			"hp": map[string]int{
-				"player": gs.PlayerCurrentHP,
-				"enemy":  gs.BotCurrentHP,
+				"player": gs.Player.CurrentHP,
+				"enemy":  gs.Bot.CurrentHP,
 			},
-			"playerHand": gs.PlayerHand,
-			"enemyHand":  gs.BotHand,
+			"playerHand": gs.Player.Hand,
+			"enemyHand":  gs.Bot.CurrentHP,
 			"cardRemaining": map[string]interface{}{
 				"player": playerTypes,
 				"enemy":  botTypes,

@@ -5,6 +5,7 @@ import Card from "./../../components/Card/Card";
 import HealthBar from "../../components/HealthBar";
 import "./css/enemyBattle.css";
 import "./css/CardAttack.css";
+import type { UnitStat } from "../../types/UnitStat";
 const Lobby = () => {
   type ServerMessage =
     | { type: "slot_assigned"; slot: "A" | "B" }
@@ -13,8 +14,33 @@ const Lobby = () => {
         opponentSelected: boolean;
       }
     | {
-        type: "player_hand";
-        playerHand: CardProps[];
+        type: "initialData";
+        player: {
+          name: string;
+          level: number;
+          currentHP: number;
+          cardRemaining: CardCount;
+          hand: CardProps[];
+          stat: {
+            atk: number;
+            def: number;
+            spd: number;
+            hp: number;
+          };
+        };
+        opponent: {
+          name: string;
+          level: number;
+          currentHP: number;
+          cardRemaining: CardCount;
+          handSize: number;
+          stat: {
+            atk: number;
+            def: number;
+            spd: number;
+            hp: number;
+          };
+        };
       }
     | {
         type: "round_result";
@@ -44,6 +70,7 @@ const Lobby = () => {
           };
         };
       };
+
   type RoundResult = {
     type: "round_result";
     gameStatus: string;
@@ -80,6 +107,13 @@ const Lobby = () => {
     player: CardCount;
     opponent: CardCount;
   };
+
+  type PlayerDetail = {
+    stat: UnitStat;
+    name: string;
+    level: number;
+  }
+
   const { id: roomID } = useParams();
   const ws = useRef<WebSocket | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
@@ -99,8 +133,12 @@ const Lobby = () => {
 
   const [currentPlayerHP, setCurrentPlayerHP] = useState(0);
   const [currentOpponentHP, setCurrentOpponentHP] = useState(0);
-  const [maxPlayerHP, setMaxPlayerHP] = useState(0);
-  const [maxOpponentHP, setMaxOpponentHP] = useState(0);
+  //const [maxPlayerHP, setMaxPlayerHP] = useState(0);
+  //const [maxOpponentHP, setMaxOpponentHP] = useState(0);
+
+  const [playerDetail, setPlayerDetail] = useState<PlayerDetail>({name: "player", level: 0, stat: {atk:0, def:0, spd:0, hp:0}});
+  const [opponentDetail, setOpponentDetail] = useState<PlayerDetail>({name: "enemy", level: 0, stat: {atk:0, def:0, spd:0, hp:0}});
+
   const [winner, setWinner] = useState("");
 
   const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
@@ -128,7 +166,7 @@ const Lobby = () => {
 
   //GAME STATE
   type GameState =
-    | "WAITT_OPPONENT"
+    | "WAIT_OPPONENT"
     | "SELECT_CARD"
     | "CARD_SELECTED"
     | "BOTH_SELECTED"
@@ -137,7 +175,7 @@ const Lobby = () => {
     | "DRAW_CARD"
     | "GAME_END_WIN"
     | "GAME_END_LOSE";
-  const [gameState, setGameState] = useState<GameState>("WAITT_OPPONENT");
+  const [gameState, setGameState] = useState<GameState>("WAIT_OPPONENT");
 
   //CARD FUNC
   const findNewCard = (updatedCard: CardProps[]) => {
@@ -300,25 +338,33 @@ const Lobby = () => {
         switch (msg.type) {
           case "slot_assigned":
             setPlayerSlot(msg.slot);
-            console.log(msg.slot);
-            setPlayerSlot(msg.slot);
-            console.log(playerSlot);
             break;
 
           case "selection_status":
             console.log(msg.opponentSelected);
             if (msg.opponentSelected) {
               setSelectedOpponentCard({ id: "enemy", type: "hidden" });
+              setOpponentHandSize((prev) => prev + -1);
               //setOpponentHandSize(opponentHandSize-1);
             }
 
             break;
 
-          case "player_hand":
-            setPlayerHand(msg.playerHand);
-            //setOpponentHandSize(3);
+          case "initialData":
+            //set hand
+            setPlayerHand(msg.player.hand);
+            setOpponentHandSize(msg.opponent.handSize);
+
+            //setCardRemaining
+            setCardRemaining({player: msg.player.cardRemaining, opponent: msg.opponent.cardRemaining})
+            //set Stat
+            setPlayerDetail({name: msg.player.name, level: msg.player.level, stat:msg.player.stat});
+            setOpponentDetail({name: msg.opponent.name, level: msg.opponent.level, stat:msg.opponent.stat});
+            setCurrentPlayerHP(msg.player.currentHP);
+            setCurrentOpponentHP(msg.opponent.currentHP);
             console.log(msg);
             console.log(playerHand);
+            setGameState("SELECT_CARD")
             break;
 
           case "round_result":
@@ -367,12 +413,13 @@ const Lobby = () => {
     console.log(selectedOpponentCard);
   }, [selectedOpponentCard]);
 
+  if(gameState==="WAIT_OPPONENT") return<div>waiting</div>
   return (
     <div className="EnemyBattle">
       <div className="EnemyBattle__arena">
         <div className="EnemyBattle__enemy-bar">
           ? : Enemy{" "}
-          <HealthBar currentHP={currentOpponentHP} maxHP={maxOpponentHP} />{" "}
+          <HealthBar currentHP={currentOpponentHP} maxHP={opponentDetail.stat.hp} />{" "}
           ROCK:{cardRemaining.opponent.rock} PAPER:
           {cardRemaining.opponent.paper} SCISSORS
           {cardRemaining.opponent.scissors}
@@ -515,7 +562,7 @@ const Lobby = () => {
         </div>
         <div className="EnemyBattle__player-bar">
           ? : {playerSlot}{" "}
-          <HealthBar currentHP={currentPlayerHP} maxHP={maxPlayerHP} />
+          <HealthBar currentHP={currentPlayerHP} maxHP={playerDetail.stat.hp} />
           ROCK:{cardRemaining.player.rock} PAPER:{cardRemaining.player.paper}{" "}
           SCISSORS{cardRemaining.player.scissors} {gameState}
         </div>

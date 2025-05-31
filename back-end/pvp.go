@@ -17,12 +17,6 @@ var upgrader = websocket.Upgrader{
 }
 
 type CardType string
-type Stat struct {
-	ATK int
-	DEF int
-	SPD int
-	HP  int
-}
 
 const (
 	Rock     CardType = "rock"
@@ -64,21 +58,25 @@ var (
 )
 
 type PVPState struct {
-	sync.Mutex  // ล็อกภายใน state เอง
-	A_Deck      []Card
-	B_Deck      []Card
-	A_Hand      []Card
-	B_Hand      []Card
-	A_ATK       int
-	B_ATK       int
-	A_DEF       int
-	B_DEF       int
-	A_SPD       int
-	B_SPD       int
-	A_MaxHP     int
-	B_MaxHP     int
-	A_CurrentHP int
-	B_CurrentHP int
+	sync.Mutex // ล็อกภายใน state เอง
+	PlayerA    PlayerData
+	PlayerB    PlayerData
+}
+
+type Stat struct {
+	ATK int
+	DEF int
+	SPD int
+	HP  int
+}
+
+type PlayerData struct {
+	Name      int
+	Level     int
+	CurrentHP int
+	Deck      []Card
+	Hand      []Card
+	Stat      Stat
 }
 
 func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
@@ -101,21 +99,34 @@ func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
 	}
 
 	state := &PVPState{
-		A_Deck:      deckA,
-		B_Deck:      deckB,
-		A_Hand:      []Card{}, // เริ่มมือว่าง
-		B_Hand:      []Card{},
-		A_ATK:       userA.Stat.Atk,
-		B_ATK:       userB.Stat.Atk,
-		A_DEF:       userA.Stat.Def,
-		B_DEF:       userB.Stat.Def,
-		A_SPD:       userA.Stat.Spd,
-		B_SPD:       userB.Stat.Spd,
-		A_MaxHP:     userA.Stat.HP,
-		B_MaxHP:     userB.Stat.HP,
-		A_CurrentHP: userA.Stat.HP,
-		B_CurrentHP: userB.Stat.HP,
+		PlayerA: PlayerData{
+			Name:      userA.ID, // หรือ userA.Name ถ้าเป็น string
+			Level:     userA.Level,
+			Deck:      deckA,
+			CurrentHP: userA.Stat.HP,
+			Hand:      []Card{},
+			Stat: Stat{
+				ATK: userA.Stat.Atk,
+				DEF: userA.Stat.Def,
+				SPD: userA.Stat.Spd,
+				HP:  userA.Stat.HP,
+			},
+		},
+		PlayerB: PlayerData{
+			Name:      userB.ID, // หรือ userB.Name ถ้าเป็น string
+			Level:     userB.Level,
+			Deck:      deckB,
+			Hand:      []Card{},
+			CurrentHP: userB.Stat.HP,
+			Stat: Stat{
+				ATK: userB.Stat.Atk,
+				DEF: userB.Stat.Def,
+				SPD: userB.Stat.Spd,
+				HP:  userB.Stat.HP,
+			},
+		},
 	}
+
 	return state, nil
 }
 
@@ -127,15 +138,16 @@ func logPVPState(roomID string, ps *PVPState) {
 	fmt.Println("Room ID:", roomID)
 
 	fmt.Println("--- Player A ---")
-	fmt.Println("Deck:", len(ps.A_Deck), "cards left")
-	fmt.Println("Hand:", ps.A_Hand)
-	fmt.Println("Hand:", formatHand(ps.A_Hand))
-	fmt.Println("ATK:", ps.A_ATK, "HP:", ps.A_CurrentHP, "DEF:", ps.A_DEF, "SPD:", ps.A_SPD)
+	fmt.Println("ID:", ps.PlayerA.Name, "Level:", ps.PlayerA.Level)
+	fmt.Println("Deck:", len(ps.PlayerA.Deck), "cards left")
+	fmt.Println("Hand:", formatHand(ps.PlayerA.Hand))
+	fmt.Println("ATK:", ps.PlayerA.Stat.ATK, "HP:", ps.PlayerA.CurrentHP, "/", ps.PlayerA.Stat.HP, "DEF:", ps.PlayerA.Stat.DEF, "SPD:", ps.PlayerA.Stat.SPD)
 
 	fmt.Println("--- Player B ---")
-	fmt.Println("Deck:", len(ps.B_Deck), "cards left")
-	fmt.Println("Hand:", formatHand(ps.B_Hand))
-	fmt.Println("ATK:", ps.B_ATK, "HP:", ps.B_CurrentHP, "DEF:", ps.B_DEF, "SPD:", ps.B_SPD)
+	fmt.Println("ID:", ps.PlayerB.Name, "Level:", ps.PlayerB.Level)
+	fmt.Println("Deck:", len(ps.PlayerB.Deck), "cards left")
+	fmt.Println("Hand:", formatHand(ps.PlayerB.Hand))
+	fmt.Println("ATK:", ps.PlayerB.Stat.ATK, "HP:", ps.PlayerB.CurrentHP, "/", ps.PlayerB.Stat.HP, "DEF:", ps.PlayerA.Stat.DEF, "SPD:", ps.PlayerA.Stat.SPD)
 
 	fmt.Println("========================")
 }
@@ -228,18 +240,41 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 				clientB, okB := match.Clients["B"]
 				pvpManager.lock.Unlock()
 
-				state.A_Hand = drawCards(&state.A_Deck, 3)
-				state.B_Hand = drawCards(&state.B_Deck, 3)
+				state.PlayerA.Hand = drawCards(&state.PlayerA.Deck, 3)
+				state.PlayerB.Hand = drawCards(&state.PlayerB.Deck, 3)
+
+				A_CardRemaining := countCardRemaining(state.PlayerA.Deck, state.PlayerA.Hand)
+				B_CardRemaining := countCardRemaining(state.PlayerB.Deck, state.PlayerB.Hand)
+
 				if okA {
 					response := map[string]interface{}{
-						"type":             "player_hand",
-						"playerHand":       state.A_Hand,
-						"opponentHandSize": len(state.B_Hand),
-						"playerMaxHP":      state.A_MaxHP,
-						"playerCurrentHP":  state.A_MaxHP,
-						"playerATK":        state.A_MaxHP,
-						"playerDEF":        state.A_MaxHP,
-						"playerSPD":        state.A_MaxHP,
+						"type": "initialData",
+						"player": map[string]interface{}{
+							"name":          state.PlayerA.Name,
+							"level":         state.PlayerA.Level,
+							"currentHP":     state.PlayerA.CurrentHP,
+							"cardRemaining": A_CardRemaining,
+							"hand":          state.PlayerA.Hand,
+							"stat": map[string]interface{}{
+								"atk": state.PlayerA.Stat.ATK,
+								"def": state.PlayerA.Stat.ATK,
+								"spd": state.PlayerA.Stat.ATK,
+								"hp":  state.PlayerA.Stat.ATK,
+							},
+						},
+						"opponent": map[string]interface{}{
+							"name":          state.PlayerB.Name,
+							"level":         state.PlayerB.Level,
+							"currentHP":     state.PlayerB.CurrentHP,
+							"cardRemaining": B_CardRemaining,
+							"handSize":      len(state.PlayerB.Hand),
+							"stat": map[string]interface{}{
+								"atk": state.PlayerB.Stat.ATK,
+								"def": state.PlayerB.Stat.ATK,
+								"spd": state.PlayerB.Stat.ATK,
+								"hp":  state.PlayerB.Stat.ATK,
+							},
+						},
 					}
 					respJSON, err := json.Marshal(response)
 					if err == nil {
@@ -248,14 +283,34 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 				}
 				if okB {
 					response := map[string]interface{}{
-						"type":             "player_hand",
-						"playerHand":       state.B_Hand,
-						"opponentHandSize": len(state.A_Hand),
-						"playerMaxHP":      state.B_MaxHP,
-						"playerCurrentHP":  state.B_MaxHP,
-						"playerATK":        state.B_MaxHP,
-						"playerDEF":        state.B_MaxHP,
-						"playerSPD":        state.B_MaxHP,
+						"type":             "initialData",
+						"opponentHandSize": len(state.PlayerA.Hand),
+						"player": map[string]interface{}{
+							"name":          state.PlayerB.Name,
+							"level":         state.PlayerB.Level,
+							"currentHP":     state.PlayerB.CurrentHP,
+							"cardRemaining": B_CardRemaining,
+							"hand":          state.PlayerB.Hand,
+							"stat": map[string]interface{}{
+								"atk": state.PlayerB.Stat.ATK,
+								"def": state.PlayerB.Stat.DEF,
+								"spd": state.PlayerB.Stat.SPD,
+								"hp":  state.PlayerB.Stat.HP,
+							},
+						},
+						"opponent": map[string]interface{}{
+							"handSize":      len(state.PlayerA.Hand),
+							"name":          state.PlayerA.Name,
+							"level":         state.PlayerA.Level,
+							"currentHP":     state.PlayerA.CurrentHP,
+							"cardRemaining": A_CardRemaining,
+							"stat": map[string]interface{}{
+								"atk": state.PlayerA.Stat.ATK,
+								"def": state.PlayerA.Stat.DEF,
+								"spd": state.PlayerA.Stat.SPD,
+								"hp":  state.PlayerA.Stat.HP,
+							},
+						},
 					}
 					respJSON, err := json.Marshal(response)
 					if err == nil {
@@ -330,9 +385,9 @@ func pvpRead(c *PVPClient) {
 
 			var hand []Card
 			if c.slot == "A" {
-				hand = state.A_Hand
+				hand = state.PlayerA.Hand
 			} else if c.slot == "B" {
-				hand = state.B_Hand
+				hand = state.PlayerB.Hand
 			} else {
 				state.Unlock()
 				fmt.Println("Invalid slot:", c.slot)
@@ -409,42 +464,42 @@ func pvpRead(c *PVPClient) {
 				damageToA := 0
 				// caldamage
 				if winner == "A" {
-					damageToB = int(math.Max(float64(state.A_ATK-state.B_DEF), 1))
-					state.B_CurrentHP = int(math.Max(float64(state.B_CurrentHP-damageToB), 0))
+					damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK-state.PlayerB.Stat.DEF), 1))
+					state.PlayerB.CurrentHP = int(math.Max(float64(state.PlayerB.CurrentHP-damageToB), 0))
 				} else if winner == "B" {
-					damageToA = int(math.Max(float64(state.B_ATK-state.A_DEF), 1))
-					state.A_CurrentHP = int(math.Max(float64(state.A_CurrentHP-damageToA), 0))
+					damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF), 1))
+					state.PlayerA.CurrentHP = int(math.Max(float64(state.PlayerA.CurrentHP-damageToA), 0))
 				} else if winner == "draw" {
 					//logic
 				}
 
 				//check winner if hp = 0
-				if state.A_CurrentHP == 0 {
+				if state.PlayerA.CurrentHP == 0 {
 					gameStatus = "Bwin"
-				} else if state.B_CurrentHP == 0 {
+				} else if state.PlayerB.CurrentHP == 0 {
 					gameStatus = "Awin"
 				} else {
-					if len(state.A_Deck)+len(state.A_Hand) == 0 && len(state.A_Deck)+len(state.B_Hand) == 0 {
+					if len(state.PlayerA.Deck)+len(state.PlayerA.Hand) == 0 && len(state.PlayerA.Deck)+len(state.PlayerB.Hand) == 0 {
 						gameStatus = "draw"
-					} else if len(state.A_Deck)+len(state.A_Hand) == 0 {
+					} else if len(state.PlayerA.Deck)+len(state.PlayerA.Hand) == 0 {
 						gameStatus = "Bwin"
-					} else if len(state.B_Deck)+len(state.B_Hand) == 0 {
+					} else if len(state.PlayerB.Deck)+len(state.PlayerB.Hand) == 0 {
 						gameStatus = "Awin"
 					}
 				}
 
 				//draw card
 				if gameStatus == "onGoing" {
-					if len(state.A_Deck) > 0 && len(state.A_Hand) < 3 {
-						state.A_Hand = append(state.A_Hand, drawCards(&state.A_Deck, 1)...)
+					if len(state.PlayerA.Deck) > 0 && len(state.PlayerA.Hand) < 3 {
+						state.PlayerA.Hand = append(state.PlayerA.Hand, drawCards(&state.PlayerA.Deck, 1)...)
 					}
-					if len(state.B_Deck) > 0 && len(state.B_Hand) < 3 {
-						state.B_Hand = append(state.B_Hand, drawCards(&state.B_Deck, 1)...)
+					if len(state.PlayerB.Deck) > 0 && len(state.PlayerB.Hand) < 3 {
+						state.PlayerB.Hand = append(state.PlayerB.Hand, drawCards(&state.PlayerB.Deck, 1)...)
 					}
 				}
 
-				A_CardLeft := countCardLeft(state.A_Deck, state.A_Hand)
-				B_CardLeft := countCardLeft(state.B_Deck, state.B_Hand)
+				A_CardRemaining := countCardRemaining(state.PlayerA.Deck, state.PlayerA.Hand)
+				B_CardRemaining := countCardRemaining(state.PlayerB.Deck, state.PlayerB.Hand)
 
 				//ส่งผลลัพธ์แยกกัน
 				respA := map[string]interface{}{
@@ -460,18 +515,18 @@ func pvpRead(c *PVPClient) {
 					}(),
 					"opponentPlayed": match.Selected["B"],
 					"playerPlayed":   match.Selected["A"],
-					"playerHand":     state.A_Hand,
+					"playerHand":     state.PlayerA.Hand,
 					"damage": map[string]interface{}{
 						"opponent": damageToB,
 						"player":   damageToA,
 					},
 					"hp": map[string]interface{}{
-						"opponent": state.B_CurrentHP,
-						"player":   state.A_CurrentHP,
+						"opponent": state.PlayerB.CurrentHP,
+						"player":   state.PlayerA.CurrentHP,
 					},
 					"cardRemaining": map[string]interface{}{
-						"player":   A_CardLeft,
-						"opponent": B_CardLeft,
+						"player":   A_CardRemaining,
+						"opponent": B_CardRemaining,
 					},
 				}
 				respB := map[string]interface{}{
@@ -487,18 +542,18 @@ func pvpRead(c *PVPClient) {
 					}(),
 					"opponentPlayed": match.Selected["A"],
 					"playerPlayed":   match.Selected["B"],
-					"playerHand":     state.B_Hand,
+					"playerHand":     state.PlayerB.Hand,
 					"damage": map[string]interface{}{
 						"opponent": damageToA,
 						"player":   damageToB,
 					},
 					"hp": map[string]interface{}{
-						"opponent": state.A_CurrentHP,
-						"player":   state.B_CurrentHP,
+						"opponent": state.PlayerA.CurrentHP,
+						"player":   state.PlayerB.CurrentHP,
 					},
 					"cardRemaining": map[string]interface{}{
-						"player":   B_CardLeft,
-						"opponent": A_CardLeft,
+						"player":   B_CardRemaining,
+						"opponent": A_CardRemaining,
 					},
 				}
 
