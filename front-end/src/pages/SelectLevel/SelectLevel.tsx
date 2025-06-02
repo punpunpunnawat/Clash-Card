@@ -3,34 +3,50 @@ import type { AppDispatch, RootState } from "../../store";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { fetchPlayer } from "../../store/slices/playerSlice";
+import NavBar from "../../components/NavBar";
+import "./SelectLevel.css";
 
 const SelectLevel = () => {
-  const dispatch: AppDispatch = useDispatch();
-  useEffect(() => {
-    dispatch(fetchPlayer());
-    //dispatch(fetchDeck(1));
-  }, [dispatch]);
-  const navigate = useNavigate();
+	const dispatch: AppDispatch = useDispatch();
+	useEffect(() => {
+		dispatch(fetchPlayer());
+		//dispatch(fetchDeck(1));
+	}, [dispatch]);
+	const navigate = useNavigate();
 
+	const player = useSelector((state: RootState) => state.player.player);
+	console.log(player);
 
-  const player = useSelector((state: RootState) => state.player.player);
-  console.log(player)
+	const handleSelectLevel = (levelId: number) => {
+		navigate(`/bot-battle/${levelId}`);
+	};
+	return (
+		<div className="SelectLevel">
+			<NavBar BackLabel="Back"/>
 
-  const handleSelectLevel = (levelId: number) => {
-    navigate(`/bot-battle/${levelId}`);
-  };
-  return (
-    <div>
-      Campaign Level Select
-      {player &&
-        Array.from({ length: player.currentCampaignLevel }).map((_, index) => {
-          return (
-            <button onClick={() => handleSelectLevel(index + 1)}>
-              Level {index + 1}
-            </button>
-          );
-        })}
-    </div>
-  );
+			<div className="SelectLevel__body">
+				<header className="SelectLevel__body_header">
+					Campaign Level Select
+				</header>
+
+				<li className="SelectLevel__body_level-list">
+					{player &&
+						Array.from({ length: player.currentCampaignLevel }).map(
+							(_, index) => {
+								return (
+									<button
+										onClick={() =>
+											handleSelectLevel(index + 1)
+										}
+									>
+										Level {index + 1}
+									</button>
+								);
+							}
+						)}
+				</li>
+			</div>
+		</div>
+	);
 };
 export default SelectLevel;

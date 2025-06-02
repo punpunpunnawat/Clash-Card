@@ -1,0 +1,24 @@
+.SelectLevel {
+	display: flex;
+	flex-direction: column;
+}
+
+.SelectLevel__body {
+	display: flex;
+    flex-direction: column;
+    padding: 128px;
+	gap: 128px;
+    align-items: center;
+}
+
+
+.SelectLevel__body_level-list {
+    width: 100%;
+	display: grid;
+	grid-template-columns: repeat(5, 1fr); /* 5 ปุ่มต่อแถว */
+	gap: 16px;
+}
+
+.SelectLevel__body_header{
+    font-size: 36px;
+}

@@ -1,0 +1,24 @@
+.NewHome {
+    display: flex;
+    flex-direction: column;
+}
+
+.NewHome__body {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+    gap: 96px;
+}
+
+.NewHome__body_Logo {
+    justify-content: center;
+}
+
+.NewHome__body_MenuCard {
+    display: flex;
+    gap: 64px;
+    justify-content: center;
+}

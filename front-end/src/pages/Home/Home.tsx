@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../store"; // import AppDispatch ด้วย
 
+
 function Home() {
   const player = useSelector((state: RootState) => state.player.player);
   const deck = useSelector((state: RootState) => state.deck.deck);

@@ -9,14 +9,13 @@ const HealthBar: React.FC<HealthBarProps> = ({ currentHP, maxHP }) => {
   return (
     <div
       style={{
-        width: '150px',
-        height: '20px',
+        width: '200px',
+        height: '100%',
         border: '1px solid #333',
-        borderRadius: '10px',
+        borderRadius: '8px',
         backgroundColor: '#ddd',
         overflow: 'hidden',
         position: 'relative', // ให้ text ซ้อน
-        marginBottom: '8px'
       }}
       className="HealthBar"
     >

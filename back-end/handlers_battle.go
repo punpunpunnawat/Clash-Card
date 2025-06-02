@@ -135,12 +135,13 @@ func newShuffledDeck() []Card {
 
 func drawCards(deck *[]Card, n int) []Card {
 	fmt.Println("draw call")
+	fmt.Println("before ", len(*deck))
 	if len(*deck) < n {
 		n = len(*deck)
 	}
 	hand := (*deck)[:n]
 	*deck = (*deck)[n:]
-
+	fmt.Println("after ", len(*deck))
 	return hand
 }
 
@@ -221,6 +222,22 @@ func handlePlayerWin(userID int, db *sql.DB, wonLevel int) error {
 	}
 
 	return nil
+}
+
+func removeCardFromHand(hand *[]Card, cardID string) bool {
+	found := false
+	newHand := (*hand)[:0] // reuse slice memory
+
+	for _, card := range *hand {
+		if card.ID == cardID && !found {
+			found = true
+			continue // ข้ามอันนี้เพื่อ "ลบ"
+		}
+		newHand = append(newHand, card)
+	}
+
+	*hand = newHand
+	return found
 }
 
 // ----------- Handlers -----------

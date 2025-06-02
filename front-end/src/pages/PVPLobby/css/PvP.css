@@ -1,27 +1,14 @@
-.EnemyBattle {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-}
 
 
-.EnemyBattle__arena {
+.PvP {
   display: flex;
-  flex: 1;
   width: 100%;
-  height: 100%;
-  background-color: rgb(40, 40, 40);
-  /* position: absolute; */
+  height: 100vh;
 }
 
-.EnemyBattle__board {
+.PvP__board {
   display: flex;
   gap: 40px;
-  width: 100%;
-  height: 100%;
   position: absolute;
   align-items: center;
   justify-content: center;
@@ -31,7 +18,7 @@
 }
 
 
-.EnemyBattle__board_card-placer {
+.PvP__board_card-placer {
   position: relative; /* ต้องใช้ relative เพื่อให้ลูก absolute ยึดตำแหน่งจากพ่อ */
   width: 170px;
   height: 270px;
@@ -39,7 +26,7 @@
   z-index: 1;
 }
 
-.EnemyBattle__board_card-placer > * {
+.PvP__board_card-placer > * {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -50,7 +37,7 @@
 }
 
 
-.EnemyBattle__hud {
+.PvP__hud {
   position: fixed;
   top: 0;
   left: 0;
@@ -60,7 +47,7 @@
   z-index: 9999; /* อยู่บนสุด */
 }
 
-.EnemyBattle__enemy-bar {
+/* .PvP__enemy-bar {
   position: fixed;
   top: 0;
   left: 0;
@@ -70,33 +57,37 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  pointer-events: auto; /* ถ้าต้องการให้คลิกได้ */
+  pointer-events: auto;
   z-index: 1000;
   color: white;
-  box-shadow: 0 0px 10px rgba(0, 0, 0, 0.25); /* เบสิคมากๆ */
+  box-shadow: 0 0px 10px rgba(0, 0, 0, 0.25);
 
-}
+} */
 
-.EnemyBattle__player-bar,.EnemyBattle__enemy-bar {
+.PvP__player-bar,.PvP__enemy-bar {
   position: fixed;
+  box-sizing: border-box;
   width: 100%;
-  height: 40px;
-  background: rgba(30, 30, 30, 1);
+  height:40px;
+  padding: 8px;
+  gap: 8px;
+  background-color: rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   justify-content: center;
   align-items: center;
   pointer-events: auto;
   z-index: 1000;
   color: white;
-  box-shadow: 0 0px 10px rgba(0, 0, 0, 0.25); /* เบสิคมากๆ */
-
+  box-shadow: 0 0px 10px rgba(0, 0, 0, 0.25);
 }
 
-.EnemyBattle__player-bar {
+.PvP__player-bar {
   bottom: 0;
 }
 
-.EnemyBattle__enemy-bar {
+.PvP__enemy-bar {
   top: 0;
 }
 
@@ -120,7 +111,7 @@
   transform: scale(1.1);
   z-index: 10;
 }
-.EnemyBattle__board-player {
+.PvP__board-player {
   position: fixed;   /* ติดกับ viewport */
   bottom: 0;         /* ติดล่าง */
   left: 0;           /* ติดซ้าย */
@@ -131,7 +122,7 @@
   padding: 0px 10px 0px 10px;     /* เพิ่มช่องว่างข้างในนิดหน่อย */
   box-sizing: border-box;
 }
-.EnemyBattle__board-enemy {
+.PvP__board-enemy {
   position: fixed;
   top: 0;
   left: 0;

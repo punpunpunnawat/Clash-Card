@@ -39,7 +39,7 @@ type PVPClient struct {
 
 type PVPMatch struct {
 	Clients  map[string]*PVPClient // key: "A", "B"
-	Selected map[string]CardType   // key: slot, value: selected card
+	Selected map[string]*Card      // key: slot, value: selected card
 }
 
 type PVPManager struct {
@@ -189,7 +189,7 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 		if !exists {
 			match = &PVPMatch{
 				Clients:  make(map[string]*PVPClient),
-				Selected: make(map[string]CardType),
+				Selected: make(map[string]*Card),
 			}
 			pvpManager.rooms[roomID] = match
 		}
@@ -410,7 +410,7 @@ func pvpRead(c *PVPClient) {
 
 			// อัปเดต selected card ของฝั่งนั้น
 			fmt.Println("CT " + CardType(playerCard.Type))
-			match.Selected[c.slot] = CardType(playerCard.Type)
+			match.Selected[c.slot] = playerCard
 
 			state.Unlock()
 
@@ -418,8 +418,8 @@ func pvpRead(c *PVPClient) {
 			if c.slot == "A" {
 				responseForB := map[string]interface{}{
 					"type":             "selection_status",
-					"playerSelected":   match.Selected["B"] != "",
-					"opponentSelected": match.Selected["A"] != "",
+					"playerSelected":   match.Selected["B"] != nil,
+					"opponentSelected": match.Selected["A"] != nil,
 				}
 
 				fmt.Println("sent to B")
@@ -435,8 +435,8 @@ func pvpRead(c *PVPClient) {
 				// สร้าง response ที่แยกฝั่ง
 				responseForA := map[string]interface{}{
 					"type":             "selection_status",
-					"playerSelected":   match.Selected["A"] != "",
-					"opponentSelected": match.Selected["B"] != "",
+					"playerSelected":   match.Selected["A"] != nil,
+					"opponentSelected": match.Selected["B"] != nil,
 				}
 				fmt.Println("sent to A")
 				respAJSON, _ := json.Marshal(responseForA)
@@ -451,17 +451,23 @@ func pvpRead(c *PVPClient) {
 			}
 
 			//เช็คว่าเลือกครบ 2 คนยัง
-			if match.Selected["A"] != "" && match.Selected["B"] != "" {
-				// do something เช่น คำนวณผล
+			if match.Selected["A"] != nil && match.Selected["B"] != nil {
+
+				// remove card from hand
+				removeCardFromHand(&state.PlayerA.Hand, match.Selected["A"].ID)
+				removeCardFromHand(&state.PlayerB.Hand, match.Selected["B"].ID)
+				fmt.Println(len(state.PlayerA.Hand))
+				fmt.Println(len(state.PlayerB.Hand))
+
 				var winner string
 				// สมมติ result แบบง่ายๆ
 				if match.Selected["A"] == match.Selected["B"] {
 					winner = "draw"
-				} else if match.Selected["A"] == "rock" && match.Selected["B"] == "scissors" {
+				} else if match.Selected["A"].Type == "rock" && match.Selected["B"].Type == "scissors" {
 					winner = "A"
-				} else if match.Selected["A"] == "scissors" && match.Selected["B"] == "paper" {
+				} else if match.Selected["A"].Type == "scissors" && match.Selected["B"].Type == "paper" {
 					winner = "A"
-				} else if match.Selected["A"] == "paper" && match.Selected["B"] == "rock" {
+				} else if match.Selected["A"].Type == "paper" && match.Selected["B"].Type == "rock" {
 					winner = "A"
 				} else {
 					winner = "B"
@@ -495,16 +501,25 @@ func pvpRead(c *PVPClient) {
 						gameStatus = "Awin"
 					}
 				}
+				fmt.Println("ก่อนจั่ว A ", countCardRemaining(state.PlayerA.Deck, state.PlayerA.Hand))
+				fmt.Println("ก่อนจั่ว B ", countCardRemaining(state.PlayerB.Deck, state.PlayerB.Hand))
 
 				//draw card
 				if gameStatus == "onGoing" {
+					fmt.Println("kuy")
+					fmt.Println(len(state.PlayerA.Deck) > 0)
+					fmt.Println(len(state.PlayerA.Hand) < 3)
 					if len(state.PlayerA.Deck) > 0 && len(state.PlayerA.Hand) < 3 {
+						fmt.Println("kuyA")
 						state.PlayerA.Hand = append(state.PlayerA.Hand, drawCards(&state.PlayerA.Deck, 1)...)
 					}
 					if len(state.PlayerB.Deck) > 0 && len(state.PlayerB.Hand) < 3 {
+						fmt.Println("kuyB")
 						state.PlayerB.Hand = append(state.PlayerB.Hand, drawCards(&state.PlayerB.Deck, 1)...)
 					}
 				}
+				fmt.Println("หลังจั่ว A ", countCardRemaining(state.PlayerA.Deck, state.PlayerA.Hand))
+				fmt.Println("หลังจั่ว B ", countCardRemaining(state.PlayerB.Deck, state.PlayerB.Hand))
 
 				A_CardRemaining := countCardRemaining(state.PlayerA.Deck, state.PlayerA.Hand)
 				B_CardRemaining := countCardRemaining(state.PlayerB.Deck, state.PlayerB.Hand)
@@ -598,7 +613,7 @@ func pvpRead(c *PVPClient) {
 
 				// ล้างสถานะเลือกไพ่เพื่อรอรอบใหม่
 				pvpManager.lock.Lock()
-				match.Selected = make(map[string]CardType)
+				match.Selected = make(map[string]*Card)
 				pvpManager.lock.Unlock()
 			}
 
