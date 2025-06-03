@@ -29,7 +29,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at FROM users WHERE id = ?`
+		query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at, class FROM users WHERE id = ?`
 		row := db.QueryRow(query, userID)
 
 		type Stat struct {
@@ -49,6 +49,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 			Exp                  int    `json:"exp"`
 			Money                int    `json:"money"`
 			CreatedAt            string `json:"created_at"`
+			Class                int    `json:"class"`
 		}
 
 		err = row.Scan(
@@ -64,6 +65,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 			&user.Exp,
 			&user.Money,
 			&user.CreatedAt,
+			&user.Class,
 		)
 
 		if err == sql.ErrNoRows {

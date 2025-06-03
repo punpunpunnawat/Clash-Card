@@ -17,6 +17,7 @@ type User struct {
 	Exp                  int      `json:"exp"`
 	Money                int      `json:"money"`
 	CreatedAt            string   `json:"createdAt"`
+	Class                string   `json:"class"`
 }
 
 type DeckCard struct {

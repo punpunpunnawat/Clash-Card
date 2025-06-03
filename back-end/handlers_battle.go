@@ -64,7 +64,7 @@ func formatHand(hand []Card) string {
 
 func getUserByIDFromDB(db *sql.DB, userID int) (*User, error) {
 	var user User
-	query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at FROM users WHERE id = ?`
+	query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at, class FROM users WHERE id = ?`
 	row := db.QueryRow(query, userID)
 	err := row.Scan(
 		&user.ID,
@@ -79,6 +79,7 @@ func getUserByIDFromDB(db *sql.DB, userID int) (*User, error) {
 		&user.Exp,
 		&user.Money,
 		&user.CreatedAt,
+		&user.Class,
 	)
 	if err != nil {
 		return nil, err
@@ -380,7 +381,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		userID, err := extractUserIDFromToken(tokenStr)
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
-			fmt.Println("❌ Failed to read body:", err)
+			fmt.Println("Failed to read body:", err)
 			http.Error(w, "Failed to read body", http.StatusBadRequest)
 			return
 		}
@@ -394,7 +395,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			fmt.Println("❌ Failed to decode JSON:", err)
+			fmt.Println("Failed to decode JSON:", err)
 			return
 		}
 

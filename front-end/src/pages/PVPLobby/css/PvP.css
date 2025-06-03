@@ -1,50 +1,46 @@
-
-
 .PvP {
-  display: flex;
-  width: 100%;
-  height: 100vh;
+	display: flex;
+	width: 100%;
+	height: 100vh;
 }
 
 .PvP__board {
-  display: flex;
-  gap: 40px;
-  position: absolute;
-  align-items: center;
-  justify-content: center;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+	display: flex;
+	gap: 40px;
+	position: absolute;
+	align-items: center;
+	justify-content: center;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 }
 
-
 .PvP__board_card-placer {
-  position: relative; /* ต้องใช้ relative เพื่อให้ลูก absolute ยึดตำแหน่งจากพ่อ */
-  width: 170px;
-  height: 270px;
-  gap: 40px;
-  z-index: 1;
+	position: relative; /* ต้องใช้ relative เพื่อให้ลูก absolute ยึดตำแหน่งจากพ่อ */
+	width: 170px;
+	height: 270px;
+	gap: 40px;
+	z-index: 1;
 }
 
 .PvP__board_card-placer > * {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: fit-content;
-  height: fit-content;
-  transform: translate(-50%, -50%); /* ให้ซ้อนตรงกลาง */
-  z-index: 2;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: fit-content;
+	height: fit-content;
+	transform: translate(-50%, -50%); /* ให้ซ้อนตรงกลาง */
+	z-index: 2;
 }
 
-
 .PvP__hud {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* ให้คลิกทะลุถ้าไม่อยากให้แถบ HUD บังคลิก */
-  z-index: 9999; /* อยู่บนสุด */
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none; /* ให้คลิกทะลุถ้าไม่อยากให้แถบ HUD บังคลิก */
+	z-index: 9999; /* อยู่บนสุด */
 }
 
 /* .PvP__enemy-bar {
@@ -64,74 +60,123 @@
 
 } */
 
-.PvP__player-bar,.PvP__enemy-bar {
-  position: fixed;
-  box-sizing: border-box;
-  width: 100%;
-  height:40px;
-  padding: 8px;
-  gap: 8px;
-  background-color: rgba(20, 20, 20, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  pointer-events: auto;
-  z-index: 1000;
-  color: white;
-  box-shadow: 0 0px 10px rgba(0, 0, 0, 0.25);
+.PvP__player-bar,
+.PvP__enemy-bar {
+	position: fixed;
+	box-sizing: border-box;
+	width: 100%;
+	height: 40px;
+	padding: 8px;
+	gap: 8px;
+	background-color: rgba(20, 20, 20, 0.8);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	pointer-events: auto;
+	z-index: 1000;
+	color: white;
+	box-shadow: 0 0px 10px rgba(0, 0, 0, 0.25);
 }
 
 .PvP__player-bar {
-  bottom: 0;
+	bottom: 0;
 }
 
 .PvP__enemy-bar {
-  top: 0;
+	top: 0;
 }
 
 .hand {
-  display: inline-flex;
-  align-items: center;
-  perspective: 1000px;
-  overflow: visible;
+	display: inline-flex;
+	align-items: center;
+	perspective: 1000px;
+	overflow: visible;
 }
 
 .hand > div {
-  transition: transform 0.3s ease;
+	transition: transform 0.3s ease;
 }
 
 /* เพิ่มชั้นใหม่เพื่อใส่ hover effect */
 .card-wrapper {
-  transition: transform 0.3s ease;
+	transition: transform 0.3s ease;
 }
 
 .card-wrapper:hover {
-  transform: scale(1.1);
-  z-index: 10;
+	transform: scale(1.1);
+	z-index: 10;
 }
 .PvP__board-player {
-  position: fixed;   /* ติดกับ viewport */
-  bottom: 0;         /* ติดล่าง */
-  left: 0;           /* ติดซ้าย */
-  width: 100%;       /* กว้างเต็ม */
-  display: flex;
-  justify-content: space-between;
-  z-index: 999;     /* ให้อยู่บนสุด */
-  padding: 0px 10px 0px 10px;     /* เพิ่มช่องว่างข้างในนิดหน่อย */
-  box-sizing: border-box;
+	position: fixed; /* ติดกับ viewport */
+	bottom: 0; /* ติดล่าง */
+	left: 0; /* ติดซ้าย */
+	width: 100%; /* กว้างเต็ม */
+	display: flex;
+	justify-content: space-between;
+	z-index: 999; /* ให้อยู่บนสุด */
+	padding: 0px 10px 0px 10px; /* เพิ่มช่องว่างข้างในนิดหน่อย */
+	box-sizing: border-box;
 }
 .PvP__board-enemy {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  z-index: 999;
-  padding: 0px 10px 0px 10px;  
-  box-sizing: border-box;
-  /* transform: rotate(180deg); */
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	display: flex;
+	justify-content: space-between;
+	z-index: 999;
+	padding: 0px 10px 0px 10px;
+	box-sizing: border-box;
+	/* transform: rotate(180deg); */
 }
 
+.PvP-win {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+.PvP-win__body {
+	display: flex;
+	flex: 1;
+	height: 100vh;
+	gap: 128px;
+	padding: 128px;
+	justify-content: center;
+	align-items: center;
+}
+
+.PvP-win__body_menu {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	background-color: rgba(20, 20, 20, 0.8);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	gap: 128px;
+	padding: 64px;
+	border-radius: 16px;
+  box-sizing: border-box;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.PvP-win__body_menu_button {
+	display: flex;
+  width: 100%;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.PvP-win__body_header {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+  padding: 64px;
+  justify-content: center;
+
+  align-items: center;
+}

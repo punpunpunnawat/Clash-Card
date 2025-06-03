@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"math/rand"
 	"net/http"
 	"sync"
 
@@ -78,6 +79,8 @@ type PlayerData struct {
 	Deck      []Card
 	Hand      []Card
 	Stat      Stat
+	Class     string
+	TrueSight int
 }
 
 func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
@@ -101,7 +104,7 @@ func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
 
 	state := &PVPState{
 		PlayerA: PlayerData{
-			Name:      userA.Username, // หรือ userA.Name ถ้าเป็น string
+			Name:      userA.Username,
 			Level:     userA.Level,
 			Deck:      deckA,
 			CurrentHP: userA.Stat.HP,
@@ -112,9 +115,11 @@ func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
 				SPD: userA.Stat.Spd,
 				HP:  userA.Stat.HP,
 			},
+			Class:     userA.Class,
+			TrueSight: 0,
 		},
 		PlayerB: PlayerData{
-			Name:      userB.Username, // หรือ userB.Name ถ้าเป็น string
+			Name:      userB.Username,
 			Level:     userB.Level,
 			Deck:      deckB,
 			Hand:      []Card{},
@@ -125,6 +130,8 @@ func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
 				SPD: userB.Stat.Spd,
 				HP:  userB.Stat.HP,
 			},
+			Class:     userB.Class,
+			TrueSight: 0,
 		},
 	}
 
@@ -262,6 +269,8 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 								"spd": state.PlayerA.Stat.ATK,
 								"hp":  state.PlayerA.Stat.ATK,
 							},
+							"class":     state.PlayerA.Class,
+							"trueSight": state.PlayerA.TrueSight,
 						},
 						"opponent": map[string]interface{}{
 							"name":          state.PlayerB.Name,
@@ -275,6 +284,8 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 								"spd": state.PlayerB.Stat.ATK,
 								"hp":  state.PlayerB.Stat.ATK,
 							},
+							"class":     state.PlayerB.Class,
+							"trueSight": state.PlayerB.TrueSight,
 						},
 					}
 					respJSON, err := json.Marshal(response)
@@ -298,6 +309,8 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 								"spd": state.PlayerB.Stat.SPD,
 								"hp":  state.PlayerB.Stat.HP,
 							},
+							"class":     state.PlayerB.Class,
+							"trueSight": state.PlayerB.TrueSight,
 						},
 						"opponent": map[string]interface{}{
 							"handSize":      len(state.PlayerA.Hand),
@@ -311,6 +324,8 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 								"spd": state.PlayerA.Stat.SPD,
 								"hp":  state.PlayerA.Stat.HP,
 							},
+							"class":     state.PlayerA.Class,
+							"trueSight": state.PlayerA.TrueSight,
 						},
 					}
 					respJSON, err := json.Marshal(response)
@@ -460,8 +475,7 @@ func pvpRead(c *PVPClient) {
 				fmt.Println(len(state.PlayerB.Hand))
 
 				var winner string
-				// สมมติ result แบบง่ายๆ
-				if match.Selected["A"] == match.Selected["B"] {
+				if match.Selected["A"].Type == match.Selected["B"].Type {
 					winner = "draw"
 				} else if match.Selected["A"].Type == "rock" && match.Selected["B"].Type == "scissors" {
 					winner = "A"
@@ -476,19 +490,63 @@ func pvpRead(c *PVPClient) {
 				gameStatus := "onGoing"
 				damageToB := 0
 				damageToA := 0
+				specialEventA := "nothing"
+				specialEventB := "nothing"
+
+				evasionA := math.Max(0.1+float64(state.PlayerB.Stat.SPD-state.PlayerA.Stat.SPD)*0.02, 1)
+				evasionB := math.Max(0.1+float64(state.PlayerB.Stat.SPD-state.PlayerA.Stat.SPD)*0.02, 1)
+				attackToAMiss := rand.Float64() < evasionA
+				attackToBMiss := rand.Float64() < evasionB
+
 				// caldamage
 				if winner == "A" {
 					damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK-state.PlayerB.Stat.DEF), 1))
-					state.PlayerB.CurrentHP = int(math.Max(float64(state.PlayerB.CurrentHP-damageToB), 0))
+
+					//special for class
+					if state.PlayerA.Class == "assassin" && match.Selected["A"].Type == "scissors" {
+						damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK), 1))
+						attackToBMiss = false
+						specialEventA = "True strike"
+					} else if state.PlayerA.Class == "mage" && match.Selected["A"].Type == "paper" {
+						state.PlayerA.TrueSight += 1
+						specialEventA = "Gain Truesight"
+					}
 				} else if winner == "B" {
 					damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF), 1))
-					state.PlayerA.CurrentHP = int(math.Max(float64(state.PlayerA.CurrentHP-damageToA), 0))
+
+					//special for class
+					if state.PlayerB.Class == "assassin" && match.Selected["B"].Type == "scissors" {
+						damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK), 1))
+						attackToAMiss = false
+						specialEventB = "True strike"
+					} else if state.PlayerB.Class == "mage" && match.Selected["B"].Type == "paper" {
+						state.PlayerB.TrueSight += 1
+						specialEventB = "Gain Truesight"
+					}
 				} else if winner == "draw" {
-					//logic
+					if state.PlayerA.Class == "warrior" && match.Selected["A"].Type == "rock" {
+						damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK-state.PlayerB.Stat.DEF)/2, 1))
+						specialEventA = "Warrior Blood"
+					}
+					if state.PlayerB.Class == "warrior" && match.Selected["B"].Type == "rock" {
+						damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF)/2, 1))
+						specialEventB = "Warrior Blood"
+					}
+
+					if !attackToAMiss {
+						state.PlayerA.CurrentHP = int(math.Max(float64(state.PlayerA.CurrentHP-damageToA), 0))
+					}
+
+					if !attackToBMiss {
+						state.PlayerB.CurrentHP = int(math.Max(float64(state.PlayerB.CurrentHP-damageToB), 0))
+					}
+
 				}
 
 				//check winner if hp = 0
-				if state.PlayerA.CurrentHP == 0 {
+				if state.PlayerA.CurrentHP == 0 && state.PlayerB.CurrentHP == 0 {
+					gameStatus = "draw"
+				} else if state.PlayerA.CurrentHP == 0 {
 					gameStatus = "Bwin"
 				} else if state.PlayerB.CurrentHP == 0 {
 					gameStatus = "Awin"
@@ -558,6 +616,8 @@ func pvpRead(c *PVPClient) {
 						"player":   A_CardRemaining,
 						"opponent": B_CardRemaining,
 					},
+					"trueSight":    state.PlayerA.TrueSight,
+					"specialEvent": specialEventA,
 				}
 				respB := map[string]interface{}{
 					"type": "round_result",
@@ -592,6 +652,8 @@ func pvpRead(c *PVPClient) {
 						"player":   B_CardRemaining,
 						"opponent": A_CardRemaining,
 					},
+					"trueSight":    state.PlayerB.TrueSight,
+					"specialEvent": specialEventB,
 				}
 
 				respAJSON, _ := json.Marshal(respA)

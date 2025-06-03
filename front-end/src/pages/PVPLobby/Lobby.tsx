@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import type { CardProps } from "../../types/Card";
 import Card from "./../../components/Card/Card";
@@ -12,8 +12,10 @@ import type {
 	ServerMessage,
 } from "../../types/Pvp";
 import Pill from "../../components/Pill";
+import NavBar from "../../components/NavBar";
 const Lobby = () => {
 	const { id: roomID } = useParams();
+	const navigate = useNavigate();
 	const ws = useRef<WebSocket | null>(null);
 	const [opponentHandSize, setOpponentHandSize] = useState<number>(0);
 
@@ -74,8 +76,8 @@ const Lobby = () => {
 		| "SHOW_RESULT"
 		| "DO_DAMAGE"
 		| "DRAW_CARD"
-		| "GAME_END_WIN"
-		| "GAME_END_LOSE";
+		| "WIN"
+		| "LOSE";
 	const [gameState, setGameState] = useState<GameState>("WAIT_OPPONENT");
 
 	//CARD FUNC
@@ -158,8 +160,16 @@ const Lobby = () => {
 		}, 600); // slightly longer than transition
 	};
 
+	const handleClickBackToMenu = () => {
+		navigate("/")
+	}
+
+	const handleClickPlayAgain = () => {
+		setGameState("WAIT_OPPONENT");
+	}
+
 	useEffect(() => {
-    console.log(roundResult)
+		console.log(roundResult);
 		if (roundResult) {
 			switch (gameState) {
 				case "BOTH_SELECTED":
@@ -187,9 +197,9 @@ const Lobby = () => {
 						setCurrentPlayerHP(Number(roundResult.hp.player));
 						setCurrentOpponentHP(Number(roundResult.hp.opponent));
 						if (roundResult.gameStatus === "playerWin") {
-							setGameState("GAME_END_WIN");
+							setGameState("WIN");
 						} else if (roundResult.gameStatus === "opponentWin") {
-							setGameState("GAME_END_LOSE");
+							setGameState("LOSE");
 						} else setGameState("DRAW_CARD");
 					}
 
@@ -232,6 +242,7 @@ const Lobby = () => {
 						break;
 
 					case "initialData":
+						console.log(msg)
 						//set hand
 						setPlayerHand(msg.player.hand);
 						setOpponentHandSize(msg.opponent.handSize);
@@ -309,8 +320,29 @@ const Lobby = () => {
 	};
 
 	if (gameState === "WAIT_OPPONENT") return <div>waiting</div>;
-	if (gameState === "GAME_END_WIN") return <div>win</div>;
-	if (gameState === "GAME_END_LOSE") return <div>lose</div>;
+	if (gameState === "WIN" || gameState === "LOSE") {
+		return (
+			<div className="PvP-win">
+				<NavBar/>
+				<div className="PvP-win__body">
+					<div className="PvP-win__body_header">
+						<img src="/LogoSmall.svg" width={120} height={24}/>
+						<header>YOU {gameState}</header>
+					</div>
+					
+					<div className="PvP-win__body_menu">
+						<h2>What is your next move ?</h2>
+						<div className="PvP-win__body_menu_button">
+							<button onClick={handleClickBackToMenu}>Back to menu</button>
+						<button onClick={handleClickPlayAgain}>Play Agian</button>
+						</div>
+						
+					</div>
+				</div>
+			</div>
+		);
+	}
+	
 	return (
 		<div className="PvP">
 			<div className="PvP__enemy-bar">

@@ -14,7 +14,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<NewHome />} />
         <Route path="/bot-battle/:levelId" element={<BotBattle />} />
         <Route path="/level" element={<SelectLevel />} />
         <Route path="/lobby/:id" element={<Lobby />} />
