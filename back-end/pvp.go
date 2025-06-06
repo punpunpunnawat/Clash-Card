@@ -532,15 +532,14 @@ func pvpRead(c *PVPClient) {
 						damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF)/2, 1))
 						specialEventB = "Warrior Blood"
 					}
+				}
 
-					if !attackToAMiss {
-						state.PlayerA.CurrentHP = int(math.Max(float64(state.PlayerA.CurrentHP-damageToA), 0))
-					}
+				if !attackToAMiss {
+					state.PlayerA.CurrentHP = int(math.Max(float64(state.PlayerA.CurrentHP-damageToA), 0))
+				}
 
-					if !attackToBMiss {
-						state.PlayerB.CurrentHP = int(math.Max(float64(state.PlayerB.CurrentHP-damageToB), 0))
-					}
-
+				if !attackToBMiss {
+					state.PlayerB.CurrentHP = int(math.Max(float64(state.PlayerB.CurrentHP-damageToB), 0))
 				}
 
 				//check winner if hp = 0
@@ -618,6 +617,21 @@ func pvpRead(c *PVPClient) {
 					},
 					"trueSight":    state.PlayerA.TrueSight,
 					"specialEvent": specialEventA,
+
+					// "player":map[string]interface{}{
+					// 	"cardPlayed": damageToB,
+					// 	"damageTaken":   damageToA,
+					// 	"isEvade":   damageToA,
+					// 	"trueSight":    state.PlayerA.TrueSight,
+					// 	"skillActivation": specialEventA,
+					// },
+					// "opponent":map[string]interface{}{
+					// 	"cardPlayed": damageToB,
+					// 	"damageTaken":   damageToA,
+					// 	"isEvade":   damageToA,
+					// 	"trueSight":    state.PlayerA.TrueSight,
+					// 	"specialEvent": specialEventA,
+					// },
 				}
 				respB := map[string]interface{}{
 					"type": "round_result",

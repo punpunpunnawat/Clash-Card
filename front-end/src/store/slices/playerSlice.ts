@@ -40,6 +40,7 @@ export const fetchPlayer = createAsyncThunk(
       throw new Error("Failed to fetch user data");
     }
 
+    
     return await res.json();
   }
 );

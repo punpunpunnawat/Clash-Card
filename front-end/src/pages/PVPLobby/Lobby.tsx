@@ -543,7 +543,7 @@ const Lobby = () => {
 			</div>
 			<div className="PvP__player-bar">
 				<Pill
-					label={opponentDetail.level + " : " + opponentDetail.name}
+					label={playerDetail.level + " : " + playerDetail.name}
 				/>
 
 				<HealthBar

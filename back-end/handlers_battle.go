@@ -169,17 +169,14 @@ func countCardRemaining(deck []Card, hand []Card) map[string]int {
 	}
 	return countByType
 }
-func handlePlayerWin(userID int, db *sql.DB, wonLevel int) error {
 
+func handlePlayerWin(userID int, db *sql.DB, wonLevel int) error {
 	fmt.Println("HandleWin")
-	fmt.Println("Won Level = ", wonLevel)
-	fmt.Println("UserID = ", userID)
+	fmt.Println("Won Level =", wonLevel)
+	fmt.Println("UserID =", userID)
 
 	var currentLevel int
-	// ดึง current_campaign_level ของผู้เล่น
-	query := `SELECT current_campaign_level FROM users WHERE id = ?`
-	fmt.Println("Query curLevel = ", query)
-	err := db.QueryRow(query, userID).Scan(&currentLevel)
+	err := db.QueryRow(`SELECT current_campaign_level FROM users WHERE id = ?`, userID).Scan(&currentLevel)
 	if err != nil {
 		return fmt.Errorf("failed to get current campaign level: %v", err)
 	}
@@ -187,39 +184,89 @@ func handlePlayerWin(userID int, db *sql.DB, wonLevel int) error {
 	var expReward, moneyReward int
 	shouldUpdateLevel := false
 
-	// เช็คว่าเป็นด่านปัจจุบันไหม
 	if wonLevel == currentLevel {
-		// รางวัลเยอะ + จะอัปเดตเลเวล
-		expReward = 20 * wonLevel
+		expReward = 50 + (20 * wonLevel)
 		moneyReward = 20 * wonLevel
 		shouldUpdateLevel = true
 	} else {
-		// รางวัลน้อย เพราะย้อนกลับไปเล่นด่านเดิม
 		expReward = 5 * wonLevel
 		moneyReward = 5 * wonLevel
 	}
 
-	// เตรียม SQL update
-	if shouldUpdateLevel {
-		query = `
-			UPDATE users
-			SET exp = exp + ?,
-				money = money + ?,
-				current_campaign_level = current_campaign_level + 1
-			WHERE id = ?
-		`
-	} else {
-		query = `
-			UPDATE users
-			SET exp = exp + ?,
-				money = money + ?
-			WHERE id = ?
-		`
+	// ดึงข้อมูลปัจจุบัน
+	var level, currentExp int
+	var class string
+	query := `SELECT level, exp, class FROM users WHERE id = ?`
+	err = db.QueryRow(query, userID).Scan(&level, &currentExp, &class)
+	if err != nil {
+		return fmt.Errorf("failed to get user level/class/exp: %v", err)
 	}
 
-	_, err = db.Exec(query, expReward, moneyReward, userID)
+	totalExp := currentExp + expReward
+	newLevel := level
+	levelUpCount := 0
+
+	// คำนวณเลเวลใหม่
+	for {
+		requiredExp := 50 + (newLevel * 50)
+		if totalExp >= requiredExp {
+			totalExp -= requiredExp
+			newLevel++
+			levelUpCount++
+		} else {
+			break
+		}
+	}
+
+	// คำนวณ stat bonus
+	atkUp, defUp, spdUp, hpUp := 0, 0, 0, 0
+	switch class {
+	case "warrior":
+		atkUp = 2 * levelUpCount
+		defUp = 2 * levelUpCount
+		spdUp = 1 * levelUpCount
+		hpUp = 20 * levelUpCount
+	case "mage":
+		atkUp = 2 * levelUpCount
+		defUp = 1 * levelUpCount
+		spdUp = 2 * levelUpCount
+		hpUp = 20 * levelUpCount
+	case "assassin":
+		atkUp = 2 * levelUpCount
+		defUp = 1 * levelUpCount
+		spdUp = 3 * levelUpCount
+		hpUp = 10 * levelUpCount
+	}
+
+	// เพิ่ม stat point
+	statPointUp := levelUpCount * 2
+
+	// สร้าง SQL update
+	var updateQuery string
+	if shouldUpdateLevel {
+		updateQuery = `
+			UPDATE users
+			SET exp = ?, money = money + ?, current_campaign_level = current_campaign_level + 1,
+				level = ?, stat_point = stat_point + ?,
+				atk = atk + ?, def = def + ?, spd = spd + ?, hp = hp + ?
+			WHERE id = ?
+		`
+		_, err = db.Exec(updateQuery, totalExp, moneyReward, newLevel, statPointUp,
+			atkUp, defUp, spdUp, hpUp, userID)
+	} else {
+		updateQuery = `
+			UPDATE users
+			SET exp = ?, money = money + ?,
+				level = ?, stat_point = stat_point + ?,
+				atk = atk + ?, def = def + ?, spd = spd + ?, hp = hp + ?
+			WHERE id = ?
+		`
+		_, err = db.Exec(updateQuery, totalExp, moneyReward, newLevel, statPointUp,
+			atkUp, defUp, spdUp, hpUp, userID)
+	}
+
 	if err != nil {
-		return fmt.Errorf("failed to update user rewards: %v", err)
+		return fmt.Errorf("failed to update user data: %v", err)
 	}
 
 	return nil
@@ -379,6 +426,13 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		userID, err := extractUserIDFromToken(tokenStr)
+		if err != nil {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		fmt.Println(userID)
+
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			fmt.Println("Failed to read body:", err)
@@ -389,10 +443,8 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 		var req struct {
-			UserID int    `json:"userID"`
 			CardID string `json:"cardID"`
 		}
-
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			fmt.Println("Failed to decode JSON:", err)
@@ -539,7 +591,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 				"enemy":  botTypes,
 			},
 		}
-		logGameState(gs)
+		//logGameState(gs)
 		fmt.Println("Received card play for match:", matchID, "CardID:", req.CardID)
 
 		w.Header().Set("Content-Type", "application/json")

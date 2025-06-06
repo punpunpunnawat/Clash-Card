@@ -247,6 +247,7 @@ const EnemyBattle = () => {
       })
       .catch((err) => {
         console.error("Error starting battle:", err);
+        console.log("Error");
       });
   };
 
@@ -265,15 +266,16 @@ const EnemyBattle = () => {
 
       case "BOTH_SELECTED":
         callPlayAPI();
-        if (turnResult?.enemyCard) {
-          setSelectedEnemyCard(turnResult?.enemyCard);
-          setGameState("SHOW_RESULT");
-        }
+        
+         setGameState("SHOW_RESULT");
 
         break;
 
       case "SHOW_RESULT":
         console.log("showing winner");
+        if (turnResult?.enemyCard) {
+          setSelectedEnemyCard(turnResult?.enemyCard);
+        }
         setTimeout(() => {
           setShowCard(false);
           setTimeout(() => {
@@ -325,7 +327,7 @@ const EnemyBattle = () => {
       default:
         break;
     }
-  }, [gameState, selectedEnemyCard, turnResult]);
+  }, [gameState, turnResult]);
 
   if (!player || !maxEnemyHP) return <div>loading</div>;
   if (gameState === "GAME_END_WIN") return <div>You win</div>;

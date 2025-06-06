@@ -1,13 +1,14 @@
 .NewHome {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    height: 100vh;
 }
 
 .NewHome__body {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    height: 100vh;
+    flex: 1;
     justify-content: center;
     align-items: center;
     gap: 96px;

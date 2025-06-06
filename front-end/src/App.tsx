@@ -15,6 +15,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<NewHome />} />
+        <Route path="/test" element={<Home />} />
         <Route path="/bot-battle/:levelId" element={<BotBattle />} />
         <Route path="/level" element={<SelectLevel />} />
         <Route path="/lobby/:id" element={<Lobby />} />

@@ -10,8 +10,10 @@ const SelectLevel = () => {
 	const dispatch: AppDispatch = useDispatch();
 	useEffect(() => {
 		dispatch(fetchPlayer());
-		//dispatch(fetchDeck(1));
 	}, [dispatch]);
+
+	
+
 	const navigate = useNavigate();
 
 	const player = useSelector((state: RootState) => state.player.player);
@@ -20,6 +22,11 @@ const SelectLevel = () => {
 	const handleSelectLevel = (levelId: number) => {
 		navigate(`/bot-battle/${levelId}`);
 	};
+
+	useEffect(() => {
+		console.log(player);
+	}, [player]);
+
 	return (
 		<div className="SelectLevel">
 			<NavBar BackLabel="Back"/>
