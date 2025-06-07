@@ -173,7 +173,7 @@ const Lobby = () => {
 		if (roundResult) {
 			switch (gameState) {
 				case "BOTH_SELECTED":
-					setSelectedOpponentCard(roundResult.opponentPlayed);
+					setSelectedOpponentCard(roundResult.opponent.cardPlayed);
 					setGameState("SHOW_RESULT");
 					break;
 				case "SHOW_RESULT":
@@ -194,8 +194,8 @@ const Lobby = () => {
 
 				case "DO_DAMAGE":
 					if (roundResult) {
-						setCurrentPlayerHP(Number(roundResult.hp.player));
-						setCurrentOpponentHP(Number(roundResult.hp.opponent));
+						setCurrentPlayerHP(Number(roundResult.player.hp));
+						setCurrentOpponentHP(Number(roundResult.opponent.hp));
 						if (roundResult.gameStatus === "playerWin") {
 							setGameState("WIN");
 						} else if (roundResult.gameStatus === "opponentWin") {
@@ -206,9 +206,9 @@ const Lobby = () => {
 					break;
 
 				case "DRAW_CARD":
-					drawPlayerCard(findNewCard(roundResult.playerHand));
+					drawPlayerCard(findNewCard(roundResult.player.hand));
 					drawOpponentCard();
-					setCardRemaining(roundResult.cardRemaining);
+					setCardRemaining({player: roundResult.player.cardRemaining, opponent: roundResult.opponent.cardRemaining});
 					setRoundResult(null);
 
 					setGameState("SELECT_CARD");

@@ -43,62 +43,52 @@ export type ServerMessage =
 			type: "round_result";
 			gameStatus: string;
 			roundWinner: string;
-			opponentPlayed: CardProps;
-			playerPlayed: CardProps;
-			playerHand: CardProps[];
-			damage: {
-				enemyToPlayer: number;
-				playerToEnemy: number;
+			player: {
+				hp: number;
+				hand: CardProps[];
+				cardPlayed: CardProps;
+				damageTaken: number;
+				isEvade: boolean;
+				cardRemaining: CardCount;
+				trueSight: number;
+				skillActivation: number;
 			};
-			hp: {
-				opponent: number;
-				player: number;
+			opponent: {
+				hp: number;
+				handLength: number;
+				cardPlayed: CardProps;
+				damageTaken: number;
+				isEvade: boolean;
+				cardRemaining: CardCount;
+				trueSight: number;
+				specialEvent: number;
 			};
-			cardRemaining: {
-				player: {
-					paper: number;
-					rock: number;
-					scissors: number;
-				};
-				opponent: {
-					paper: number;
-					rock: number;
-					scissors: number;
-				};
-			};
-			trueSight: number;
-			specialEvent: number;
 	  };
 
 export type RoundResult = {
 	type: "round_result";
 	gameStatus: string;
 	roundWinner: string;
-	opponentPlayed: CardProps;
-	playerPlayed: CardProps;
-	playerHand: CardProps[];
-	damage: {
-		enemyToPlayer: number;
-		playerToEnemy: number;
+	player: {
+		hp: number;
+		hand: CardProps[];
+		cardPlayed: CardProps;
+		damageTaken: number;
+		isEvade: boolean;
+		cardRemaining: CardCount;
+		trueSight: number;
+		skillActivation: number;
 	};
-	hp: {
-		opponent: number;
-		player: number;
+	opponent: {
+		hp: number;
+		handLength: number;
+		cardPlayed: CardProps;
+		damageTaken: number;
+		isEvade: boolean;
+		cardRemaining: CardCount;
+		trueSight: number;
+		specialEvent: number;
 	};
-	cardRemaining: {
-		player: {
-			paper: number;
-			rock: number;
-			scissors: number;
-		};
-		opponent: {
-			paper: number;
-			rock: number;
-			scissors: number;
-		};
-	};
-	trueSight: number;
-	specialEvent: number;
 };
 
 export type CardCount = {
