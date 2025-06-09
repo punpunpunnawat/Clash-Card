@@ -8,6 +8,7 @@ import Lobby from "./pages/PVPLobby/Lobby";
 import Login from "./pages/Login/Login";
 import NewHome from "./pages/NewHome";
 import NewLogin from "./pages/Login copy";
+import Upgrade from "./pages/Upgrade";
 
 function App() {
   const userId = useSelector((state: RootState) => state.player.player?.id);
@@ -23,6 +24,7 @@ function App() {
         <Route path="/login" element={<NewLogin />} />
         <Route path="/login-test" element={<Login />} />
         <Route path="/test" element={<NewHome />} />
+        <Route path="/upgrade" element={<Upgrade />} />
         {/* <Route path="/bot-battle" element={userId ? <BotBattle userId={userId} /> : <div>กรุณาเข้าสู่ระบบก่อน</div>} /> */}
       </Routes>
     </Router>
