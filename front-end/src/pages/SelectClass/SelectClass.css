@@ -1,0 +1,88 @@
+.select-class {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+.select-class__body {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	padding: 64px;
+	justify-content: space-between;
+    align-items: center;
+}
+
+.select-class__body_class-card {
+	display: flex;
+	gap: 160px;
+}
+
+.select-class__body_class-card_warrior,
+.select-class__body_class-card_mage,
+.select-class__body_class-card_assassin {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+}
+
+.select-class__body_detail {
+	display: flex;
+    box-sizing: border-box;
+    width: 100%;
+	padding: 32px;
+	gap: 64px;
+	background-color: rgba(0, 0, 0, 0.1);
+	border-radius: 24px;
+}
+
+.select-class__body_detail_stat {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: 16px;
+	justify-content: center;
+	align-items: center;
+}
+
+.select-class__body_detail_card {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: 16px;
+	justify-content: center;
+	align-items: center;
+}
+
+.select-class__body_detail_stat_atk,
+.select-class__body_detail_stat_def,
+.select-class__body_detail_stat_spd,
+.select-class__body_detail_stat_hp {
+	display: flex;
+	gap: 16px;
+	align-items: center;
+}
+
+.select-class__body_detail_card_rock,
+.select-class__body_detail_card_paper,
+.select-class__body_detail_card_scissors {
+	display: flex;
+	gap: 16px;
+	align-items: center;
+}
+
+.side-text-left {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 16px;
+}
+
+.side-text-right {
+  writing-mode: vertical-rl;
+  font-size: 16px;
+}
+
+.select-class__body_detail_active-class {
+    display: flex;
+}

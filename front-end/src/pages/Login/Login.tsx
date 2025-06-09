@@ -1,25 +1,60 @@
 import { useNavigate } from "react-router-dom";
-
+import "./Login.css";
+import NavBar from "../../components/NavBar";
+import { useState } from "react";
 export default function Login() {
-  const navigate = useNavigate();
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const [confirmPassword, setConfirmPassword] = useState("");
+	const [mode, setMode] = useState("login");
 
-  const handleLogin = async (userID: number) => {
-    const res = await fetch("http://localhost:8080/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userID }),
-    });
+	const navigate = useNavigate();
 
-    const data = await res.json();
-    localStorage.setItem("authToken", data.token);
-    navigate("/");
-  };
+	const handleLogin = () => {
+		navigate("/");
+	};
 
-  return (
-    <div>
-      <h1>เลือก User เพื่อเข้าสู่ระบบ</h1>
-      <button onClick={() => handleLogin(1)}>เข้าสู่ระบบด้วย User 1</button>
-      <button onClick={() => handleLogin(2)}>เข้าสู่ระบบด้วย User 2</button>
-    </div>
-  );
+	return (
+		<div className="Login">
+			<NavBar />
+			<div className="Login__body">
+				<section className="Login__body_logo">
+					<img src="LogoBig.svg"></img>
+				</section>
+				<section className="Login__body_main">
+					<div className="Login__body_main_select-mode">
+						<button style={{ flex: 1 }} onClick={() => setMode("login")}>Login</button>
+						<button style={{ flex: 1 }} onClick={() => setMode("register")}>Register</button>
+					</div>
+					<form className="Login__body_main_form">
+						<input
+							type="email"
+							placeholder="EMAIL"
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+						/>
+						<input
+							type="password"
+							placeholder="PASSWORD"
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+						/>
+						{mode === "register" && (
+							<input
+								type="password"
+								placeholder="CONFIRM PASSWORD"
+								value={confirmPassword}
+								onChange={(e) =>
+									setConfirmPassword(e.target.value)
+								}
+							/>
+						)}
+					</form>
+					<button onClick={handleLogin} style={{ borderRadius: 16 }}>
+						Login
+					</button>
+				</section>
+			</div>
+		</div>
+	);
 }
