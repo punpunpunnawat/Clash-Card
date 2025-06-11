@@ -42,8 +42,8 @@ html {
 }
 
 button {
-    all: unset;
-    cursor: pointer;
+    font-family: "MOON_Bold";
+    src: url("./fonts/MOON_Bold.otf") format("opentype");
     display: flex;
     box-sizing: border-box;
     color: white;
@@ -53,10 +53,17 @@ button {
     background-color: rgba(0, 0, 0, 0.5);
     justify-content: center;
     align-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.1); /* กำหนดขอบให้ชัดเจน */
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     transition: background-color 0.4s ease, border-color 0.2s ease;
 }
+
+button:disabled {
+    opacity: 0.5;
+    pointer-events: none; 
+    cursor: not-allowed;
+}
+
 
 header {
     font-size: 64px;

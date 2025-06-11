@@ -12,11 +12,11 @@ const SelectLevel = () => {
 		dispatch(fetchPlayer());
 	}, [dispatch]);
 
-	
+	const player = useSelector((state: RootState) => state.player.player);
 
 	const navigate = useNavigate();
 
-	const player = useSelector((state: RootState) => state.player.player);
+
 	console.log(player);
 
 	const handleSelectLevel = (levelId: number) => {

@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import MenuCard from "../../components/MenuCard/MenuCard";
 import NavBar from "../../components/NavBar";
 import "./Home.css";
-const NewHome = () => {
+const Home = () => {
     
     const navigate = useNavigate();
     const handleOnClickCampaign = () => {
@@ -22,13 +22,13 @@ const NewHome = () => {
 
 
     return (
-        <div className="NewHome">
+        <div className="Home">
             <NavBar />
-            <div className="NewHome__body">
-                <div className="NewHome__body_Logo">
+            <div className="Home__body">
+                <div className="Home__body_Logo">
                     <img src="/LogoBig.svg" />
                 </div>
-                <div className="NewHome__body_MenuCard">
+                <div className="Home__body_MenuCard">
                     <MenuCard type={"Campaign"} onClick={handleOnClickCampaign}/>
                     <MenuCard type={"PvP"} onClick={handleOnClickPvP}/>
                     <MenuCard type={"Upgrade"} onClick={handleOnClickUpgrade}/>
@@ -37,4 +37,4 @@ const NewHome = () => {
         </div>
     );
 };
-export default NewHome;
+export default Home;

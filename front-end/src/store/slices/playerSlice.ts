@@ -11,6 +11,7 @@ export interface Player {
   exp: number;
   money: number;
   createdAt: string;
+  class: "none"|"warrior"|"mage"|"assassin";
 }
 
 interface PlayerState {
