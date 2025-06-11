@@ -1,17 +1,30 @@
 import { useNavigate } from "react-router-dom";
 import "./NavBar.css";
+import type { AppDispatch, RootState } from "../../store";
+import { useEffect } from "react";
+import { fetchPlayer } from "../../store/slices/playerSlice";
+import { useDispatch, useSelector } from "react-redux";
+import LevelBar from "./LevelBar";
 
 type NavBarProps = {
 	BackLabel?: string;
-	loggedIn?: boolean;
 };
-const NavBar = ({ BackLabel, loggedIn = false }: NavBarProps) => {
+const NavBar = ({ BackLabel }: NavBarProps) => {
 	const navigate = useNavigate();
+	const dispatch: AppDispatch = useDispatch();
+	useEffect(() => {
+		dispatch(fetchPlayer());
+	}, [dispatch]);
+
+	const player = useSelector((state: RootState) => state.player);
+
 	const onClickBack = () => {
 		navigate(-1);
 	};
 
-	if (loggedIn) {
+	const isLoggedIn = player.id !== 0;
+
+	if (isLoggedIn) {
 		return (
 			<div className="NavBar">
 				<div className="NavBar__left-side">
@@ -22,10 +35,22 @@ const NavBar = ({ BackLabel, loggedIn = false }: NavBarProps) => {
 					)}
 				</div>
 				<div className="NavBar__right-side">
-					<div>exp</div>
-					<div>gold</div>
-					<div>name</div>
-					<button>logout</button>
+					<LevelBar
+						level={player.level}
+						currentExp={player.exp}
+						nextLevelExp={50 + (player.level*50)}
+						playerClass={player.class}
+					/>
+					<div className="NavBar__right-side_point">
+						{player.statPoint} P
+					</div>
+					<div className="NavBar__right-side_gold">
+						{player.gold} G
+					</div>
+					<div className="NavBar__right-side_username">
+						{player.username}
+					</div>
+					<button>Logout</button>
 				</div>
 			</div>
 		);
@@ -37,5 +62,4 @@ const NavBar = ({ BackLabel, loggedIn = false }: NavBarProps) => {
 		</div>
 	);
 };
-
 export default NavBar;

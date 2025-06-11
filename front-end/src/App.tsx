@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "./store";
-import TestHome from "./pages/TestHome/TestHome";
 import Home from "./pages/Home";
 import EnemyBattle from "./pages/BotBattle";
 import SelectLevel from './pages/SelectLevel';
@@ -12,13 +11,12 @@ import Upgrade from "./pages/Upgrade";
 import SelectClass from "./pages/SelectClass";
 
 function App() {
-  const userId = useSelector((state: RootState) => state.player.player?.id);
+  const userId = useSelector((state: RootState) => state.player?.id);
   console.log(userId);
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/test" element={<TestHome />} />
         <Route path="/bot-battle/:levelId" element={<EnemyBattle />} />
         <Route path="/level" element={<SelectLevel />} />
         <Route path="/lobby/:id" element={<Lobby />} />

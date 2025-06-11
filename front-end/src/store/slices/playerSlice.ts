@@ -9,17 +9,29 @@ export interface Player {
   level: number;
   currentCampaignLevel: number;
   exp: number;
-  money: number;
+  gold: number;
   createdAt: string;
   class: "none"|"warrior"|"mage"|"assassin";
+  statPoint : number;
 }
 
-interface PlayerState {
-  player: Player | null;
-}
-
-const initialState: PlayerState = {
-  player: null,
+const initialState: Player = {
+  id: 0,
+  username: "",
+  email: "",
+  stat: {
+    atk: 0,
+    def: 0,
+    spd: 0,
+    hp: 0,
+  },
+  level: 1,
+  currentCampaignLevel: 1,
+  exp: 0,
+  gold: 0,
+  createdAt: "",
+  class: "none",
+  statPoint: 0,
 };
 
 export const fetchPlayer = createAsyncThunk(
@@ -52,15 +64,15 @@ const playerSlice = createSlice({
   initialState,
   reducers: {
     setPlayer(state, action: PayloadAction<Player>) {
-      state.player = action.payload;
+      return action.payload; 
     },
-    clearPlayer(state) {
-      state.player = null;
+    clearPlayer() {
+      return initialState; 
     },
   },
   extraReducers: (builder) => {
     builder.addCase(fetchPlayer.fulfilled, (state, action) => {
-      state.player = action.payload;
+      return action.payload; 
     });
   },
 });

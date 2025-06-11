@@ -30,7 +30,7 @@ func loginHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at FROM users WHERE id = ?`
+		query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, gold, created_at FROM users WHERE id = ?`
 		row := db.QueryRow(query, req.UserID)
 
 		var user struct {
@@ -41,7 +41,7 @@ func loginHandler(db *sql.DB) http.HandlerFunc {
 			Level                int
 			CurrentCampaignLevel int
 			Exp                  int
-			Money                int
+			Gold                 int
 			CreatedAt            string
 		}
 
@@ -56,7 +56,7 @@ func loginHandler(db *sql.DB) http.HandlerFunc {
 			&user.Level,
 			&user.CurrentCampaignLevel,
 			&user.Exp,
-			&user.Money,
+			&user.Gold,
 			&user.CreatedAt,
 		)
 

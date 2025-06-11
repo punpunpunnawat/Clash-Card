@@ -36,7 +36,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 		}
 		fmt.Println("✅ Extracted userID:", userID)
 
-		query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at, class, stat_point FROM users WHERE id = ?`
+		query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, gold, created_at, class, stat_point FROM users WHERE id = ?`
 		fmt.Println("🔎 SQL Query:", query)
 
 		row := db.QueryRow(query, userID)
@@ -56,7 +56,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 			Level                int    `json:"level"`
 			CurrentCampaignLevel int    `json:"currentCampaignLevel"`
 			Exp                  int    `json:"exp"`
-			Money                int    `json:"money"`
+			Gold                 int    `json:"gold"`
 			CreatedAt            string `json:"created_at"`
 			Class                string `json:"class"`
 			StatPoint            int    `json:"statPoint"`
@@ -73,7 +73,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 			&user.Level,
 			&user.CurrentCampaignLevel,
 			&user.Exp,
-			&user.Money,
+			&user.Gold,
 			&user.CreatedAt,
 			&user.Class,
 			&user.StatPoint,
@@ -122,7 +122,7 @@ func GetUserDeckHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		rows, err := db.Query("SELECT card_type FROM decks WHERE user_id = ?", userID)
+		rows, err := db.Query("SELECT card_type, quantity FROM decks WHERE user_id = ?", userID)
 		if err != nil {
 			http.Error(w, "Error loading deck", http.StatusInternalServerError)
 			return
@@ -132,7 +132,7 @@ func GetUserDeckHandler(db *sql.DB) http.HandlerFunc {
 		var deck []DeckCard
 		for rows.Next() {
 			var card DeckCard
-			if err := rows.Scan(&card.CardType); err != nil {
+			if err := rows.Scan(&card.CardType, &card.Quantity); err != nil {
 				http.Error(w, "Error reading card", http.StatusInternalServerError)
 				return
 			}

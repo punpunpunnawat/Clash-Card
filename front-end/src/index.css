@@ -42,6 +42,7 @@ html {
 }
 
 button {
+    cursor: pointer;
     font-family: "MOON_Bold";
     src: url("./fonts/MOON_Bold.otf") format("opentype");
     display: flex;

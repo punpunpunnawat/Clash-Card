@@ -4,19 +4,62 @@ import "./Upgrade.css";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchPlayer } from "../../store/slices/playerSlice";
 import type { AppDispatch, RootState } from "../../store";
+import { fetchDeck } from "../../store/slices/deckSlice";
 
 const Upgrade = () => {
 	const dispatch: AppDispatch = useDispatch();
 	useEffect(() => {
 		dispatch(fetchPlayer());
+		dispatch(fetchDeck());
 	}, [dispatch]);
 
-	const player = useSelector((state: RootState) => state.player.player);
+	const player = useSelector((state: RootState) => state.player);
+	const deck = useSelector((state: RootState) => state.deck)
 	console.log(player);
+	console.log(deck);
+
+	const handleClickUpgradeStat = async (statType: string) => {
+  try {
+    const res = await fetch("http://localhost:8080/api/upgrade-stat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+      },
+      body: JSON.stringify({ type: statType }), // เช่น { type: "atk" }
+    });
+
+    if (!res.ok) throw new Error("Upgrade failed");
+
+    await dispatch(fetchPlayer()); // ดึง stat ใหม่มาโชว์
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const handleClickBuyCard = async (cardType: string) => {
+  try {
+    const res = await fetch("http://localhost:8080/api/buy-card", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+      },
+      body: JSON.stringify({ type: cardType }), // เช่น { type: "rock" }
+    });
+
+    if (!res.ok) throw new Error("Buy failed");
+
+    await dispatch(fetchDeck()); // ดึง deck ใหม่
+    await dispatch(fetchPlayer()); // เผื่อมีหัก gold ด้วย
+  } catch (err) {
+    console.error(err);
+  }
+};
 
 	return (
 		<div className="Upgrade">
-			<NavBar />
+			<NavBar BackLabel="Back"/>
 			<div className="Upgrade__body">
 				<h1>Upgrade and buy card</h1>
 				<div className="Upgrade__body_class-card">
@@ -82,22 +125,22 @@ const Upgrade = () => {
 						<div className="Upgrade__body_detail_stat_atk">
 							<span style={{ fontSize: 24, width: 60 }}>ATK</span>
 							<span style={{ fontSize: 24, width: 60 }}>{player?.stat.atk}</span>
-							<button>1 P</button>
+							<button onClick={() => handleClickUpgradeStat("atk")}>1 P</button>
 						</div>
 						<div className="Upgrade__body_detail_stat_def">
 							<span style={{ fontSize: 24, width: 60 }}>DEF</span>
 							<span style={{ fontSize: 24, width: 60 }}>{player?.stat.def}</span>
-							<button>1 P</button>
+							<button onClick={() => handleClickUpgradeStat("def")}>1 P</button>
 						</div>
 						<div className="Upgrade__body_detail_stat_spd">
 							<span style={{ fontSize: 24, width: 60 }}>SPD</span>
 							<span style={{ fontSize: 24, width: 60 }}>{player?.stat.spd}</span>
-							<button>1 P</button>
+							<button onClick={() => handleClickUpgradeStat("spd")}>1 P</button>
 						</div>
 						<div className="Upgrade__body_detail_stat_hp">
 							<span style={{ fontSize: 24, width: 60 }}>HP</span>
 							<span style={{ fontSize: 24, width: 60 }}>{player?.stat.hp}</span>
-							<button>1 P</button>
+							<button onClick={() => handleClickUpgradeStat("hp")}>1 P</button>
 						</div>
 					</div>
 					<div className="Upgrade__body_detail_active-class">
@@ -120,22 +163,22 @@ const Upgrade = () => {
 							<span style={{ fontSize: 24, width: 128 }}>
 								Rock
 							</span>
-							<span style={{ fontSize: 24, width: 60 }}>x 0</span>
-							<button>500 G</button>
+							<span style={{ fontSize: 24, width: 60 }}>x {deck.rock}</span>
+							<button onClick={() => handleClickBuyCard("rock")}>500 G</button>
 						</div>
 						<div className="Upgrade__body_detail_card_paper">
 							<span style={{ fontSize: 24, width: 128 }}>
 								Paper
 							</span>
-							<span style={{ fontSize: 24, width: 60 }}>x 0</span>
-							<button>500 G</button>
+							<span style={{ fontSize: 24, width: 60 }}>x {deck.paper}</span>
+							<button onClick={() => handleClickBuyCard("paper")}>500 G</button>
 						</div>
 						<div className="Upgrade__body_detail_card_scissors">
 							<span style={{ fontSize: 24, width: 128 }}>
 								Scissors
 							</span>
-							<span style={{ fontSize: 24, width: 60 }}>x 0</span>
-							<button>500 G</button>
+							<span style={{ fontSize: 24, width: 60 }}>x {deck.scissors}</span>
+							<button onClick={() => handleClickBuyCard("scissors")}>500 G</button>
 						</div>
 					</div>
 				</div>

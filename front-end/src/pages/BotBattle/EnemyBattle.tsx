@@ -58,7 +58,7 @@ type GameState =
 
 const EnemyBattle = () => {
   const { levelId } = useParams<{ levelId: string }>();
-  const player = useSelector((state: RootState) => state.player.player);
+  const player = useSelector((state: RootState) => state.player);
 
   const dispatch: AppDispatch = useDispatch();
   useEffect(() => {
@@ -199,11 +199,11 @@ const EnemyBattle = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("authToken")}`, // ใส่ token ตรงนี้
+        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
       },
       body: JSON.stringify({ levelId: Number(levelId) }),
     })
-      .then((res) => res.json()) // <== เพิ่ม .json() ตรงนี้
+      .then((res) => res.json())
       .then((data) => {
         setCardRemaining(data.cardRemaining);
         setMaxEnemyHP(Number(data.enemyHP));

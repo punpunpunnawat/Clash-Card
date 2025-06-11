@@ -64,7 +64,7 @@ func formatHand(hand []Card) string {
 
 func getUserByIDFromDB(db *sql.DB, userID int) (*User, error) {
 	var user User
-	query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, money, created_at, class FROM users WHERE id = ?`
+	query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, gold, created_at, class FROM users WHERE id = ?`
 	row := db.QueryRow(query, userID)
 	err := row.Scan(
 		&user.ID,
@@ -77,7 +77,7 @@ func getUserByIDFromDB(db *sql.DB, userID int) (*User, error) {
 		&user.Level,
 		&user.CurrentCampaignLevel,
 		&user.Exp,
-		&user.Money,
+		&user.Gold,
 		&user.CreatedAt,
 		&user.Class,
 	)
@@ -88,7 +88,7 @@ func getUserByIDFromDB(db *sql.DB, userID int) (*User, error) {
 }
 
 func getDeckByUserIDFromDB(db *sql.DB, userID int) ([]Card, error) {
-	rows, err := db.Query("SELECT card_type FROM decks WHERE user_id = ?", userID)
+	rows, err := db.Query("SELECT card_type, quantity FROM decks WHERE user_id = ?", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -96,21 +96,27 @@ func getDeckByUserIDFromDB(db *sql.DB, userID int) ([]Card, error) {
 
 	var cards []Card
 	idCounter := 1
+
 	for rows.Next() {
-		var dc DeckCard
-		if err := rows.Scan(&dc.CardType); err != nil {
+		var cardType string
+		var quantity int
+		if err := rows.Scan(&cardType, &quantity); err != nil {
 			return nil, err
 		}
-		cardID := "c" + strconv.Itoa(idCounter)
-		cards = append(cards, Card{ID: cardID, Type: dc.CardType})
-		idCounter++
+
+		// สร้างการ์ดตามจำนวน quantity
+		for i := 0; i < quantity; i++ {
+			cardID := "c" + strconv.Itoa(idCounter)
+			cards = append(cards, Card{ID: cardID, Type: cardType})
+			idCounter++
+		}
 	}
 
 	if len(cards) == 0 {
 		return nil, fmt.Errorf("deck is empty")
 	}
 
-	// Shuffle the player's deck here
+	// shuffle การ์ด
 	rand.Shuffle(len(cards), func(i, j int) {
 		cards[i], cards[j] = cards[j], cards[i]
 	})
@@ -181,16 +187,16 @@ func handlePlayerWin(userID int, db *sql.DB, wonLevel int) error {
 		return fmt.Errorf("failed to get current campaign level: %v", err)
 	}
 
-	var expReward, moneyReward int
+	var expReward, goldReward int
 	shouldUpdateLevel := false
 
 	if wonLevel == currentLevel {
 		expReward = 50 + (20 * wonLevel)
-		moneyReward = 20 * wonLevel
+		goldReward = 20 * wonLevel
 		shouldUpdateLevel = true
 	} else {
 		expReward = 5 * wonLevel
-		moneyReward = 5 * wonLevel
+		goldReward = 5 * wonLevel
 	}
 
 	// ดึงข้อมูลปัจจุบัน
@@ -246,22 +252,22 @@ func handlePlayerWin(userID int, db *sql.DB, wonLevel int) error {
 	if shouldUpdateLevel {
 		updateQuery = `
 			UPDATE users
-			SET exp = ?, money = money + ?, current_campaign_level = current_campaign_level + 1,
+			SET exp = ?, gold = gold + ?, current_campaign_level = current_campaign_level + 1,
 				level = ?, stat_point = stat_point + ?,
 				atk = atk + ?, def = def + ?, spd = spd + ?, hp = hp + ?
 			WHERE id = ?
 		`
-		_, err = db.Exec(updateQuery, totalExp, moneyReward, newLevel, statPointUp,
+		_, err = db.Exec(updateQuery, totalExp, goldReward, newLevel, statPointUp,
 			atkUp, defUp, spdUp, hpUp, userID)
 	} else {
 		updateQuery = `
 			UPDATE users
-			SET exp = ?, money = money + ?,
+			SET exp = ?, gold = gold + ?,
 				level = ?, stat_point = stat_point + ?,
 				atk = atk + ?, def = def + ?, spd = spd + ?, hp = hp + ?
 			WHERE id = ?
 		`
-		_, err = db.Exec(updateQuery, totalExp, moneyReward, newLevel, statPointUp,
+		_, err = db.Exec(updateQuery, totalExp, goldReward, newLevel, statPointUp,
 			atkUp, defUp, spdUp, hpUp, userID)
 	}
 

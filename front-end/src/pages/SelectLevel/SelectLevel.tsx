@@ -12,7 +12,7 @@ const SelectLevel = () => {
 		dispatch(fetchPlayer());
 	}, [dispatch]);
 
-	const player = useSelector((state: RootState) => state.player.player);
+	const player = useSelector((state: RootState) => state.player);
 
 	const navigate = useNavigate();
 

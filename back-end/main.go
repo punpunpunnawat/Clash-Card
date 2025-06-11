@@ -24,6 +24,9 @@ func main() {
 	r.HandleFunc("/api/battle/start", StartBattleHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/battle/{matchID}/play", PlayCardHandler(db)).Methods("POST", "OPTIONS")
 
+	r.HandleFunc("/api/upgrade-stat", UpgradeStatHandler(db)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/buy-card", BuyCardHandler(db)).Methods("POST", "OPTIONS")
+
 	r.HandleFunc("/ws/pvp", HandlePVPWebSocket(db))
 	//r.HandleFunc("/ws/pvp", HandlePVPWebSocket)
 

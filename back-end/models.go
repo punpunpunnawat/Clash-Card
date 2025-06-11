@@ -15,11 +15,12 @@ type User struct {
 	Level                int      `json:"level"`
 	CurrentCampaignLevel int      `json:"currentCampaignLevel"`
 	Exp                  int      `json:"exp"`
-	Money                int      `json:"money"`
+	Gold                 int      `json:"gold"`
 	CreatedAt            string   `json:"createdAt"`
 	Class                string   `json:"class"`
 }
 
 type DeckCard struct {
-	CardType string `json:"cardType"`
+	CardType string `json:"card_type"`
+	Quantity int    `json:"quantity"`
 }

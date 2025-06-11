@@ -17,7 +17,7 @@ const Home = () => {
     };
 
     const handleOnClickUpgrade = () => {
-        navigate("/select-level");
+        navigate("/upgrade");
     };
 
 
