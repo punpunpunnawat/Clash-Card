@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/tool
 import type { UnitStat } from "../../types/UnitStat";
 
 export interface Player {
-  id: number;
+  id: string;
   username: string;
   email: string;
   stat: UnitStat;
@@ -16,7 +16,7 @@ export interface Player {
 }
 
 const initialState: Player = {
-  id: 0,
+  id: "0",
   username: "",
   email: "",
   stat: {

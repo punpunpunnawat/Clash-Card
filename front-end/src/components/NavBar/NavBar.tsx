@@ -18,18 +18,23 @@ const NavBar = ({ BackLabel }: NavBarProps) => {
 
 	const player = useSelector((state: RootState) => state.player);
 
-	const onClickBack = () => {
+	const handleClickBack = () => {
 		navigate(-1);
 	};
 
-	const isLoggedIn = player.id !== 0;
+	const handleClickLogout = () => {
+		navigate("/login");
+		localStorage.clear();
+	};
+
+	const isLoggedIn = player.id !== "";
 
 	if (isLoggedIn) {
 		return (
 			<div className="NavBar">
 				<div className="NavBar__left-side">
 					{BackLabel ? (
-						<button onClick={onClickBack}>{BackLabel}</button>
+						<button onClick={handleClickBack}>{BackLabel}</button>
 					) : (
 						<img src="/LogoSmall.svg" />
 					)}
@@ -38,7 +43,7 @@ const NavBar = ({ BackLabel }: NavBarProps) => {
 					<LevelBar
 						level={player.level}
 						currentExp={player.exp}
-						nextLevelExp={50 + (player.level*50)}
+						nextLevelExp={50 + player.level * 50}
 						playerClass={player.class}
 					/>
 					<div className="NavBar__right-side_point">
@@ -50,7 +55,7 @@ const NavBar = ({ BackLabel }: NavBarProps) => {
 					<div className="NavBar__right-side_username">
 						{player.username}
 					</div>
-					<button>Logout</button>
+					<button onClick={handleClickLogout}>Logout</button>
 				</div>
 			</div>
 		);

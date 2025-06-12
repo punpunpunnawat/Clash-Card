@@ -34,7 +34,7 @@ type PVPClient struct {
 	conn   *websocket.Conn
 	roomID string
 	slot   string // "A" หรือ "B"
-	userID int    // เก็บ userID ที่ถอดจาก token
+	userID string // เก็บ userID ที่ถอดจาก token
 	send   chan []byte
 }
 
@@ -83,7 +83,7 @@ type PlayerData struct {
 	TrueSight int
 }
 
-func loadPVPStateFromDB(db *sql.DB, userAID, userBID int) (*PVPState, error) {
+func loadPVPStateFromDB(db *sql.DB, userAID, userBID string) (*PVPState, error) {
 	userA, err := getUserByIDFromDB(db, userAID)
 	if err != nil {
 		return nil, err

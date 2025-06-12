@@ -49,7 +49,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		var user struct {
-			ID                   int    `json:"id"`
+			ID                   string `json:"id"`
 			Username             string `json:"username"`
 			Email                string `json:"email"`
 			Stat                 Stat   `json:"stat"`

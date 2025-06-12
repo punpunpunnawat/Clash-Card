@@ -23,7 +23,7 @@ func UpgradeStatHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		userID, err := extractUserIDFromToken(tokenStr)
-		if err != nil || userID == 0 {
+		if err != nil || userID == "0" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -98,7 +98,7 @@ func BuyCardHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		userID, err := extractUserIDFromToken(tokenStr)
-		if err != nil || userID == 0 {
+		if err != nil || userID == "0" {
 			fmt.Println("Unauthorized:", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

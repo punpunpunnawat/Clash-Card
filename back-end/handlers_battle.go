@@ -62,7 +62,7 @@ func formatHand(hand []Card) string {
 	return strings.Join(result, ", ")
 }
 
-func getUserByIDFromDB(db *sql.DB, userID int) (*User, error) {
+func getUserByIDFromDB(db *sql.DB, userID string) (*User, error) {
 	var user User
 	query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, gold, created_at, class FROM users WHERE id = ?`
 	row := db.QueryRow(query, userID)
@@ -87,7 +87,7 @@ func getUserByIDFromDB(db *sql.DB, userID int) (*User, error) {
 	return &user, nil
 }
 
-func getDeckByUserIDFromDB(db *sql.DB, userID int) ([]Card, error) {
+func getDeckByUserIDFromDB(db *sql.DB, userID string) ([]Card, error) {
 	rows, err := db.Query("SELECT card_type, quantity FROM decks WHERE user_id = ?", userID)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func countCardRemaining(deck []Card, hand []Card) map[string]int {
 	return countByType
 }
 
-func handlePlayerWin(userID int, db *sql.DB, wonLevel int) error {
+func handlePlayerWin(userID string, db *sql.DB, wonLevel int) error {
 	fmt.Println("HandleWin")
 	fmt.Println("Won Level =", wonLevel)
 	fmt.Println("UserID =", userID)
@@ -322,7 +322,7 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || userID == 0 {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || userID == "0" {
 			fmt.Println("T T")
 			http.Error(w, "Invalid or missing userId", http.StatusBadRequest)
 			return
