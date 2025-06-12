@@ -7,7 +7,7 @@ export default function Login() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
-	const [mode, setMode] = useState<"login" | "register">("login");
+	const [mode, setMode] = useState<"login" | "register" | "selectClass">("login");
 
 	const navigate = useNavigate();
 
@@ -62,12 +62,16 @@ export default function Login() {
 		}
 	};
 
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (mode === "login") handleLogin();
 		else handleRegister();
 	};
 
+	if(mode==="selectClass") return (
+		<div></div>
+	)
 	return (
 		<div className="Login">
 			<NavBar />

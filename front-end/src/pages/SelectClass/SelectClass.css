@@ -27,6 +27,19 @@
 	gap: 8px;
 }
 
+.select-class__body_class-card_warrior img,
+.select-class__body_class-card_mage img,
+.select-class__body_class-card_assassin img {
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.select-class__body_class-card_warrior img:hover,
+.select-class__body_class-card_mage img:hover,
+.select-class__body_class-card_assassin img:hover {
+  transform: scale(1.1);
+}
+
 .select-class__body_detail {
 	display: flex;
     box-sizing: border-box;
