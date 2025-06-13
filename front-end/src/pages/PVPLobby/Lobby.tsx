@@ -32,11 +32,13 @@ const Lobby = () => {
 		name: "player",
 		level: 0,
 		stat: { atk: 0, def: 0, spd: 0, hp: 0 },
+		class: "none"
 	});
 	const [opponentDetail, setOpponentDetail] = useState<PlayerDetail>({
 		name: "enemy",
 		level: 0,
 		stat: { atk: 0, def: 0, spd: 0, hp: 0 },
+		class: "none"
 	});
 
 	const [winner, setWinner] = useState("");
@@ -258,11 +260,13 @@ const Lobby = () => {
 							name: msg.player.name,
 							level: msg.player.level,
 							stat: msg.player.stat,
+							class: msg.player.class,
 						});
 						setOpponentDetail({
 							name: msg.opponent.name,
 							level: msg.opponent.level,
 							stat: msg.opponent.stat,
+							class: msg.opponent.class
 						});
 						setCurrentPlayerHP(msg.player.currentHP);
 						setCurrentOpponentHP(msg.opponent.currentHP);
@@ -353,6 +357,8 @@ const Lobby = () => {
 				<HealthBar
 					currentHP={currentOpponentHP}
 					maxHP={opponentDetail.stat.hp}
+					level={opponentDetail.level}
+					playerClass={opponentDetail.class}
 				/>
 				<Pill
 					label={`Rock ${
@@ -549,6 +555,8 @@ const Lobby = () => {
 				<HealthBar
 					currentHP={currentPlayerHP}
 					maxHP={playerDetail.stat.hp}
+					level={playerDetail.level}
+					playerClass={playerDetail.class}
 				/>
 				<Pill
 					label={`Rock ${

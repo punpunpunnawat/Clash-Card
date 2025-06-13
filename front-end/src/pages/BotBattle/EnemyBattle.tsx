@@ -336,7 +336,7 @@ const EnemyBattle = () => {
     <div className="EnemyBattle">
       <div className="EnemyBattle__arena">
         <div className="EnemyBattle__enemy-bar">
-          ? : Enemy <HealthBar currentHP={currentEnemyHP} maxHP={maxEnemyHP} />{" "}
+          ? : Enemy <HealthBar currentHP={currentEnemyHP} maxHP={maxEnemyHP} level={levelId?Number(levelId):0} playerClass="none"/>{" "}
           ROCK:{cardRemaining.enemy.rock} PAPER:{cardRemaining.enemy.paper}{" "}
           SCISSORS{cardRemaining.enemy.scissors}
         </div>
@@ -475,7 +475,7 @@ const EnemyBattle = () => {
         </div>
         <div className="EnemyBattle__player-bar">
           {player?.level} : {player?.username}{" "}
-          <HealthBar currentHP={currentPlayerHP} maxHP={player?.stat.hp} />
+          <HealthBar currentHP={currentPlayerHP} maxHP={player?.stat.hp} level={player.level} playerClass={player.class}/>
           ROCK:{cardRemaining.player.rock} PAPER:{cardRemaining.player.paper}{" "}
           SCISSORS{cardRemaining.player.scissors} {gameState}
         </div>

@@ -111,7 +111,7 @@ const SelectClass = ({
 						</div>
 						<div className="select-class__body_detail_stat_hp">
 							<span style={{ fontSize: 24, width: 60 }}>HP</span>
-							<span style={{ fontSize: 24, width: 60 }}>00</span>
+							<span style={{ fontSize: 24, width: 60 }}>50</span>
 							<span style={{ fontSize: 24, width: 144 }}>
 								+ {classData[selectedClass].statPerLevel.hp}/lvl
 							</span>

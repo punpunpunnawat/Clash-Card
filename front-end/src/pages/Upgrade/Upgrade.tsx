@@ -14,52 +14,56 @@ const Upgrade = () => {
 	}, [dispatch]);
 
 	const player = useSelector((state: RootState) => state.player);
-	const deck = useSelector((state: RootState) => state.deck)
+	const deck = useSelector((state: RootState) => state.deck);
 	console.log(player);
 	console.log(deck);
 
 	const handleClickUpgradeStat = async (statType: string) => {
-  try {
-    const res = await fetch("http://localhost:8080/api/upgrade-stat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-      },
-      body: JSON.stringify({ type: statType }), // เช่น { type: "atk" }
-    });
+		try {
+			const res = await fetch("http://localhost:8080/api/upgrade-stat", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${localStorage.getItem(
+						"authToken"
+					)}`,
+				},
+				body: JSON.stringify({ type: statType }), // เช่น { type: "atk" }
+			});
 
-    if (!res.ok) throw new Error("Upgrade failed");
+			if (!res.ok) throw new Error("Upgrade failed");
 
-    await dispatch(fetchPlayer()); // ดึง stat ใหม่มาโชว์
-  } catch (err) {
-    console.error(err);
-  }
-};
+			await dispatch(fetchPlayer()); // ดึง stat ใหม่มาโชว์
+		} catch (err) {
+			console.error(err);
+		}
+	};
 
-const handleClickBuyCard = async (cardType: string) => {
-  try {
-    const res = await fetch("http://localhost:8080/api/buy-card", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-      },
-      body: JSON.stringify({ type: cardType }), // เช่น { type: "rock" }
-    });
+	const handleClickBuyCard = async (cardType: string) => {
+		try {
+			const res = await fetch("http://localhost:8080/api/buy-card", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${localStorage.getItem(
+						"authToken"
+					)}`,
+				},
+				body: JSON.stringify({ type: cardType }), // เช่น { type: "rock" }
+			});
 
-    if (!res.ok) throw new Error("Buy failed");
+			if (!res.ok) throw new Error("Buy failed");
 
-    await dispatch(fetchDeck()); // ดึง deck ใหม่
-    await dispatch(fetchPlayer()); // เผื่อมีหัก gold ด้วย
-  } catch (err) {
-    console.error(err);
-  }
-};
+			await dispatch(fetchDeck()); // ดึง deck ใหม่
+			await dispatch(fetchPlayer()); // เผื่อมีหัก gold ด้วย
+		} catch (err) {
+			console.error(err);
+		}
+	};
 
 	return (
 		<div className="Upgrade">
-			<NavBar BackLabel="Back"/>
+			<NavBar BackLabel="Back" />
 			<div className="Upgrade__body">
 				<h1>Upgrade and buy card</h1>
 				<div className="Upgrade__body_class-card">
@@ -67,7 +71,9 @@ const handleClickBuyCard = async (cardType: string) => {
 						<div className="Upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Warrior</label>
 							<img src="WarriorCard.svg" />
-							<button style={{ width: "100%" }} disabled>Active</button>
+							<button style={{ width: "100%" }} disabled>
+								Active
+							</button>
 						</div>
 					) : (
 						<div className="Upgrade__body_class-card_warrior">
@@ -76,9 +82,7 @@ const handleClickBuyCard = async (cardType: string) => {
 								src="WarriorCard.svg"
 								style={{ opacity: 0.5 }}
 							/>
-							<button style={{ width: "100%" }}>
-								1000 G
-							</button>
+							<button style={{ width: "100%" }}>1000 G</button>
 						</div>
 					)}
 
@@ -86,18 +90,15 @@ const handleClickBuyCard = async (cardType: string) => {
 						<div className="Upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Mage</label>
 							<img src="MageCard.svg" />
-							<button style={{ width: "100%" }} disabled>Active</button>
+							<button style={{ width: "100%" }} disabled>
+								Active
+							</button>
 						</div>
 					) : (
 						<div className="Upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Mage</label>
-							<img
-								src="MageCard.svg"
-								style={{ opacity: 0.5 }}
-							/>
-							<button style={{ width: "100%" }}>
-								1000 G
-							</button>
+							<img src="MageCard.svg" style={{ opacity: 0.5 }} />
+							<button style={{ width: "100%" }}>1000 G</button>
 						</div>
 					)}
 
@@ -105,7 +106,9 @@ const handleClickBuyCard = async (cardType: string) => {
 						<div className="Upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Assassin</label>
 							<img src="AssassinCard.svg" />
-							<button style={{ width: "100%" }} disabled>Active</button>
+							<button style={{ width: "100%" }} disabled>
+								Active
+							</button>
 						</div>
 					) : (
 						<div className="Upgrade__body_class-card_warrior">
@@ -114,9 +117,7 @@ const handleClickBuyCard = async (cardType: string) => {
 								src="AssassinCard.svg"
 								style={{ opacity: 0.5 }}
 							/>
-							<button style={{ width: "100%" }}>
-								1000 G
-							</button>
+							<button style={{ width: "100%" }}>1000 G</button>
 						</div>
 					)}
 				</div>
@@ -124,23 +125,47 @@ const handleClickBuyCard = async (cardType: string) => {
 					<div className="Upgrade__body_detail_stat">
 						<div className="Upgrade__body_detail_stat_atk">
 							<span style={{ fontSize: 24, width: 60 }}>ATK</span>
-							<span style={{ fontSize: 24, width: 60 }}>{player?.stat.atk}</span>
-							<button onClick={() => handleClickUpgradeStat("atk")}>1 P</button>
+							<span style={{ fontSize: 24, width: 60 }}>
+								{player?.stat.atk}
+							</span>
+							<button
+								onClick={() => handleClickUpgradeStat("atk")}
+							>
+								1 P
+							</button>
 						</div>
 						<div className="Upgrade__body_detail_stat_def">
 							<span style={{ fontSize: 24, width: 60 }}>DEF</span>
-							<span style={{ fontSize: 24, width: 60 }}>{player?.stat.def}</span>
-							<button onClick={() => handleClickUpgradeStat("def")}>1 P</button>
+							<span style={{ fontSize: 24, width: 60 }}>
+								{player?.stat.def}
+							</span>
+							<button
+								onClick={() => handleClickUpgradeStat("def")}
+							>
+								1 P
+							</button>
 						</div>
 						<div className="Upgrade__body_detail_stat_spd">
 							<span style={{ fontSize: 24, width: 60 }}>SPD</span>
-							<span style={{ fontSize: 24, width: 60 }}>{player?.stat.spd}</span>
-							<button onClick={() => handleClickUpgradeStat("spd")}>1 P</button>
+							<span style={{ fontSize: 24, width: 60 }}>
+								{player?.stat.spd}
+							</span>
+							<button
+								onClick={() => handleClickUpgradeStat("spd")}
+							>
+								1 P
+							</button>
 						</div>
 						<div className="Upgrade__body_detail_stat_hp">
 							<span style={{ fontSize: 24, width: 60 }}>HP</span>
-							<span style={{ fontSize: 24, width: 60 }}>{player?.stat.hp}</span>
-							<button onClick={() => handleClickUpgradeStat("hp")}>1 P</button>
+							<span style={{ fontSize: 24, width: 60 }}>
+								{player?.stat.hp}
+							</span>
+							<button
+								onClick={() => handleClickUpgradeStat("hp")}
+							>
+								1 P
+							</button>
 						</div>
 					</div>
 					<div className="Upgrade__body_detail_active-class">
@@ -150,7 +175,16 @@ const handleClickBuyCard = async (cardType: string) => {
 						>
 							STAT
 						</span>
-						<img src="WarriorCard.svg" />
+						{player.class === "warrior" ? (
+							<img src="WarriorCard.svg" />
+						) : player.class === "mage" ? (
+							<img src="MageCard.svg" />
+						) : (
+							player.class === "assassin" && (
+								<img src="AssassinCard.svg" />
+							)
+						)}
+
 						<span
 							className="side-text-right"
 							style={{ fontSize: 24 }}
@@ -163,22 +197,36 @@ const handleClickBuyCard = async (cardType: string) => {
 							<span style={{ fontSize: 24, width: 128 }}>
 								Rock
 							</span>
-							<span style={{ fontSize: 24, width: 60 }}>x {deck.rock}</span>
-							<button onClick={() => handleClickBuyCard("rock")}>500 G</button>
+							<span style={{ fontSize: 24, width: 60 }}>
+								x {deck.rock}
+							</span>
+							<button onClick={() => handleClickBuyCard("rock")}>
+								500 G
+							</button>
 						</div>
 						<div className="Upgrade__body_detail_card_paper">
 							<span style={{ fontSize: 24, width: 128 }}>
 								Paper
 							</span>
-							<span style={{ fontSize: 24, width: 60 }}>x {deck.paper}</span>
-							<button onClick={() => handleClickBuyCard("paper")}>500 G</button>
+							<span style={{ fontSize: 24, width: 60 }}>
+								x {deck.paper}
+							</span>
+							<button onClick={() => handleClickBuyCard("paper")}>
+								500 G
+							</button>
 						</div>
 						<div className="Upgrade__body_detail_card_scissors">
 							<span style={{ fontSize: 24, width: 128 }}>
 								Scissors
 							</span>
-							<span style={{ fontSize: 24, width: 60 }}>x {deck.scissors}</span>
-							<button onClick={() => handleClickBuyCard("scissors")}>500 G</button>
+							<span style={{ fontSize: 24, width: 60 }}>
+								x {deck.scissors}
+							</span>
+							<button
+								onClick={() => handleClickBuyCard("scissors")}
+							>
+								500 G
+							</button>
 						</div>
 					</div>
 				</div>

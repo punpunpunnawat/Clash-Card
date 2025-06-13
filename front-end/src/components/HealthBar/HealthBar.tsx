@@ -1,57 +1,41 @@
-interface HealthBarProps {
+import React from "react";
+import "./HealthBar.css";
+
+type HealthBarProps = {
+  level: number;
   currentHP: number;
   maxHP: number;
-}
+  playerClass: "none" | "warrior" | "mage" | "assassin";
+};
 
-const HealthBar: React.FC<HealthBarProps> = ({ currentHP, maxHP }) => {
-  const percentage = (currentHP / maxHP) * 100;
+const HealthBar: React.FC<HealthBarProps> = ({ level, currentHP, maxHP, playerClass }) => {
+  const percent = Math.min(100, Math.floor((currentHP / maxHP) * 100));
+
+  const getHealthColor = (percent: number) => {
+  if (percent > 60) return "#4caf50"; // เขียว
+  if (percent > 30) return "#ff9800"; // ส้ม
+  return "#f44336"; // แดง
+};
+
 
   return (
-    <div
-      style={{
-        width: '200px',
-        height: '100%',
-        border: '1px solid #333',
-        borderRadius: '8px',
-        backgroundColor: '#ddd',
-        overflow: 'hidden',
-        position: 'relative', // ให้ text ซ้อน
-      }}
-      className="HealthBar"
-    >
-      {/* Bar filled */}
-      <div
-        style={{
-          width: `${percentage}%`,
-          height: '100%',
-          backgroundColor:
-            percentage > 50 ? 'green' : percentage > 20 ? 'orange' : 'red',
-          transition: 'width 0.3s ease-in-out',
-        }}
-      />
-
-      {/* Overlayed Text */}
-      <div
-        className="HealthBar__text"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 'bold',
-          color: 'white', // จะมองเห็นบน bar
-          textShadow: '0 0 3px black',
-          pointerEvents: 'none', // กันไม่ให้ text ไปบัง event mouse
-        }}
-      >
-        {currentHP}
+    <div className="HealthBar">
+      <div className="HealthBar__info">
+        <span className="HealthBar__Health">
+          Lv. {level} {playerClass}
+        </span>
+        <span className="HealthBar__exp">
+          {currentHP} / {maxHP} HP
+        </span>
+      </div>
+      <div className="HealthBar__bar">
+        <div
+          className="HealthBar__fill"
+          style={{ width: `${percent}%`, backgroundColor: getHealthColor(percent) }}
+        />
       </div>
     </div>
   );
 };
 
-export default HealthBar
+export default HealthBar;

@@ -265,9 +265,9 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 							"hand":          state.PlayerA.Hand,
 							"stat": map[string]interface{}{
 								"atk": state.PlayerA.Stat.ATK,
-								"def": state.PlayerA.Stat.ATK,
-								"spd": state.PlayerA.Stat.ATK,
-								"hp":  state.PlayerA.Stat.ATK,
+								"def": state.PlayerA.Stat.DEF,
+								"spd": state.PlayerA.Stat.SPD,
+								"hp":  state.PlayerA.Stat.HP,
 							},
 							"class":     state.PlayerA.Class,
 							"trueSight": state.PlayerA.TrueSight,
@@ -280,9 +280,9 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 							"handSize":      len(state.PlayerB.Hand),
 							"stat": map[string]interface{}{
 								"atk": state.PlayerB.Stat.ATK,
-								"def": state.PlayerB.Stat.ATK,
-								"spd": state.PlayerB.Stat.ATK,
-								"hp":  state.PlayerB.Stat.ATK,
+								"def": state.PlayerB.Stat.DEF,
+								"spd": state.PlayerB.Stat.SPD,
+								"hp":  state.PlayerB.Stat.HP,
 							},
 							"class":     state.PlayerB.Class,
 							"trueSight": state.PlayerB.TrueSight,
@@ -578,7 +578,7 @@ func pvpRead(c *PVPClient) {
 				respA := map[string]interface{}{
 					"type": "round_result",
 					"player": map[string]interface{}{
-						"hp":            state.PlayerA.Stat.HP,
+						"hp":            state.PlayerA.CurrentHP,
 						"hand":          state.PlayerA.Hand,
 						"cardPlayed":    match.Selected["A"],
 						"damageTaken":   damageToA,
@@ -588,7 +588,7 @@ func pvpRead(c *PVPClient) {
 						"specialEvent":  specialEventA,
 					},
 					"opponent": map[string]interface{}{
-						"hp":            state.PlayerB.Stat.HP,
+						"hp":            state.PlayerB.CurrentHP,
 						"handLength":    len(state.PlayerB.Hand),
 						"cardPlayed":    match.Selected["B"],
 						"damageTaken":   damageToB,
@@ -617,7 +617,7 @@ func pvpRead(c *PVPClient) {
 				respB := map[string]interface{}{
 					"type": "round_result",
 					"player": map[string]interface{}{
-						"hp":            state.PlayerB.Stat.HP,
+						"hp":            state.PlayerB.CurrentHP,
 						"hand":          state.PlayerB.Hand,
 						"cardPlayed":    match.Selected["B"],
 						"damageTaken":   damageToB,
@@ -627,7 +627,7 @@ func pvpRead(c *PVPClient) {
 						"specialEvent":  specialEventB,
 					},
 					"opponent": map[string]interface{}{
-						"hp":            state.PlayerA.Stat.HP,
+						"hp":            state.PlayerA.CurrentHP,
 						"handLength":    len(state.PlayerA.Hand),
 						"cardPlayed":    match.Selected["A"],
 						"damageTaken":   damageToA,
@@ -670,7 +670,7 @@ func pvpRead(c *PVPClient) {
 					default:
 					}
 				}
-
+				logPVPState(c.roomID, state)
 				// ล้างสถานะเลือกไพ่เพื่อรอรอบใหม่
 				pvpManager.lock.Lock()
 				match.Selected = make(map[string]*Card)

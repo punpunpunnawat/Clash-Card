@@ -22,7 +22,7 @@ export type ServerMessage =
 					spd: number;
 					hp: number;
 				};
-				class: string;
+				class: PlayerClass;
 			};
 			opponent: {
 				name: string;
@@ -36,7 +36,7 @@ export type ServerMessage =
 					spd: number;
 					hp: number;
 				};
-				class: string;
+				class: PlayerClass;
 			};
 	  }
 	| {
@@ -101,9 +101,11 @@ export type CardRemaining = {
 	player: CardCount;
 	opponent: CardCount;
 };
+export type PlayerClass = "none" | "warrior" | "mage" | "assassin";
 
 export type PlayerDetail = {
 	stat: UnitStat;
 	name: string;
 	level: number;
+	class: PlayerClass;
 };
