@@ -8,7 +8,7 @@ type UnitStat struct {
 }
 
 type User struct {
-	ID                   int      `json:"id"`
+	ID                   string   `json:"id"`
 	Username             string   `json:"username"`
 	Email                string   `json:"email"`
 	Stat                 UnitStat `json:"stat"`

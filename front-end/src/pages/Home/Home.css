@@ -7,11 +7,11 @@
 
 .Home__body {
     display: flex;
+    padding: 64px;
     flex-direction: column;
     flex: 1;
-    justify-content: center;
+    justify-content: space-evenly;
     align-items: center;
-    gap: 96px;
 }
 
 .Home__body_Logo {

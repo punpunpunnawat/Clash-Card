@@ -34,10 +34,8 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 			fmt.Println("❌ Token extraction failed:", err)
 			return
 		}
-		fmt.Println("✅ Extracted userID:", userID)
 
 		query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, gold, created_at, class, stat_point FROM users WHERE id = ?`
-		fmt.Println("🔎 SQL Query:", query)
 
 		row := db.QueryRow(query, userID)
 

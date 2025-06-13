@@ -18,6 +18,8 @@ func main() {
 	// เพิ่ม middleware CORS
 	r.Use(middlewareCORS)
 	r.HandleFunc("/api/login", loginHandler(db)).Methods("POST", "OPTIONS")
+
+	r.HandleFunc("/api/check-email", checkEmailHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/register", registerHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/user", GetUserHandler(db)).Methods("GET", "OPTIONS")
 	r.HandleFunc("/api/deck", GetUserDeckHandler(db)).Methods("GET", "OPTIONS")

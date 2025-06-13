@@ -2,25 +2,23 @@ import { useNavigate } from "react-router-dom";
 import MenuCard from "../../components/MenuCard/MenuCard";
 import NavBar from "../../components/NavBar";
 import "./Home.css";
-import type { AppDispatch, RootState } from "../../store";
+import type { AppDispatch } from "../../store";
 import { useEffect } from "react";
 import { fetchPlayer } from "../../store/slices/playerSlice";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 const Home = () => {
 	const dispatch: AppDispatch = useDispatch();
 
 	useEffect(() => {
-		dispatch(fetchPlayer());
+		const token = localStorage.getItem("authToken");
+		if (token) {
+			dispatch(fetchPlayer());
+		}
 	}, [dispatch]);
-	const player = useSelector((state: RootState) => state.player);
 
 	const navigate = useNavigate();
 	const handleOnClickCampaign = () => {
-		if (player.class === "none") {
-			navigate("/level");
-		} else {
-			navigate("select-class");
-		}
+		navigate("/level");
 	};
 
 	const handleOnClickPvP = () => {

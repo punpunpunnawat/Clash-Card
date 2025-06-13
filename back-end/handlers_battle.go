@@ -299,11 +299,11 @@ func removeCardFromHand(hand *[]Card, cardID string) bool {
 func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
-			//UserID   int `json:"userId"`
 			BotLevel int `json:"levelId"`
 		}
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
+			fmt.Println("[ERROR] Missing Authorization header")
 			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
 			return
 		}
@@ -311,34 +311,41 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 		var tokenStr string
 		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
 		if tokenStr == "" {
+			fmt.Println("[ERROR] Invalid Authorization header format:", authHeader)
 			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
 			return
 		}
 
 		userID, err := extractUserIDFromToken(tokenStr)
-
 		if err != nil {
+			fmt.Println("[ERROR] Failed to extract user ID from token:", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+		fmt.Println("[INFO] userID from token:", userID)
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || userID == "0" {
-			fmt.Println("T T")
+			fmt.Println("[ERROR] Failed to decode request body or invalid userID, body decode error:", err)
 			http.Error(w, "Invalid or missing userId", http.StatusBadRequest)
 			return
 		}
+		fmt.Println("[INFO] BotLevel requested:", req.BotLevel)
 
 		user, err := getUserByIDFromDB(db, userID)
 		if err != nil {
+			fmt.Println("[ERROR] Failed to get user by ID:", userID, "err:", err)
 			http.Error(w, "User not found", http.StatusNotFound)
 			return
 		}
+		fmt.Println("[INFO] Fetched user:", user.Username)
 
 		deck, err := getDeckByUserIDFromDB(db, userID)
 		if err != nil {
+			fmt.Println("[ERROR] Failed to get deck for user:", userID, "err:", err)
 			http.Error(w, "Deck not found", http.StatusNotFound)
 			return
 		}
+		fmt.Println("[INFO] Deck fetched for user:", userID, "| deck len:", len(deck))
 
 		botDeck := newShuffledDeck()
 		playerHand := drawCards(&deck, 3)

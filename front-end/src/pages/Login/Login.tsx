@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import "./Login.css";
 import NavBar from "../../components/NavBar";
 import { useState } from "react";
+import SelectClass from "../SelectClass";
 
 export default function Login() {
 	const [email, setEmail] = useState("");
@@ -42,10 +43,10 @@ export default function Login() {
 		}
 
 		try {
-			const res = await fetch("http://localhost:8080/api/register", {
+			const res = await fetch("http://localhost:8080/api/check-email", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email, password }),
+				body: JSON.stringify({ email }),
 			});
 
 			if (!res.ok) {
@@ -53,10 +54,9 @@ export default function Login() {
 				alert("Register failed: " + errMsg);
 				return;
 			}
-
 			const data = await res.json();
-			localStorage.setItem("authToken", data.token);
-			navigate("/");
+			console.log(data)
+			if(data) setMode("selectClass")
 		} catch (err) {
 			alert("Network error: " + err);
 		}
@@ -69,8 +69,38 @@ export default function Login() {
 		else handleRegister();
 	};
 
+	const handleSelectClass = async (selectedClass: string) => {
+				if (password !== confirmPassword) {
+			alert("Passwords do not match");
+			return;
+		}
+		console.log(email, password, selectedClass)
+		try {
+			const res = await fetch("http://localhost:8080/api/register", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email, password, class: selectedClass }),
+			});
+
+			if (!res.ok) {
+				const errMsg = await res.text();
+				alert("Register failed: " + errMsg);
+				return;
+			}
+
+			const data = await res.json();
+			console.log(data)
+			localStorage.setItem("authToken", data.token);
+			navigate("/");
+		} catch (err) {
+			alert("Network error: " + err);
+		}
+	}
+
 	if(mode==="selectClass") return (
-		<div></div>
+		<div>
+			<SelectClass onSelectWarrior={() => handleSelectClass("warrior")} onSelectMage={() => handleSelectClass("mage")} onSelectAssassin={() => handleSelectClass("assassin")}/>
+		</div>
 	)
 	return (
 		<div className="Login">

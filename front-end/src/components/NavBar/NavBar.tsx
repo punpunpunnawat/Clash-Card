@@ -12,9 +12,14 @@ type NavBarProps = {
 const NavBar = ({ BackLabel }: NavBarProps) => {
 	const navigate = useNavigate();
 	const dispatch: AppDispatch = useDispatch();
+	
 	useEffect(() => {
+	const token = localStorage.getItem("authToken");
+	if (token) {
 		dispatch(fetchPlayer());
-	}, [dispatch]);
+	}
+}, [dispatch]);
+
 
 	const player = useSelector((state: RootState) => state.player);
 
