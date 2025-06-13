@@ -493,10 +493,14 @@ func pvpRead(c *PVPClient) {
 				specialEventA := "nothing"
 				specialEventB := "nothing"
 
-				evasionA := math.Min(0.1+float64(state.PlayerB.Stat.SPD-state.PlayerA.Stat.SPD)*0.02, 1)
-				evasionB := math.Min(0.1+float64(state.PlayerB.Stat.SPD-state.PlayerA.Stat.SPD)*0.02, 1)
+				evasionA := math.Max(0.15, math.Min(0.1+float64(state.PlayerA.Stat.SPD-state.PlayerB.Stat.SPD)*0.02, 0.75))
+				evasionB := math.Max(0.15, math.Min(0.1+float64(state.PlayerB.Stat.SPD-state.PlayerA.Stat.SPD)*0.02, 0.75))
+
 				attackToAMiss := rand.Float64() < evasionA
 				attackToBMiss := rand.Float64() < evasionB
+
+				fmt.Println("evasion A", evasionA)
+				fmt.Println("evasion B", evasionB)
 
 				// caldamage
 				if winner == "A" {
@@ -578,21 +582,29 @@ func pvpRead(c *PVPClient) {
 				respA := map[string]interface{}{
 					"type": "round_result",
 					"player": map[string]interface{}{
-						"hp":            state.PlayerA.CurrentHP,
-						"hand":          state.PlayerA.Hand,
-						"cardPlayed":    match.Selected["A"],
-						"damageTaken":   damageToA,
-						"isEvade":       attackToAMiss,
+						"hp":         state.PlayerA.CurrentHP,
+						"hand":       state.PlayerA.Hand,
+						"cardPlayed": match.Selected["A"],
+						"doDamage": func() int {
+							if attackToBMiss {
+								return -1
+							}
+							return damageToB
+						}(),
 						"cardRemaining": A_CardRemaining,
 						"trueSight":     state.PlayerA.TrueSight,
 						"specialEvent":  specialEventA,
 					},
 					"opponent": map[string]interface{}{
-						"hp":            state.PlayerB.CurrentHP,
-						"handLength":    len(state.PlayerB.Hand),
-						"cardPlayed":    match.Selected["B"],
-						"damageTaken":   damageToB,
-						"isEvade":       attackToBMiss,
+						"hp":         state.PlayerB.CurrentHP,
+						"handLength": len(state.PlayerB.Hand),
+						"cardPlayed": match.Selected["B"],
+						"doDamage": func() int {
+							if attackToAMiss {
+								return -1
+							}
+							return damageToA
+						}(),
 						"cardRemaining": B_CardRemaining,
 						"trueSight":     state.PlayerB.TrueSight,
 						"specialEvent":  specialEventB,
@@ -617,21 +629,29 @@ func pvpRead(c *PVPClient) {
 				respB := map[string]interface{}{
 					"type": "round_result",
 					"player": map[string]interface{}{
-						"hp":            state.PlayerB.CurrentHP,
-						"hand":          state.PlayerB.Hand,
-						"cardPlayed":    match.Selected["B"],
-						"damageTaken":   damageToB,
-						"isEvade":       attackToBMiss,
+						"hp":         state.PlayerB.CurrentHP,
+						"hand":       state.PlayerB.Hand,
+						"cardPlayed": match.Selected["B"],
+						"doDamage": func() int {
+							if attackToAMiss {
+								return -1
+							}
+							return damageToA
+						}(),
 						"cardRemaining": B_CardRemaining,
 						"trueSight":     state.PlayerB.TrueSight,
 						"specialEvent":  specialEventB,
 					},
 					"opponent": map[string]interface{}{
-						"hp":            state.PlayerA.CurrentHP,
-						"handLength":    len(state.PlayerA.Hand),
-						"cardPlayed":    match.Selected["A"],
-						"damageTaken":   damageToA,
-						"isEvade":       attackToAMiss,
+						"hp":         state.PlayerA.CurrentHP,
+						"handLength": len(state.PlayerA.Hand),
+						"cardPlayed": match.Selected["A"],
+						"doDamage": func() int {
+							if attackToAMiss {
+								return -1
+							}
+							return damageToA
+						}(),
 						"cardRemaining": A_CardRemaining,
 						"trueSight":     state.PlayerA.TrueSight,
 						"specialEvent":  specialEventA,

@@ -32,13 +32,13 @@ const Lobby = () => {
 		name: "player",
 		level: 0,
 		stat: { atk: 0, def: 0, spd: 0, hp: 0 },
-		class: "none"
+		class: "none",
 	});
 	const [opponentDetail, setOpponentDetail] = useState<PlayerDetail>({
 		name: "enemy",
 		level: 0,
 		stat: { atk: 0, def: 0, spd: 0, hp: 0 },
-		class: "none"
+		class: "none",
 	});
 
 	const [winner, setWinner] = useState("");
@@ -163,12 +163,12 @@ const Lobby = () => {
 	};
 
 	const handleClickBackToMenu = () => {
-		navigate("/")
-	}
+		navigate("/");
+	};
 
 	const handleClickPlayAgain = () => {
 		setGameState("WAIT_OPPONENT");
-	}
+	};
 
 	useEffect(() => {
 		console.log(roundResult);
@@ -210,7 +210,10 @@ const Lobby = () => {
 				case "DRAW_CARD":
 					drawPlayerCard(findNewCard(roundResult.player.hand));
 					drawOpponentCard();
-					setCardRemaining({player: roundResult.player.cardRemaining, opponent: roundResult.opponent.cardRemaining});
+					setCardRemaining({
+						player: roundResult.player.cardRemaining,
+						opponent: roundResult.opponent.cardRemaining,
+					});
 					setRoundResult(null);
 
 					setGameState("SELECT_CARD");
@@ -244,7 +247,7 @@ const Lobby = () => {
 						break;
 
 					case "initialData":
-						console.log(msg)
+						console.log(msg);
 						//set hand
 						setPlayerHand(msg.player.hand);
 						setOpponentHandSize(msg.opponent.handSize);
@@ -266,11 +269,10 @@ const Lobby = () => {
 							name: msg.opponent.name,
 							level: msg.opponent.level,
 							stat: msg.opponent.stat,
-							class: msg.opponent.class
+							class: msg.opponent.class,
 						});
 						setCurrentPlayerHP(msg.player.currentHP);
 						setCurrentOpponentHP(msg.opponent.currentHP);
-
 						setGameState("SELECT_CARD");
 						break;
 
@@ -327,26 +329,29 @@ const Lobby = () => {
 	if (gameState === "WIN" || gameState === "LOSE") {
 		return (
 			<div className="PvP-win">
-				<NavBar/>
+				<NavBar />
 				<div className="PvP-win__body">
 					<div className="PvP-win__body_header">
-						<img src="/LogoSmall.svg" width={120} height={24}/>
+						<img src="/LogoSmall.svg" width={120} height={24} />
 						<header>YOU {gameState}</header>
 					</div>
-					
+
 					<div className="PvP-win__body_menu">
 						<h2>What is your next move ?</h2>
 						<div className="PvP-win__body_menu_button">
-							<button onClick={handleClickBackToMenu}>Back to menu</button>
-						<button onClick={handleClickPlayAgain}>Play Agian</button>
+							<button onClick={handleClickBackToMenu}>
+								Back to menu
+							</button>
+							<button onClick={handleClickPlayAgain}>
+								Play Agian
+							</button>
 						</div>
-						
 					</div>
 				</div>
 			</div>
 		);
 	}
-	
+
 	return (
 		<div className="PvP">
 			<div className="PvP__enemy-bar">
@@ -459,7 +464,10 @@ const Lobby = () => {
 								className={
 									winner === "player"
 										? "card card-attack-right"
-										: winner === "enemy"
+										: winner === "opponent" &&
+										  roundResult?.opponent.doDamage === -1
+										? "card card-dodge-left"
+										: winner === "opponent"
 										? "card card-fly-left"
 										: "card"
 								}
@@ -476,8 +484,11 @@ const Lobby = () => {
 							id={selectedOpponentCard.id}
 							isHidden={hideCard}
 							className={
-								winner === "enemy"
+								winner === "opponent"
 									? "card card-attack-left"
+									: winner === "player" &&
+									  roundResult?.player.doDamage === -1
+									? "card card-dodge-right"
 									: winner === "player"
 									? "card card-fly-right"
 									: "card"
@@ -548,9 +559,7 @@ const Lobby = () => {
 				)}
 			</div>
 			<div className="PvP__player-bar">
-				<Pill
-					label={playerDetail.level + " : " + playerDetail.name}
-				/>
+				<Pill label={playerDetail.level + " : " + playerDetail.name} />
 
 				<HealthBar
 					currentHP={currentPlayerHP}

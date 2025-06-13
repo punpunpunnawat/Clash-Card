@@ -47,8 +47,7 @@ export type ServerMessage =
 				hp: number;
 				hand: CardProps[];
 				cardPlayed: CardProps;
-				damageTaken: number;
-				isEvade: boolean;
+				doDamage: number;
 				cardRemaining: CardCount;
 				trueSight: number;
 				skillActivation: number;
@@ -57,8 +56,7 @@ export type ServerMessage =
 				hp: number;
 				handLength: number;
 				cardPlayed: CardProps;
-				damageTaken: number;
-				isEvade: boolean;
+				doDamage: number;
 				cardRemaining: CardCount;
 				trueSight: number;
 				specialEvent: number;
@@ -73,8 +71,7 @@ export type RoundResult = {
 		hp: number;
 		hand: CardProps[];
 		cardPlayed: CardProps;
-		damageTaken: number;
-		isEvade: boolean;
+		doDamage: number;
 		cardRemaining: CardCount;
 		trueSight: number;
 		skillActivation: number;
@@ -83,8 +80,7 @@ export type RoundResult = {
 		hp: number;
 		handLength: number;
 		cardPlayed: CardProps;
-		damageTaken: number;
-		isEvade: boolean;
+		doDamage: number;
 		cardRemaining: CardCount;
 		trueSight: number;
 		specialEvent: number;

@@ -65,3 +65,51 @@
 		transform: translateX(0) scale(1);
 	}
 }
+
+.card-dodge-left {
+	animation: dodgeLeft 0.6s ease-out forwards;
+	z-index: 2;
+}
+
+.card-dodge-right {
+	animation: dodgeRight 0.6s ease-out forwards;
+	z-index: 2;
+}
+
+@keyframes dodgeLeft {
+	0% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
+	30% {
+		transform: translateX(-80px) rotate(-10deg);
+		opacity: 0.7;
+	}
+	60% {
+		transform: translateX(-60px) rotate(-15deg);
+		opacity: 0.5;
+	}
+	100% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
+}
+
+@keyframes dodgeRight {
+	0% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
+	30% {
+		transform: translateX(80px) rotate(10deg);
+		opacity: 0.7;
+	}
+	60% {
+		transform: translateX(60px) rotate(15deg);
+		opacity: 0.5;
+	}
+	100% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
+}
