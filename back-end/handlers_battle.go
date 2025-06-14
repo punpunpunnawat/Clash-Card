@@ -141,14 +141,11 @@ func newShuffledDeck() []Card {
 }
 
 func drawCards(deck *[]Card, n int) []Card {
-	fmt.Println("draw call")
-	fmt.Println("before ", len(*deck))
 	if len(*deck) < n {
 		n = len(*deck)
 	}
 	hand := (*deck)[:n]
 	*deck = (*deck)[n:]
-	fmt.Println("after ", len(*deck))
 	return hand
 }
 
@@ -166,8 +163,7 @@ func generateBotStats(level int) (atk, def, spd, hp int) {
 	return
 }
 
-func countCardRemaining(deck []Card, hand []Card) map[string]int {
-	allCards := append(deck, hand...)
+func countCard(card []Card) map[string]int {
 
 	countByType := map[string]int{
 		"rock":     0,
@@ -175,7 +171,7 @@ func countCardRemaining(deck []Card, hand []Card) map[string]int {
 		"scissors": 0,
 	}
 
-	for _, card := range allCards {
+	for _, card := range card {
 		countByType[card.Type]++
 	}
 
@@ -183,10 +179,6 @@ func countCardRemaining(deck []Card, hand []Card) map[string]int {
 }
 
 func handlePlayerWin(userID string, db *sql.DB, wonLevel int) error {
-	fmt.Println("HandleWin")
-	fmt.Println("Won Level =", wonLevel)
-	fmt.Println("UserID =", userID)
-
 	var currentLevel int
 	err := db.QueryRow(`SELECT current_campaign_level FROM users WHERE id = ?`, userID).Scan(&currentLevel)
 	if err != nil {
@@ -413,8 +405,8 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 				"SPD": gameState.Bot.Stat.SPD,
 			},
 			"cardRemaining": map[string]interface{}{
-				"player": countCardRemaining(gameState.Player.Deck, gameState.Player.Hand),
-				"enemy":  countCardRemaining(gameState.Bot.Deck, gameState.Bot.Hand),
+				"player": countCard(append(gameState.Player.Deck, gameState.Player.Hand...)),
+				"enemy":  countCard(append(gameState.Bot.Deck, gameState.Bot.Hand...)),
 			},
 		}
 
@@ -450,15 +442,12 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		fmt.Println(userID)
-
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			fmt.Println("Failed to read body:", err)
 			http.Error(w, "Failed to read body", http.StatusBadRequest)
 			return
 		}
-		fmt.Println("📥 Raw request body:", string(bodyBytes))
 		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 		var req struct {
@@ -466,11 +455,9 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			fmt.Println("Failed to decode JSON:", err)
 			return
 		}
 
-		fmt.Println("card id = ", req.CardID)
 		gameStatesMutex.Lock()
 		gs, ok := gameStates[matchID]
 		gameStatesMutex.Unlock()
@@ -561,8 +548,8 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		playerOutOfCards := len(gs.Player.Hand) == 0 && len(gs.Player.Deck) == 0
 		botOutOfCards := len(gs.Bot.Hand) == 0 && len(gs.Bot.Deck) == 0
 
-		botTypes := countCardRemaining(gs.Bot.Deck, gs.Bot.Hand)
-		playerTypes := countCardRemaining(gs.Player.Deck, gs.Player.Hand)
+		botTypes := countCard(append(gs.Bot.Deck, gs.Bot.Hand...))
+		playerTypes := countCard(append(gs.Player.Deck, gs.Player.Hand...))
 
 		gameResult := "onGoing"
 
@@ -611,7 +598,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 			},
 		}
 		//logGameState(gs)
-		fmt.Println("Received card play for match:", matchID, "CardID:", req.CardID)
+		//fmt.Println("Received card play for match:", matchID, "CardID:", req.CardID)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(res)

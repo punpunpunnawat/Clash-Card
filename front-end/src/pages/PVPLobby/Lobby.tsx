@@ -14,6 +14,7 @@ import type {
 import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
 import PlayerStatus from "../../components/PlayerStatus";
+
 const Lobby = () => {
 	const { id: roomID } = useParams();
 	const navigate = useNavigate();
@@ -34,12 +35,14 @@ const Lobby = () => {
 		level: 0,
 		stat: { atk: 0, def: 0, spd: 0, hp: 0 },
 		class: "none",
+		trueSight: 0,
 	});
 	const [opponentDetail, setOpponentDetail] = useState<PlayerDetail>({
 		name: "enemy",
 		level: 0,
 		stat: { atk: 0, def: 0, spd: 0, hp: 0 },
 		class: "none",
+		trueSight: 0,
 	});
 
 	const [winner, setWinner] = useState("");
@@ -64,7 +67,13 @@ const Lobby = () => {
 		player: { rock: 0, paper: 0, scissors: 0 },
 		opponent: { rock: 0, paper: 0, scissors: 0 },
 	});
-	const [postGameDetail, setPostGameDetail] = useState<PostGameDetail|null>(null);
+	const [postGameDetail, setPostGameDetail] = useState<PostGameDetail | null>(
+		null
+	);
+
+	//overlay
+	const [toggleOverlay, setToggleOverlay] = useState(false);
+	const [eventMessage, setEventMessage] = useState("");
 
 	const playerDeckRef = useRef<HTMLDivElement>(null);
 	const playerHandRef = useRef<HTMLDivElement>(null);
@@ -80,7 +89,7 @@ const Lobby = () => {
 		| "SHOW_RESULT"
 		| "DO_DAMAGE"
 		| "DRAW_CARD"
-		| "END"
+		| "END";
 	const [gameState, setGameState] = useState<GameState>("WAIT_OPPONENT");
 
 	//CARD FUNC
@@ -173,7 +182,7 @@ const Lobby = () => {
 
 	useEffect(() => {
 		console.log(roundResult);
-		console.log(gameState)
+		console.log(gameState);
 		if (roundResult) {
 			switch (gameState) {
 				case "BOTH_SELECTED":
@@ -200,11 +209,21 @@ const Lobby = () => {
 					if (roundResult) {
 						setCurrentPlayerHP(Number(roundResult.player.hp));
 						setCurrentOpponentHP(Number(roundResult.opponent.hp));
-						if (roundResult.gameStatus === "playerWin" || roundResult.gameStatus === "opponentWin") {
+						setPlayerDetail((prev) => ({
+							...prev,
+							trueSight: roundResult.player.trueSight,
+						}));
+						setOpponentDetail((prev) => ({
+							...prev,
+							trueSight: roundResult.opponent.trueSight,
+						}));
+						if (
+							roundResult.gameStatus === "playerWin" ||
+							roundResult.gameStatus === "opponentWin"
+						) {
 							setGameState("END");
-							setPostGameDetail(roundResult.postGameDetail)
-						}
-						 else setGameState("DRAW_CARD");
+							setPostGameDetail(roundResult.postGameDetail);
+						} else setGameState("DRAW_CARD");
 					}
 
 					break;
@@ -242,7 +261,7 @@ const Lobby = () => {
 
 			try {
 				const msg = JSON.parse(e.data) as ServerMessage;
-				console.log(msg)
+				console.log(msg);
 				switch (msg.type) {
 					case "slot_assigned":
 						//setPlayerSlot(msg.slot);
@@ -266,12 +285,14 @@ const Lobby = () => {
 							level: msg.player.level,
 							stat: msg.player.stat,
 							class: msg.player.class,
+							trueSight: 0,
 						});
 						setOpponentDetail({
 							name: msg.opponent.name,
 							level: msg.opponent.level,
 							stat: msg.opponent.stat,
 							class: msg.opponent.class,
+							trueSight: 0,
 						});
 						setCurrentPlayerHP(msg.player.currentHP);
 						setCurrentOpponentHP(msg.opponent.currentHP);
@@ -297,12 +318,46 @@ const Lobby = () => {
 						setGameState("END");
 						setPostGameDetail({
 							result: "Win",
-								detail: "Opponent leave",
-								exp: 0,
-								gold: 0,
-								levelUp: 0,
-								statGain: {atk:0, def:0, spd:0, hp:0},
-						})
+							detail: "Opponent leave",
+							exp: 0,
+							gold: 0,
+							levelUp: 0,
+							statGain: { atk: 0, def: 0, spd: 0, hp: 0 },
+						});
+						break;
+
+					case "true_sight_result":
+						setToggleOverlay(true);
+						setEventMessage(
+							"Rock: " +
+								msg.opponentHand.rock +
+								" Paper: " +
+								msg.opponentHand.paper +
+								" Scissors: " +
+								msg.opponentHand.scissors
+						);
+						setPlayerDetail((prev) => ({
+							...prev,
+							trueSight: msg.trueSightLeft,
+						}));
+						setTimeout(() => {
+							setToggleOverlay(false);
+							setEventMessage("");
+						}, 3000);
+
+						break;
+
+					case "true_sight_alert":
+						setToggleOverlay(true);
+						setEventMessage("Opponent revealed your cards");
+						setOpponentDetail((prev) => ({
+							...prev,
+							trueSight: prev.trueSight - 1,
+						}));
+						setTimeout(() => {
+							setToggleOverlay(false);
+							setEventMessage("");
+						}, 3000);
 						break;
 
 					default:
@@ -339,7 +394,14 @@ const Lobby = () => {
 		// setMessages((m) => [...m, `📤 You selected: ${cardID}`]);
 	};
 
-
+	const handleTrueSightUse = () => {
+		if (ws.current?.readyState !== WebSocket.OPEN) return;
+		ws.current.send(
+			JSON.stringify({
+				type: "use_true_sight",
+			})
+		);
+	};
 	if (gameState === "WAIT_OPPONENT")
 		return (
 			<div className="PvP-Loading">
@@ -387,6 +449,13 @@ const Lobby = () => {
 
 	return (
 		<div className="PvP">
+			{/* Event Overlay */}
+			{toggleOverlay && (
+				<div className="Home__overlay">
+					<h2>{eventMessage}</h2>
+				</div>
+			)}
+
 			{/* Player */}
 			<div className="PvP__player_status">
 				<PlayerStatus
@@ -395,6 +464,8 @@ const Lobby = () => {
 					currentHP={currentPlayerHP}
 					stat={playerDetail.stat}
 					cardRemaining={cardRemaining.player}
+					trueSight={playerDetail.trueSight}
+					onClickPassive={handleTrueSightUse}
 				/>
 			</div>
 
@@ -446,7 +517,6 @@ const Lobby = () => {
 					/>
 				</div>
 			)}
-
 
 			{/* Card Placer */}
 			<div className="PvP__board">
@@ -513,6 +583,7 @@ const Lobby = () => {
 					currentHP={currentOpponentHP}
 					stat={opponentDetail.stat}
 					cardRemaining={cardRemaining.opponent}
+					trueSight={opponentDetail.trueSight}
 				/>
 			</div>
 

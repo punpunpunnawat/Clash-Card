@@ -40,6 +40,14 @@ export type ServerMessage =
 			};
 	  }
 	| {
+			type: "true_sight_alert";		
+	  }
+	| {
+			type: "true_sight_result";
+			opponentHand:  CardCount,
+			trueSightLeft: number,
+	  }
+	| {
 			type: "opponent_left";
 	  }
 	| RoundResult;
@@ -85,13 +93,21 @@ export type PlayerDetail = {
 	name: string;
 	level: number;
 	class: PlayerClass;
+	trueSight: number;
 };
 
 export type PostGameDetail = {
 	result: "Win" | "Lose" | "Draw";
-	detail: "You out of HP" | "You out of Card" | "Opponent out of HP" | "Opponent out of Card" | "Opponent leave" | "Both out of HP" | "Both out of Card";
+	detail:
+		| "You out of HP"
+		| "You out of Card"
+		| "Opponent out of HP"
+		| "Opponent out of Card"
+		| "Opponent leave"
+		| "Both out of HP"
+		| "Both out of Card";
 	exp: number;
 	gold: number;
 	levelUp: number;
 	statGain: UnitStat;
-}
+};

@@ -252,8 +252,8 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 				state.PlayerA.Hand = drawCards(&state.PlayerA.Deck, 3)
 				state.PlayerB.Hand = drawCards(&state.PlayerB.Deck, 3)
 
-				A_CardRemaining := countCardRemaining(state.PlayerA.Deck, state.PlayerA.Hand)
-				B_CardRemaining := countCardRemaining(state.PlayerB.Deck, state.PlayerB.Hand)
+				A_CardRemaining := countCard(append(state.PlayerA.Deck, state.PlayerA.Hand...))
+				B_CardRemaining := countCard(append(state.PlayerB.Deck, state.PlayerB.Hand...))
 
 				if okA {
 					response := map[string]interface{}{
@@ -334,7 +334,7 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 						clientB.send <- respJSON
 					}
 				}
-				logPVPState(roomID, state)
+				//logPVPState(roomID, state)
 				pvpStatesMu.Lock()
 				pvpStates[roomID] = state
 				pvpStatesMu.Unlock()
@@ -427,6 +427,7 @@ func pvpRead(c *PVPClient) {
 			// อัปเดต selected card ของฝั่งนั้น
 			fmt.Println("CT " + CardType(playerCard.Type))
 			match.Selected[c.slot] = playerCard
+			fmt.Println("Player ", c.slot, " Selected Card")
 
 			state.Unlock()
 
@@ -438,7 +439,6 @@ func pvpRead(c *PVPClient) {
 					"opponentSelected": match.Selected["A"] != nil,
 				}
 
-				fmt.Println("sent to B")
 				respBJSON, _ := json.Marshal(responseForB)
 				// A เป็นคนเลือก → ส่งให้ B
 				if clientB, ok := match.Clients["B"]; ok {
@@ -454,7 +454,6 @@ func pvpRead(c *PVPClient) {
 					"playerSelected":   match.Selected["A"] != nil,
 					"opponentSelected": match.Selected["B"] != nil,
 				}
-				fmt.Println("sent to A")
 				respAJSON, _ := json.Marshal(responseForA)
 
 				// B เป็นคนเลือก → ส่งให้ A
@@ -472,8 +471,6 @@ func pvpRead(c *PVPClient) {
 				// remove card from hand
 				removeCardFromHand(&state.PlayerA.Hand, match.Selected["A"].ID)
 				removeCardFromHand(&state.PlayerB.Hand, match.Selected["B"].ID)
-				fmt.Println(len(state.PlayerA.Hand))
-				fmt.Println(len(state.PlayerB.Hand))
 
 				var winner string
 				if match.Selected["A"].Type == match.Selected["B"].Type {
@@ -499,9 +496,6 @@ func pvpRead(c *PVPClient) {
 
 				attackToAMiss := rand.Float64() < evasionA
 				attackToBMiss := rand.Float64() < evasionB
-
-				fmt.Println("evasion A", evasionA)
-				fmt.Println("evasion B", evasionB)
 
 				// caldamage
 				if winner == "A" {
@@ -597,7 +591,7 @@ func pvpRead(c *PVPClient) {
 						Detail: "You out of HP",
 					}
 				} else {
-					if len(state.PlayerA.Deck)+len(state.PlayerA.Hand) == 0 && len(state.PlayerA.Deck)+len(state.PlayerB.Hand) == 0 {
+					if len(state.PlayerA.Deck)+len(state.PlayerA.Hand) == 0 && len(state.PlayerB.Deck)+len(state.PlayerB.Hand) == 0 {
 						gameStatus = "draw"
 						postGameDetailA = PostGameDetail{
 							Result: "Draw",
@@ -632,8 +626,6 @@ func pvpRead(c *PVPClient) {
 
 				//draw card
 				if gameStatus == "onGoing" {
-					fmt.Println(len(state.PlayerA.Deck) > 0)
-					fmt.Println(len(state.PlayerA.Hand) < 3)
 					if len(state.PlayerA.Deck) > 0 && len(state.PlayerA.Hand) < 3 {
 						state.PlayerA.Hand = append(state.PlayerA.Hand, drawCards(&state.PlayerA.Deck, 1)...)
 					}
@@ -642,8 +634,8 @@ func pvpRead(c *PVPClient) {
 					}
 				}
 
-				A_CardRemaining := countCardRemaining(state.PlayerA.Deck, state.PlayerA.Hand)
-				B_CardRemaining := countCardRemaining(state.PlayerB.Deck, state.PlayerB.Hand)
+				A_CardRemaining := countCard(append(state.PlayerA.Deck, state.PlayerA.Hand...))
+				B_CardRemaining := countCard(append(state.PlayerB.Deck, state.PlayerB.Hand...))
 
 				//ส่งผลลัพธ์แยกกัน
 				respA := map[string]interface{}{
@@ -767,10 +759,103 @@ func pvpRead(c *PVPClient) {
 					}(c.roomID)
 				}
 
-				logPVPState(c.roomID, state)
+				//logPVPState(c.roomID, state)
 				pvpManager.lock.Lock()
 				match.Selected = make(map[string]*Card)
 				pvpManager.lock.Unlock()
+			}
+		case "use_true_sight":
+
+			pvpStatesMu.Lock()
+			state, ok := pvpStates[c.roomID]
+			pvpStatesMu.Unlock()
+			if !ok {
+				fmt.Println("Error PvP State")
+				return
+			}
+
+			state.Lock()
+
+			var player *PlayerData
+			var opponent *PlayerData
+
+			if c.slot == "A" {
+				player = &state.PlayerA
+				opponent = &state.PlayerB
+			} else if c.slot == "B" {
+				player = &state.PlayerB
+				opponent = &state.PlayerA
+			} else {
+				state.Unlock()
+				fmt.Println("Invalid slot:", c.slot)
+				return
+			}
+
+			if player.TrueSight <= 0 {
+				state.Unlock()
+				fmt.Println("No TrueSight left")
+				errorResp := map[string]interface{}{
+					"type":  "error",
+					"error": "No TrueSight left",
+				}
+
+				errorJSON, err := json.Marshal(errorResp)
+				if err == nil {
+					if client, ok := pvpManager.rooms[c.roomID].Clients[c.slot]; ok {
+						select {
+						case client.send <- errorJSON:
+						default:
+						}
+					}
+				}
+				return
+			}
+
+			player.TrueSight--
+			opponentCardCount := countCard(opponent.Hand)
+
+			state.Unlock()
+
+			response := map[string]interface{}{
+				"type":          "true_sight_result",
+				"opponentHand":  opponentCardCount,
+				"trueSightLeft": player.TrueSight,
+			}
+
+			respJSON, err := json.Marshal(response)
+			if err != nil {
+				fmt.Println("JSON marshal error:", err)
+				return
+			}
+
+			if client, ok := pvpManager.rooms[c.roomID].Clients[c.slot]; ok {
+				select {
+				case client.send <- respJSON:
+				default:
+				}
+			}
+
+			fmt.Println("trueeee")
+
+			notify := map[string]interface{}{
+				"type": "true_sight_alert",
+			}
+
+			notifyJSON, err := json.Marshal(notify)
+			if err != nil {
+				fmt.Println("JSON marshal error:", err)
+				return
+			}
+
+			opponentSlot := "A"
+			if c.slot == "A" {
+				opponentSlot = "B"
+			}
+			if client, ok := pvpManager.rooms[c.roomID].Clients[opponentSlot]; ok {
+				select {
+				case client.send <- notifyJSON:
+				default:
+				}
 			}
 
 		}

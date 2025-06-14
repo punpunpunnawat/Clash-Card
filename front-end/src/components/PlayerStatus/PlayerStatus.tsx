@@ -9,6 +9,8 @@ type PlayerStatusProps = {
 	playerClass: PlayerClass;
 	cardRemaining: CardCount;
 	stat: UnitStat;
+	trueSight: number;
+	onClickPassive?: () => void;
 };
 
 const PlayerStatus = ({
@@ -17,7 +19,14 @@ const PlayerStatus = ({
 	playerClass,
 	cardRemaining,
 	stat,
+	trueSight,
+	onClickPassive,
 }: PlayerStatusProps) => {
+
+	const handleClickPassive = () => {
+		onClickPassive?.();
+	};
+
 	return (
 		<div className="player-status">
 			<div className="player-status__hp">
@@ -114,6 +123,12 @@ const PlayerStatus = ({
 					</div>
 				</div>
 			</div>
+			<button
+				className="player-status__passive"
+				onClick={handleClickPassive}
+			>
+				{trueSight}
+			</button>
 		</div>
 	);
 };
