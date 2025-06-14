@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -155,7 +156,7 @@ func logPVPState(roomID string, ps *PVPState) {
 	fmt.Println("ID:", ps.PlayerB.Name, "Level:", ps.PlayerB.Level)
 	fmt.Println("Deck:", len(ps.PlayerB.Deck), "cards left")
 	fmt.Println("Hand:", formatHand(ps.PlayerB.Hand))
-	fmt.Println("ATK:", ps.PlayerB.Stat.ATK, "HP:", ps.PlayerB.CurrentHP, "/", ps.PlayerB.Stat.HP, "DEF:", ps.PlayerA.Stat.DEF, "SPD:", ps.PlayerA.Stat.SPD)
+	fmt.Println("ATK:", ps.PlayerB.Stat.ATK, "HP:", ps.PlayerB.CurrentHP, "/", ps.PlayerB.Stat.HP, "DEF:", ps.PlayerB.Stat.DEF, "SPD:", ps.PlayerB.Stat.SPD)
 
 	fmt.Println("========================")
 }
@@ -493,8 +494,8 @@ func pvpRead(c *PVPClient) {
 				specialEventA := "nothing"
 				specialEventB := "nothing"
 
-				evasionA := math.Max(0.15, math.Min(0.1+float64(state.PlayerA.Stat.SPD-state.PlayerB.Stat.SPD)*0.02, 0.75))
-				evasionB := math.Max(0.15, math.Min(0.1+float64(state.PlayerB.Stat.SPD-state.PlayerA.Stat.SPD)*0.02, 0.75))
+				evasionA := math.Max(0.15, math.Min(0.1+float64(state.PlayerA.Stat.SPD-state.PlayerB.Stat.SPD)*0.01, 0.75))
+				evasionB := math.Max(0.15, math.Min(0.1+float64(state.PlayerB.Stat.SPD-state.PlayerA.Stat.SPD)*0.01, 0.75))
 
 				attackToAMiss := rand.Float64() < evasionA
 				attackToBMiss := rand.Float64() < evasionB
@@ -546,20 +547,86 @@ func pvpRead(c *PVPClient) {
 					state.PlayerB.CurrentHP = int(math.Max(float64(state.PlayerB.CurrentHP-damageToB), 0))
 				}
 
+				postGameDetailA := PostGameDetail{
+					Result:   "",
+					Detail:   "",
+					Exp:      0,
+					Gold:     0,
+					LvlUp:    0,
+					StatGain: UnitStat{Atk: 0, Def: 0, Spd: 0, HP: 0},
+				}
+
+				postGameDetailB := PostGameDetail{
+					Result:   "",
+					Detail:   "",
+					Exp:      0,
+					Gold:     0,
+					LvlUp:    0,
+					StatGain: UnitStat{Atk: 0, Def: 0, Spd: 0, HP: 0},
+				}
+
 				//check winner if hp = 0
 				if state.PlayerA.CurrentHP == 0 && state.PlayerB.CurrentHP == 0 {
 					gameStatus = "draw"
+					postGameDetailA = PostGameDetail{
+						Result: "Draw",
+						Detail: "Both out of HP",
+					}
+					postGameDetailB = PostGameDetail{
+						Result: "Draw",
+						Detail: "Both out of HP",
+					}
 				} else if state.PlayerA.CurrentHP == 0 {
 					gameStatus = "Bwin"
+					postGameDetailA = PostGameDetail{
+						Result: "Lose",
+						Detail: "You out of HP",
+					}
+					postGameDetailB = PostGameDetail{
+						Result: "Win",
+						Detail: "Opponent out of HP",
+					}
 				} else if state.PlayerB.CurrentHP == 0 {
 					gameStatus = "Awin"
+					postGameDetailA = PostGameDetail{
+						Result: "Win",
+						Detail: "Opponent out of HP",
+					}
+					postGameDetailB = PostGameDetail{
+						Result: "Lose",
+						Detail: "You out of HP",
+					}
 				} else {
 					if len(state.PlayerA.Deck)+len(state.PlayerA.Hand) == 0 && len(state.PlayerA.Deck)+len(state.PlayerB.Hand) == 0 {
 						gameStatus = "draw"
+						postGameDetailA = PostGameDetail{
+							Result: "Draw",
+							Detail: "Both out of Card",
+						}
+						postGameDetailB = PostGameDetail{
+							Result: "Draw",
+							Detail: "Both out of HP",
+						}
 					} else if len(state.PlayerA.Deck)+len(state.PlayerA.Hand) == 0 {
 						gameStatus = "Bwin"
+						postGameDetailA = PostGameDetail{
+							Result: "Lose",
+							Detail: "You out of Card",
+						}
+						postGameDetailB = PostGameDetail{
+							Result: "Win",
+							Detail: "Opponent out of Card",
+						}
 					} else if len(state.PlayerB.Deck)+len(state.PlayerB.Hand) == 0 {
 						gameStatus = "Awin"
+						postGameDetailA = PostGameDetail{
+							Result: "Win",
+							Detail: "Opponent out of Card",
+						}
+						postGameDetailB = PostGameDetail{
+							Result: "Lose",
+							Detail: "You out of Card",
+						}
 					}
 				}
 
@@ -623,8 +690,9 @@ func pvpRead(c *PVPClient) {
 						} else if winner == "B" {
 							return "opponent"
 						}
-						return "onGoing"
+						return "draw"
 					}(),
+					"postGameDetail": postGameDetailA,
 				}
 				respB := map[string]interface{}{
 					"type": "round_result",
@@ -647,10 +715,10 @@ func pvpRead(c *PVPClient) {
 						"handLength": len(state.PlayerA.Hand),
 						"cardPlayed": match.Selected["A"],
 						"doDamage": func() int {
-							if attackToAMiss {
+							if attackToBMiss {
 								return -1
 							}
-							return damageToA
+							return damageToB
 						}(),
 						"cardRemaining": A_CardRemaining,
 						"trueSight":     state.PlayerA.TrueSight,
@@ -670,8 +738,9 @@ func pvpRead(c *PVPClient) {
 						} else if winner == "A" {
 							return "opponent"
 						}
-						return "onGoing"
+						return "draw"
 					}(),
+					"postGameDetail": postGameDetailB,
 				}
 
 				respAJSON, _ := json.Marshal(respA)
@@ -690,8 +759,15 @@ func pvpRead(c *PVPClient) {
 					default:
 					}
 				}
+
+				if gameStatus == "Awin" || gameStatus == "Bwin" || gameStatus == "draw" {
+					go func(roomID string) {
+						time.Sleep(100 * time.Millisecond)
+						disconnectAllClients(roomID)
+					}(c.roomID)
+				}
+
 				logPVPState(c.roomID, state)
-				// ล้างสถานะเลือกไพ่เพื่อรอรอบใหม่
 				pvpManager.lock.Lock()
 				match.Selected = make(map[string]*Card)
 				pvpManager.lock.Unlock()
@@ -719,14 +795,54 @@ func pvpRemoveClient(c *PVPClient) {
 		return
 	}
 
+	// แจ้งอีกฝั่งก่อนลบ
+	var opponent *PVPClient
+	if c.slot == "A" {
+		opponent = match.Clients["B"]
+	} else if c.slot == "B" {
+		opponent = match.Clients["A"]
+	}
+
+	if opponent != nil {
+		leaveMsg := map[string]interface{}{
+			"type": "opponent_left",
+		}
+		data, _ := json.Marshal(leaveMsg)
+		select {
+		case opponent.send <- data:
+		default:
+		}
+	}
+
 	delete(match.Clients, c.slot)
 	delete(match.Selected, c.slot)
 
 	if len(match.Clients) == 0 {
 		delete(pvpManager.rooms, c.roomID)
-		// ลบสถานะเกมถ้าไม่มีคนในห้องแล้ว
 		pvpStatesMu.Lock()
 		delete(pvpStates, c.roomID)
 		pvpStatesMu.Unlock()
 	}
+}
+
+func disconnectAllClients(roomID string) {
+	pvpManager.lock.Lock()
+	defer pvpManager.lock.Unlock()
+
+	match, ok := pvpManager.rooms[roomID]
+	if !ok {
+		return
+	}
+
+	for _, client := range match.Clients {
+		if client.conn != nil {
+			client.conn.Close()
+		}
+	}
+
+	delete(pvpManager.rooms, roomID)
+
+	pvpStatesMu.Lock()
+	delete(pvpStates, roomID)
+	pvpStatesMu.Unlock()
 }

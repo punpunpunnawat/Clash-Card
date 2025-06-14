@@ -1,14 +1,15 @@
 import React from "react";
 import "./HealthBar.css";
+import type { PlayerClass } from "../../types/UnitStat";
 
 type HealthBarProps = {
   level: number;
   currentHP: number;
   maxHP: number;
-  playerClass: "none" | "warrior" | "mage" | "assassin";
+  playerClass: PlayerClass;
 };
 
-const HealthBar: React.FC<HealthBarProps> = ({ level, currentHP, maxHP, playerClass }) => {
+const HealthBar = ({ level, currentHP, maxHP, playerClass }: HealthBarProps) => {
   const percent = Math.min(100, Math.floor((currentHP / maxHP) * 100));
 
   const getHealthColor = (percent: number) => {

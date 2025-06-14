@@ -4,3 +4,5 @@ export type UnitStat = {
   hp: number;
   spd: number;
 } 
+
+export type PlayerClass = "none"|"warrior"|"mage"|"assassin";

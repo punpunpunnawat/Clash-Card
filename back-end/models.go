@@ -24,3 +24,12 @@ type DeckCard struct {
 	CardType string `json:"card_type"`
 	Quantity int    `json:"quantity"`
 }
+
+type PostGameDetail struct {
+	Result   string   `json:"result"`
+	Detail   string   `json:"detail"`
+	Exp      int      `json:"exp"`
+	Gold     int      `json:"gold"`
+	LvlUp    int      `json:"lvlUp"`
+	StatGain UnitStat `json:"statGain"`
+}

@@ -1,5 +1,5 @@
 import type { CardProps } from "./Card";
-import type { UnitStat } from "./UnitStat";
+import type { PlayerClass, UnitStat } from "./UnitStat";
 
 export type ServerMessage =
 	| { type: "slot_assigned"; slot: "A" | "B" }
@@ -40,28 +40,9 @@ export type ServerMessage =
 			};
 	  }
 	| {
-			type: "round_result";
-			gameStatus: string;
-			roundWinner: string;
-			player: {
-				hp: number;
-				hand: CardProps[];
-				cardPlayed: CardProps;
-				doDamage: number;
-				cardRemaining: CardCount;
-				trueSight: number;
-				skillActivation: number;
-			};
-			opponent: {
-				hp: number;
-				handLength: number;
-				cardPlayed: CardProps;
-				doDamage: number;
-				cardRemaining: CardCount;
-				trueSight: number;
-				specialEvent: number;
-			};
-	  };
+			type: "opponent_left";
+	  }
+	| RoundResult;
 
 export type RoundResult = {
 	type: "round_result";
@@ -85,6 +66,7 @@ export type RoundResult = {
 		trueSight: number;
 		specialEvent: number;
 	};
+	postGameDetail: PostGameDetail;
 };
 
 export type CardCount = {
@@ -97,7 +79,6 @@ export type CardRemaining = {
 	player: CardCount;
 	opponent: CardCount;
 };
-export type PlayerClass = "none" | "warrior" | "mage" | "assassin";
 
 export type PlayerDetail = {
 	stat: UnitStat;
@@ -105,3 +86,12 @@ export type PlayerDetail = {
 	level: number;
 	class: PlayerClass;
 };
+
+export type PostGameDetail = {
+	result: "Win" | "Lose" | "Draw";
+	detail: "You out of HP" | "You out of Card" | "Opponent out of HP" | "Opponent out of Card" | "Opponent leave" | "Both out of HP" | "Both out of Card";
+	exp: number;
+	gold: number;
+	levelUp: number;
+	statGain: UnitStat;
+}

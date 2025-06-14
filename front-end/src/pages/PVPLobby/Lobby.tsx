@@ -2,17 +2,18 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import type { CardProps } from "../../types/Card";
 import Card from "./../../components/Card/Card";
-import HealthBar from "../../components/HealthBar";
 import "./css/PvP.css";
 import "./css/CardAttack.css";
 import type {
 	CardRemaining,
 	PlayerDetail,
+	PostGameDetail,
 	RoundResult,
 	ServerMessage,
 } from "../../types/Pvp";
-import Pill from "../../components/Pill";
 import NavBar from "../../components/NavBar";
+import LoadingCard from "../../components/LoadingCard";
+import PlayerStatus from "../../components/PlayerStatus";
 const Lobby = () => {
 	const { id: roomID } = useParams();
 	const navigate = useNavigate();
@@ -63,6 +64,7 @@ const Lobby = () => {
 		player: { rock: 0, paper: 0, scissors: 0 },
 		opponent: { rock: 0, paper: 0, scissors: 0 },
 	});
+	const [postGameDetail, setPostGameDetail] = useState<PostGameDetail|null>(null);
 
 	const playerDeckRef = useRef<HTMLDivElement>(null);
 	const playerHandRef = useRef<HTMLDivElement>(null);
@@ -78,8 +80,7 @@ const Lobby = () => {
 		| "SHOW_RESULT"
 		| "DO_DAMAGE"
 		| "DRAW_CARD"
-		| "WIN"
-		| "LOSE";
+		| "END"
 	const [gameState, setGameState] = useState<GameState>("WAIT_OPPONENT");
 
 	//CARD FUNC
@@ -123,7 +124,7 @@ const Lobby = () => {
 
 		// after animation ends
 		setTimeout(() => {
-			setPlayerHand((prev) => [...prev, newCard]); // actual add
+			setPlayerHand(roundResult?.player.hand ?? []);
 			setAnimatingPlayerCard(null); // remove floating card
 		}, 600); // slightly longer than transition
 	};
@@ -157,9 +158,9 @@ const Lobby = () => {
 
 		// after animation ends
 		setTimeout(() => {
-			setOpponentHandSize((prev) => prev + 1); // actual add
-			setAnimatingOpponentCard(null); // remove floating card
-		}, 600); // slightly longer than transition
+			setOpponentHandSize(roundResult?.opponent.handLength ?? 0); // ใช้ 0 ถ้า undefined
+			setAnimatingOpponentCard(null);
+		}, 600);
 	};
 
 	const handleClickBackToMenu = () => {
@@ -167,11 +168,12 @@ const Lobby = () => {
 	};
 
 	const handleClickPlayAgain = () => {
-		setGameState("WAIT_OPPONENT");
+		window.location.reload();
 	};
 
 	useEffect(() => {
 		console.log(roundResult);
+		console.log(gameState)
 		if (roundResult) {
 			switch (gameState) {
 				case "BOTH_SELECTED":
@@ -198,11 +200,11 @@ const Lobby = () => {
 					if (roundResult) {
 						setCurrentPlayerHP(Number(roundResult.player.hp));
 						setCurrentOpponentHP(Number(roundResult.opponent.hp));
-						if (roundResult.gameStatus === "playerWin") {
-							setGameState("WIN");
-						} else if (roundResult.gameStatus === "opponentWin") {
-							setGameState("LOSE");
-						} else setGameState("DRAW_CARD");
+						if (roundResult.gameStatus === "playerWin" || roundResult.gameStatus === "opponentWin") {
+							setGameState("END");
+							setPostGameDetail(roundResult.postGameDetail)
+						}
+						 else setGameState("DRAW_CARD");
 					}
 
 					break;
@@ -240,7 +242,7 @@ const Lobby = () => {
 
 			try {
 				const msg = JSON.parse(e.data) as ServerMessage;
-
+				console.log(msg)
 				switch (msg.type) {
 					case "slot_assigned":
 						//setPlayerSlot(msg.slot);
@@ -291,6 +293,18 @@ const Lobby = () => {
 						setGameState("BOTH_SELECTED");
 						break;
 
+					case "opponent_left":
+						setGameState("END");
+						setPostGameDetail({
+							result: "Win",
+								detail: "Opponent leave",
+								exp: 0,
+								gold: 0,
+								levelUp: 0,
+								statGain: {atk:0, def:0, spd:0, hp:0},
+						})
+						break;
+
 					default:
 						console.warn("⚠️ Unknown message type:", msg);
 						break;
@@ -325,15 +339,34 @@ const Lobby = () => {
 		// setMessages((m) => [...m, `📤 You selected: ${cardID}`]);
 	};
 
-	if (gameState === "WAIT_OPPONENT") return <div>waiting</div>;
-	if (gameState === "WIN" || gameState === "LOSE") {
+
+	if (gameState === "WAIT_OPPONENT")
+		return (
+			<div className="PvP-Loading">
+				<NavBar BackLabel="Back" />
+				<div className="PvP-Loading__body">
+					<div className="PvP-Loading__body_text">
+						<div className="PvP-Loading__body_text_header">
+							<h2>Lobby ID</h2>
+							<div className="PvP-Loading__body_text_header_lobby-ID">
+								{roomID}
+							</div>
+						</div>
+						<span>waiting for your opponent</span>
+					</div>
+					<LoadingCard />
+				</div>
+			</div>
+		);
+	if (gameState === "END") {
 		return (
 			<div className="PvP-win">
 				<NavBar />
 				<div className="PvP-win__body">
 					<div className="PvP-win__body_header">
 						<img src="/LogoSmall.svg" width={120} height={24} />
-						<header>YOU {gameState}</header>
+						<header>{postGameDetail?.result}</header>
+						<span>{postGameDetail?.detail}</span>
 					</div>
 
 					<div className="PvP-win__body_menu">
@@ -354,94 +387,68 @@ const Lobby = () => {
 
 	return (
 		<div className="PvP">
-			<div className="PvP__enemy-bar">
-				<Pill
-					label={opponentDetail.level + " : " + opponentDetail.name}
-				/>
-
-				<HealthBar
-					currentHP={currentOpponentHP}
-					maxHP={opponentDetail.stat.hp}
-					level={opponentDetail.level}
-					playerClass={opponentDetail.class}
-				/>
-				<Pill
-					label={`Rock ${
-						cardRemaining.opponent.rock
-							? cardRemaining.opponent.rock
-							: 0
-					}`}
-					type="Rock"
-				/>
-				<Pill
-					label={`Paper ${
-						cardRemaining.opponent.paper
-							? cardRemaining.opponent.paper
-							: 0
-					}`}
-					type="Paper"
-				/>
-				<Pill
-					label={`Scissors ${
-						cardRemaining.opponent.scissors
-							? cardRemaining.opponent.scissors
-							: 0
-					}`}
-					type="Scissors"
+			{/* Player */}
+			<div className="PvP__player_status">
+				<PlayerStatus
+					level={playerDetail.level}
+					playerClass={playerDetail.class}
+					currentHP={currentPlayerHP}
+					stat={playerDetail.stat}
+					cardRemaining={cardRemaining.player}
 				/>
 			</div>
-			<div className="PvP__board-player">
-				<div
-					style={{
-						width: 150,
-						height: 250,
-						visibility: "hidden",
-					}}
-				/>
-				<div className="hand" ref={playerHandRef}>
-					{playerHand?.map((card, index) => {
-						const total = playerHand.length;
-						const angleStep = 10; // ค่าที่ควบคุมความเอียง
-						const mid = (total - 1) / 2;
-						const angle = (index - mid) * angleStep;
-						const xOffset = (index - mid) * -30; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
-						const yOffset = Math.abs(index - mid) * 20; // ยิ่งห่างจากตรงกลาง ยิ่งต่ำลง
-						const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
-						return (
-							<div
-								key={card.id}
-								style={{
-									transform,
-									transition: "transform 0.5s ease", // 👈 ใส่ transition ตรงนี้
-								}}
-							>
-								<div className="card-wrapper">
-									<Card
-										id={card.id}
-										type={card.type}
-										onClick={handleCardSelect}
-									/>
-								</div>
+
+			<div className="PvP__player_hand" ref={playerHandRef}>
+				{playerHand?.map((card, index) => {
+					const total = playerHand.length;
+					const angleStep = 10; // ค่าที่ควบคุมความเอียง
+					const mid = (total - 1) / 2;
+					const angle = (index - mid) * angleStep;
+					const xOffset = (index - mid) * -30; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
+					const yOffset = Math.abs(index - mid) * 20; // ยิ่งห่างจากตรงกลาง ยิ่งต่ำลง
+					const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
+					return (
+						<div
+							key={card.id}
+							style={{
+								transform,
+								transition: "transform 0.5s ease", // 👈 ใส่ transition ตรงนี้
+							}}
+						>
+							<div className="card-wrapper">
+								<Card
+									id={card.id}
+									type={card.type}
+									onClick={handleCardSelect}
+								/>
 							</div>
-						);
-					})}
-				</div>
-				<div
-					className="PvP__card-layer_board-enemy_deck"
-					ref={playerDeckRef}
-				>
+						</div>
+					);
+				})}
+			</div>
+
+			<div className="PvP__player_deck" ref={playerDeckRef}>
+				{cardRemaining.player.rock +
+					cardRemaining.player.paper +
+					cardRemaining.player.scissors >
+				3 ? (
 					<img src="/BackOfCard.svg" width={150} height={250} />
-				</div>
-				{animatingPlayerCard && (
-					<div style={playerDrawStyle}>
-						<Card
-							id={animatingPlayerCard.id}
-							type={animatingPlayerCard.type}
-						/>
-					</div>
+				) : (
+					<div style={{ width: 150, height: 250 }} />
 				)}
 			</div>
 
+			{animatingPlayerCard && (
+				<div style={playerDrawStyle}>
+					<Card
+						id={animatingPlayerCard.id}
+						type={animatingPlayerCard.type}
+					/>
+				</div>
+			)}
+
+
+			{/* Card Placer */}
 			<div className="PvP__board">
 				<div className="PvP__board_card-placer">
 					<img
@@ -498,100 +505,73 @@ const Lobby = () => {
 				</div>
 			</div>
 
-			<div className="PvP__board-enemy">
-				<div
-					className="PvP__board-enemy_deck"
-					ref={enemyDeckRef}
-					style={{ transform: "scaleY(-1)" }}
-				>
-					<img src="/BackOfCard.svg" width={150} height={250} />
-				</div>
-
-				<div className="hand" ref={enemyHandRef}>
-					{Array.from({ length: opponentHandSize }).map(
-						(_, index) => {
-							const total = opponentHandSize;
-							const angleStep = 10; // ค่าที่ควบคุมความเอียง
-							const mid = (total - 1) / 2;
-							const angle = -(index - mid) * angleStep;
-							const xOffset = (index - mid) * -30;
-							const yOffset = Math.abs(index - mid) * -20;
-							const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
-
-							return (
-								<div
-									style={{
-										transform,
-										transition: "transform 0.5s ease",
-									}}
-								>
-									<div
-										className="card-wrapper"
-										style={{ transform: "scaleY(-1)" }}
-									>
-										<Card
-											id={"id here"}
-											type="hidden" // เปลี่ยน type ได้ตามที่ต้องการ
-											isHidden
-										/>
-									</div>
-								</div>
-							);
-						}
-					)}
-				</div>
-
-				<div
-					style={{
-						width: 150,
-						height: 250,
-						visibility: "hidden",
-					}}
+			{/* Opponent */}
+			<div className="PvP__opponent_status">
+				<PlayerStatus
+					level={opponentDetail.level}
+					playerClass={opponentDetail.class}
+					currentHP={currentOpponentHP}
+					stat={opponentDetail.stat}
+					cardRemaining={cardRemaining.opponent}
 				/>
-				{animatingOpponentCard && (
-					<div style={enemyDrawStyle}>
-						<Card
-							id={animatingOpponentCard.id}
-							type={animatingOpponentCard.type}
-							isHidden
-						/>
-					</div>
+			</div>
+
+			<div
+				className="PvP__opoonent_deck"
+				ref={enemyDeckRef}
+				style={{ transform: "scaleY(-1)" }}
+			>
+				{cardRemaining.opponent.rock +
+					cardRemaining.opponent.paper +
+					cardRemaining.opponent.scissors >
+				3 ? (
+					<img src="/BackOfCard.svg" width={150} height={250} />
+				) : (
+					<div style={{ width: 150, height: 250 }} />
 				)}
 			</div>
-			<div className="PvP__player-bar">
-				<Pill label={playerDetail.level + " : " + playerDetail.name} />
 
-				<HealthBar
-					currentHP={currentPlayerHP}
-					maxHP={playerDetail.stat.hp}
-					level={playerDetail.level}
-					playerClass={playerDetail.class}
-				/>
-				<Pill
-					label={`Rock ${
-						cardRemaining.player.rock
-							? cardRemaining.player.rock
-							: 0
-					}`}
-					type="Rock"
-				/>
-				<Pill
-					label={`Paper ${
-						cardRemaining.player.paper
-							? cardRemaining.player.paper
-							: 0
-					}`}
-					type="Paper"
-				/>
-				<Pill
-					label={`Scissors ${
-						cardRemaining.player.scissors
-							? cardRemaining.player.scissors
-							: 0
-					}`}
-					type="Scissors"
-				/>
+			<div className="PvP__opoonent_hand" ref={enemyHandRef}>
+				{Array.from({ length: opponentHandSize }).map((_, index) => {
+					const total = opponentHandSize;
+					const angleStep = 10; // ค่าที่ควบคุมความเอียง
+					const mid = (total - 1) / 2;
+					const angle = -(index - mid) * angleStep;
+					const xOffset = (index - mid) * -30;
+					const yOffset = Math.abs(index - mid) * -20;
+					const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
+
+					return (
+						<div
+							style={{
+								transform,
+								transition: "transform 0.5s ease",
+							}}
+						>
+							<div
+								className="card-wrapper"
+								style={{ transform: "scaleY(-1)" }}
+							>
+								<Card
+									id={"id here"}
+									type="hidden" // เปลี่ยน type ได้ตามที่ต้องการ
+									isHidden
+								/>
+							</div>
+						</div>
+					);
+				})}
 			</div>
+
+			{animatingOpponentCard && (
+				<div style={enemyDrawStyle}>
+					<Card
+						id={animatingOpponentCard.id}
+						type={animatingOpponentCard.type}
+						isHidden
+					/>
+				</div>
+			)}
 		</div>
 	);
 };

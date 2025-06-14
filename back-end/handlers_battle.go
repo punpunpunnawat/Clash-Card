@@ -167,12 +167,18 @@ func generateBotStats(level int) (atk, def, spd, hp int) {
 }
 
 func countCardRemaining(deck []Card, hand []Card) map[string]int {
-	allCards := append(deck, hand...) // รวม deck และ hand เข้าด้วยกัน
+	allCards := append(deck, hand...)
 
-	countByType := make(map[string]int)
+	countByType := map[string]int{
+		"rock":     0,
+		"paper":    0,
+		"scissors": 0,
+	}
+
 	for _, card := range allCards {
 		countByType[card.Type]++
 	}
+
 	return countByType
 }
 
