@@ -63,7 +63,7 @@ export type RoundResult = {
 		doDamage: number;
 		cardRemaining: CardCount;
 		trueSight: number;
-		skillActivation: number;
+		specialEvent: "Warrior Blood"|"True Strike"|"True Sight"|"nothing";
 	};
 	opponent: {
 		hp: number;
@@ -72,7 +72,7 @@ export type RoundResult = {
 		doDamage: number;
 		cardRemaining: CardCount;
 		trueSight: number;
-		specialEvent: number;
+		specialEvent: "Warrior Blood"|"True Strike"|"True Sight"|"nothing";
 	};
 	postGameDetail: PostGameDetail;
 };

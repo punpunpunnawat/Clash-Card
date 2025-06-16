@@ -51,7 +51,6 @@ const Lobby = () => {
 	});
 
 	//match data
-	const [winner, setWinner] = useState("");
 	const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
 	const [cardRemaining, setCardRemaining] = useState<CardRemaining>({
 		player: { rock: 0, paper: 0, scissors: 0 },
@@ -82,8 +81,15 @@ const Lobby = () => {
 	const [opponentSelectingCard, setOpponentSelectingCard] = useState(false);
 	const [opponentSelectStyle, setOpponentSelectStyle] =
 		useState<React.CSSProperties>({});
-	const [showPlayerDamage, setShowPlayerDamage] = useState(false);
-	const [showOpponentDamage, setShowOpponentDamage] = useState(false);
+
+	const [playerBattleAnimation, setPlayerBattleAnimation] = useState("");
+	const [opponentBattleAnimation, setOpponentBattleAnimation] = useState("");
+	const [playerTakenDamage, setPlayerTakenDamage] = useState<string | null>(
+		null
+	);
+	const [opponentTakenDamage, setOpponentTakenDamage] = useState<
+		string | null
+	>(null);
 
 	//overlay
 	const [toggleOverlay, setToggleOverlay] = useState(false);
@@ -169,41 +175,110 @@ const Lobby = () => {
 					setTimeout(() => {
 						setHideCard(false);
 						setTimeout(() => {
-							setWinner(roundResult.roundWinner);
-							setTimeout(() => {
-								setHideCard(true);
-								setWinner("");
-								setSelectedPlayerCard(null);
-								setSelectedOpponentCard(null);
-								setGameState("DO_DAMAGE");
-							}, 1000);
+							setGameState("DO_DAMAGE");
 						}, 1000);
-					}, 2000);
+					}, 1000);
 					break;
 
 				case "DO_DAMAGE":
 					if (roundResult) {
-						setShowPlayerDamage(true);
-						setShowOpponentDamage(true);
-						setCurrentPlayerHP(Number(roundResult.player.hp));
-						setCurrentOpponentHP(Number(roundResult.opponent.hp));
-						setPlayerDetail((prev) => ({
-							...prev,
-							trueSight: roundResult.player.trueSight,
-						}));
-						setOpponentDetail((prev) => ({
-							...prev,
-							trueSight: roundResult.opponent.trueSight,
-						}));
-						if (
-							roundResult.gameStatus === "playerWin" ||
-							roundResult.gameStatus === "opponentWin"
-						) {
-							setGameState("END");
-							setPostGameDetail(roundResult.postGameDetail);
-						} else setGameState("DRAW_CARD");
-					}
+						// ทำ animation โจมตีก่อน
+						// Player
+						if (roundResult.player.specialEvent !== "nothing") {
+							const event =
+								roundResult.player.specialEvent
+									.toLowerCase()
+									.replace(" ", "-") + "-left";
+							setPlayerBattleAnimation(event);
+						} else {
+							switch (true) {
+								case roundResult.roundWinner === "player":
+									setPlayerBattleAnimation("attack-left");
+									break;
+								case roundResult.roundWinner === "opponent" &&
+									roundResult.opponent.doDamage === -1:
+									setPlayerBattleAnimation("dodge-left");
+									break;
+								case roundResult.roundWinner === "opponent":
+									setPlayerBattleAnimation("fly-left");
+									break;
+							}
+						}
 
+						// Opponent
+						if (roundResult.opponent.specialEvent !== "nothing") {
+							const event =
+								roundResult.opponent.specialEvent
+									.toLowerCase()
+									.replace(" ", "-") + "-right";
+							setOpponentBattleAnimation(event);
+						} else {
+							switch (true) {
+								case roundResult.roundWinner === "opponent":
+									setOpponentBattleAnimation("attack-right");
+									break;
+								case roundResult.roundWinner === "player" &&
+									roundResult.player.doDamage === -1:
+									setOpponentBattleAnimation("dodge-right");
+									break;
+								case roundResult.roundWinner === "player":
+									setOpponentBattleAnimation("fly-right");
+									break;
+							}
+						}
+
+						setTimeout(() => {
+							// หลัง 0.6s ค่อยโชว์ดาเมจ
+
+							// Damage Texts
+							setOpponentTakenDamage(
+								roundResult.player.doDamage === -1
+									? "Miss"
+									: roundResult.player.doDamage !== 0
+									? "- " + roundResult.player.doDamage.toString()
+									: ""
+							);
+
+							setPlayerTakenDamage(
+								roundResult.opponent.doDamage === -1
+									? "Miss"
+									: roundResult.opponent.doDamage !== 0
+									? "- " + roundResult.opponent.doDamage.toString()
+									: ""
+							);
+
+							// update HP
+							setCurrentPlayerHP(Number(roundResult.player.hp));
+							setCurrentOpponentHP(
+								Number(roundResult.opponent.hp)
+							);
+
+							// trueSight
+							setPlayerDetail((prev) => ({
+								...prev,
+								trueSight: roundResult.player.trueSight,
+							}));
+							setOpponentDetail((prev) => ({
+								...prev,
+								trueSight: roundResult.opponent.trueSight,
+							}));
+
+							setTimeout(() => {
+								if (
+									roundResult.gameStatus === "playerWin" ||
+									roundResult.gameStatus === "opponentWin"
+								) {
+									setGameState("END");
+									setPostGameDetail(
+										roundResult.postGameDetail
+									);
+								} else {
+									setGameState("DRAW_CARD");
+								}
+							}, 1500);
+							// เกมจบหรือยัง
+						}, 300); // ตรงกับเวลาของ attack animation
+					}
 					break;
 
 				case "DRAW_CARD":
@@ -225,8 +300,15 @@ const Lobby = () => {
 							cardRemaining.opponent.scissors >
 						3
 					)
-						drawOpponentCard();
+					drawOpponentCard();
 
+					setHideCard(true);
+					setPlayerBattleAnimation("")
+					setOpponentBattleAnimation("")
+					setPlayerTakenDamage("")
+					setOpponentTakenDamage("")
+					setSelectedPlayerCard(null);
+					setSelectedOpponentCard(null);
 					setRoundResult(null);
 
 					setGameState("SELECT_CARD");
@@ -321,22 +403,25 @@ const Lobby = () => {
 								}));
 							}, 50);
 
-							
-
 							// after animation ends
 							setTimeout(() => {
 								setSelectedOpponentCard({
-								id: "temp",
-								type: "hidden",
-							});
+									id: "temp",
+									type: "hidden",
+								});
 								setOpponentSelectingCard(false);
 							}, 500);
 						}
 						break;
 
 					case "round_result":
-						setRoundResult(msg);
-						setGameState("BOTH_SELECTED");
+						setTimeout(() => {
+							setRoundResult(msg);
+
+							//trigger show result event
+							setGameState("BOTH_SELECTED");
+						}, 600);
+
 						break;
 
 					case "opponent_left":
@@ -504,8 +589,11 @@ const Lobby = () => {
 	};
 
 	useEffect(() => {
-		console.log(playerSelectingCard);
-	}, [playerSelectingCard]);
+		console.log("player = " + playerBattleAnimation);
+		console.log("opponenet = " + opponentBattleAnimation);
+		console.log("player ta = " + playerTakenDamage);
+		console.log("opponenet ta = " + opponentTakenDamage);
+	}, [playerBattleAnimation, opponentBattleAnimation, playerTakenDamage, opponentTakenDamage]);
 
 	//waiting page
 	if (gameState === "WAIT_OPPONENT")
@@ -638,9 +726,9 @@ const Lobby = () => {
 						width={170}
 						height={270}
 					/>
-					{showPlayerDamage && (
+					{playerTakenDamage && (
 						<div className="floating-damage">
-							-{roundResult?.opponent.doDamage}
+							{playerTakenDamage}
 						</div>
 					)}
 					{selectedPlayerCard && (
@@ -655,16 +743,7 @@ const Lobby = () => {
 								type={selectedPlayerCard.type}
 								id={selectedPlayerCard.id}
 								isHidden={hideCard && hidePlayerCard}
-								className={
-									winner === "player"
-										? "card card-attack-right"
-										: winner === "opponent" &&
-										  roundResult?.opponent.doDamage === -1
-										? "card card-dodge-left"
-										: winner === "opponent"
-										? "card card-fly-left"
-										: "card"
-								}
+								className={`card ${playerBattleAnimation}`}
 							/>
 						</div>
 					)}
@@ -679,21 +758,17 @@ const Lobby = () => {
 						width={170}
 						height={270}
 					/>
+					{opponentTakenDamage && (
+						<div className="floating-damage">
+							{opponentTakenDamage}
+						</div>
+					)}
 					{selectedOpponentCard && (
 						<Card
 							type={selectedOpponentCard.type}
 							id={selectedOpponentCard.id}
 							isHidden={hideCard}
-							className={
-								winner === "opponent"
-									? "card card-attack-left"
-									: winner === "player" &&
-									  roundResult?.player.doDamage === -1
-									? "card card-dodge-right"
-									: winner === "player"
-									? "card card-fly-right"
-									: "card"
-							}
+							className={`card ${opponentBattleAnimation}`}
 						/>
 					)}
 				</div>

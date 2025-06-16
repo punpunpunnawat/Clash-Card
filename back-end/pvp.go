@@ -505,10 +505,10 @@ func pvpRead(c *PVPClient) {
 					if state.PlayerA.Class == "assassin" && match.Selected["A"].Type == "scissors" {
 						damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK), 1))
 						attackToBMiss = false
-						specialEventA = "True strike"
+						specialEventA = "True Strike"
 					} else if state.PlayerA.Class == "mage" && match.Selected["A"].Type == "paper" {
 						state.PlayerA.TrueSight += 1
-						specialEventA = "Gain Truesight"
+						specialEventA = "True Sight"
 					}
 				} else if winner == "B" {
 					damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF), 1))
@@ -517,10 +517,10 @@ func pvpRead(c *PVPClient) {
 					if state.PlayerB.Class == "assassin" && match.Selected["B"].Type == "scissors" {
 						damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK), 1))
 						attackToAMiss = false
-						specialEventB = "True strike"
+						specialEventB = "True Strike"
 					} else if state.PlayerB.Class == "mage" && match.Selected["B"].Type == "paper" {
 						state.PlayerB.TrueSight += 1
-						specialEventB = "Gain Truesight"
+						specialEventB = "True Sight"
 					}
 				} else if winner == "draw" {
 					if state.PlayerA.Class == "warrior" && match.Selected["A"].Type == "rock" {

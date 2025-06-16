@@ -3,6 +3,10 @@
 		transform: translateX(0) rotate(0);
 		opacity: 1;
 	}
+	50% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
 	100% {
 		transform: translateX(400px) rotate(720deg);
 		opacity: 0;
@@ -14,26 +18,30 @@
 		transform: translateX(0) rotate(0);
 		opacity: 1;
 	}
+	50% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
 	100% {
 		transform: translateX(-400px) rotate(-720deg);
 		opacity: 0;
 	}
 }
 
-.card-fly-right {
+.fly-right {
 	animation: flyRight 1s ease forwards;
 }
 
-.card-fly-left {
+.fly-left {
 	animation: flyLeft 1s ease forwards;
 }
 
-.card-attack-right {
-	animation: attackBounceRight 0.6s ease forwards;
+.attack-right {
+	animation: attackBounceRight 1s ease forwards;
 }
 
-.card-attack-left {
-	animation: attackBounceLeft 0.6s ease forwards;
+.attack-left {
+	animation: attackBounceLeft 1s ease forwards;
 }
 
 @keyframes attackBounceRight {
@@ -66,13 +74,13 @@
 	}
 }
 
-.card-dodge-left {
-	animation: dodgeLeft 0.6s ease-out forwards;
+.dodge-left {
+	animation: dodgeLeft 1s ease-out forwards;
 	z-index: 2;
 }
 
-.card-dodge-right {
-	animation: dodgeRight 0.6s ease-out forwards;
+.dodge-right {
+	animation: dodgeRight 1s ease-out forwards;
 	z-index: 2;
 }
 
@@ -115,23 +123,119 @@
 }
 
 .floating-damage {
-  position: absolute;
-  color: red;
-  font-weight: bold;
-  font-size: 64px;
-  animation: floatUp 1s ease-out forwards;
-  pointer-events: none;
-  left: 50%; /* center */
-  transform: translateX(-50%);
+	position: absolute;
+	color: white;
+	font-weight: bold;
+	font-size: 64px;
+	animation: floatUp 2s ease-out forwards;
+	pointer-events: none;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
 }
 
+
+
 @keyframes floatUp {
+	0% {
+		opacity: 1;
+		transform: translate(-50%, -50%);
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-50%, -100px);
+	}
+}
+
+@keyframes warriorBloodShake {
+	0% {
+		transform: translate(0, 0);
+	}
+	20% {
+		transform: translate(-5px, 0);
+	}
+	40% {
+		transform: translate(5px, 0);
+	}
+	60% {
+		transform: translate(-5px, 0);
+	}
+	80% {
+		transform: translate(5px, 0);
+	}
+	100% {
+		transform: translate(0, 0);
+	}
+}
+
+.warrior-blood-left {
+	animation: warriorBloodShake 1s ease-in-out 3;
+}
+
+.warrior-blood-right {
+	animation: warriorBloodShake 1s ease-in-out 3;
+}
+@keyframes simpleRotate {
   0% {
-    opacity: 1;
-    transform: translate(-50%, 0);
+    transform: rotate(0deg);
   }
   100% {
-    opacity: 0;
-    transform: translate(-50%, -50px);
+    transform: rotate(360deg);
   }
+}
+
+.true-sight-left {
+	animation: simpleRotate 1s ease-in-out forwards;
+	transform-origin: center center;
+}
+
+.true-sight-right {
+	animation: simpleRotate 1s ease-in-out forwards;
+	transform-origin: center center;
+}
+@keyframes trueStrikeLeft {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  30% {
+    transform: translateX(-80px);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(400px);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes trueStrikeRight {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  30% {
+    transform: translateX(80px);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(-400px);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.true-strike-left {
+  animation: trueStrikeLeft 1s ease-out forwards;
+}
+
+.true-strike-right {
+  animation: trueStrikeRight 1s ease-out forwards;
 }
