@@ -14,6 +14,7 @@ function App() {
   const userId = useSelector((state: RootState) => state.player?.id);
   console.log(userId);
   return (
+    <>
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
@@ -27,6 +28,8 @@ function App() {
         {/* <Route path="/bot-battle" element={userId ? <BotBattle userId={userId} /> : <div>กรุณาเข้าสู่ระบบก่อน</div>} /> */}
       </Routes>
     </Router>
+    </>
+    
   );
 }
 export default App;

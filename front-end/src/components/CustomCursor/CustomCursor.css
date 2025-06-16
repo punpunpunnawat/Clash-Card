@@ -1,0 +1,102 @@
+body {
+    cursor: none;
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #1a202c; /* สีพื้นหลัง: gray-900 */
+    color: #f7fafc; /* สีข้อความ: gray-100 */
+    padding: 2rem;
+  }
+
+  /* ตรวจสอบให้แน่ใจว่าองค์ประกอบที่ควรทริกเกอร์เอฟเฟกต์โฮเวอร์ก็ซ่อนเคอร์เซอร์เริ่มต้นด้วย */
+  .hover-target {
+    cursor: none !important;
+  }
+
+  /* สไตล์สำหรับคอนเทนเนอร์ของจุดเคอร์เซอร์แบบกำหนดเอง */
+  .cursor-dot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none; /* อนุญาตให้เหตุการณ์เมาส์ส่งผ่านไปยังองค์ประกอบด้านล่าง */
+    z-index: 9999;
+    opacity: 0.8;
+    /* การเปลี่ยนผ่านสำหรับการปรับขนาดคอนเทนเนอร์เคอร์เซอร์ให้ราบรื่น */
+    transition: transform 150ms ease-out, opacity 150ms ease-out;
+    width: 1.5rem !important; /* ขนาดพื้นฐานของคอนเทนเนอร์รูปภาพ SVG (w-4) */
+    height: 1.5rem !important; /* ขนาดพื้นฐานของคอนเทนเนอร์รูปภาพ SVG (h-4) */
+    display: flex; /* ใช้ flexbox เพื่อจัดรูปภาพให้อยู่กึ่งกลางหากจำเป็น */
+    align-items: center;
+    justify-content: center;
+    transform-origin: center center; /* ตั้งค่าจุดกำเนิดการแปลงเป็นกึ่งกลาง */
+    background-color: transparent; /* ตั้งค่าพื้นหลังเป็นโปร่งใส เพื่อให้เห็นเฉพาะ SVG */
+  }
+
+  /* ตรวจสอบให้แน่ใจว่ารูปภาพ SVG ด้านในเติมเต็มคอนเทนเนอร์ */
+  .cursor-dot img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain; /* ตรวจสอบให้แน่ใจว่า SVG ปรับขนาดได้อย่างสวยงามภายในคอนเทนเนอร์ */
+  }
+
+  /* สไตล์สำหรับปุ่ม */
+  .demo-button {
+    padding: 1rem 2rem;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: scale(1);
+    transition: transform 200ms ease-out, background-color 200ms ease-out;
+    outline: none;
+    border: none;
+  }
+
+  .demo-button:hover {
+    transform: scale(1.05);
+  }
+
+  .demo-button.blue {
+    background-color: #2563eb;
+    color: white;
+  }
+
+  .demo-button.blue:hover {
+    background-color: #1d4ed8;
+  }
+
+  .demo-button.purple {
+    background-color: #7c3aed;
+    color: white;
+  }
+
+  .demo-button.purple:hover {
+    background-color: #6d28d9;
+  }
+
+  /* สไตล์ข้อความ */
+  .heading {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: white;
+  }
+
+  .paragraph {
+    font-size: 1.125rem;
+    margin-bottom: 3rem;
+    color: #cbd5e0;
+    text-align: center;
+    max-width: 48rem;
+  }
+
+  .button-container {
+    display: flex;
+    gap: 1.5rem;
+  }

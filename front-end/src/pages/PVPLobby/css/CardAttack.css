@@ -113,3 +113,25 @@
 		opacity: 1;
 	}
 }
+
+.floating-damage {
+  position: absolute;
+  color: red;
+  font-weight: bold;
+  font-size: 64px;
+  animation: floatUp 1s ease-out forwards;
+  pointer-events: none;
+  left: 50%; /* center */
+  transform: translateX(-50%);
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50px);
+  }
+}
