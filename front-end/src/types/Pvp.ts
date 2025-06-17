@@ -8,37 +8,7 @@ export type ServerMessage =
 			playerSelected: boolean;
 			opponentSelected: boolean;
 	  }
-	| {
-			type: "initialData";
-			player: {
-				name: string;
-				level: number;
-				currentHP: number;
-				cardRemaining: CardCount;
-				hand: CardProps[];
-				stat: {
-					atk: number;
-					def: number;
-					spd: number;
-					hp: number;
-				};
-				class: PlayerClass;
-			};
-			opponent: {
-				name: string;
-				level: number;
-				currentHP: number;
-				cardRemaining: CardCount;
-				handSize: number;
-				stat: {
-					atk: number;
-					def: number;
-					spd: number;
-					hp: number;
-				};
-				class: PlayerClass;
-			};
-	  }
+	| InitialData
 	| {
 			type: "true_sight_alert";		
 	  }
@@ -76,6 +46,38 @@ export type RoundResult = {
 	};
 	postGameDetail: PostGameDetail;
 };
+
+export type InitialData = {
+	type: "initialData";
+			player: {
+				name: string;
+				level: number;
+				currentHP: number;
+				cardRemaining: CardCount;
+				hand: CardProps[];
+				stat: {
+					atk: number;
+					def: number;
+					spd: number;
+					hp: number;
+				};
+				class: PlayerClass;
+			};
+			opponent: {
+				name: string;
+				level: number;
+				currentHP: number;
+				cardRemaining: CardCount;
+				handSize: number;
+				stat: {
+					atk: number;
+					def: number;
+					spd: number;
+					hp: number;
+				};
+				class: PlayerClass;
+			};
+}
 
 export type CardCount = {
 	rock: number;

@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
-	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -472,78 +470,15 @@ func pvpRead(c *PVPClient) {
 				removeCardFromHand(&state.PlayerA.Hand, match.Selected["A"].ID)
 				removeCardFromHand(&state.PlayerB.Hand, match.Selected["B"].ID)
 
-				var winner string
-				if match.Selected["A"].Type == match.Selected["B"].Type {
-					winner = "draw"
-				} else if match.Selected["A"].Type == "rock" && match.Selected["B"].Type == "scissors" {
-					winner = "A"
-				} else if match.Selected["A"].Type == "scissors" && match.Selected["B"].Type == "paper" {
-					winner = "A"
-				} else if match.Selected["A"].Type == "paper" && match.Selected["B"].Type == "rock" {
-					winner = "A"
-				} else {
-					winner = "B"
-				}
+				var winner = findWinner(*match.Selected["A"], *match.Selected["B"])
 
-				gameStatus := "onGoing"
-				damageToB := 0
-				damageToA := 0
-				specialEventA := "nothing"
-				specialEventB := "nothing"
+				damageToA, damageToB, specialEventA, specialEventB := doDamage(state, *match.Selected["A"], *match.Selected["B"], winner)
 
-				evasionA := math.Max(0.15, math.Min(0.1+float64(state.PlayerA.Stat.SPD-state.PlayerB.Stat.SPD)*0.01, 0.75))
-				evasionB := math.Max(0.15, math.Min(0.1+float64(state.PlayerB.Stat.SPD-state.PlayerA.Stat.SPD)*0.01, 0.75))
-
-				attackToAMiss := rand.Float64() < evasionA
-				attackToBMiss := rand.Float64() < evasionB
-
-				// caldamage
-				if winner == "A" {
-					damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK-state.PlayerB.Stat.DEF), 1))
-
-					//special for class
-					if state.PlayerA.Class == "assassin" && match.Selected["A"].Type == "scissors" {
-						damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK), 1))
-						attackToBMiss = false
-						specialEventA = "True Strike"
-					} else if state.PlayerA.Class == "mage" && match.Selected["A"].Type == "paper" {
-						state.PlayerA.TrueSight += 1
-						specialEventA = "True Sight"
-					}
-				} else if winner == "B" {
-					damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF), 1))
-
-					//special for class
-					if state.PlayerB.Class == "assassin" && match.Selected["B"].Type == "scissors" {
-						damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK), 1))
-						attackToAMiss = false
-						specialEventB = "True Strike"
-					} else if state.PlayerB.Class == "mage" && match.Selected["B"].Type == "paper" {
-						state.PlayerB.TrueSight += 1
-						specialEventB = "True Sight"
-					}
-				} else if winner == "draw" {
-					if state.PlayerA.Class == "warrior" && match.Selected["A"].Type == "rock" {
-						damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK-state.PlayerB.Stat.DEF)/2, 1))
-						specialEventA = "Warrior Blood"
-					}
-					if state.PlayerB.Class == "warrior" && match.Selected["B"].Type == "rock" {
-						damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF)/2, 1))
-						specialEventB = "Warrior Blood"
-					}
-				}
-
-				if !attackToAMiss {
-					state.PlayerA.CurrentHP = int(math.Max(float64(state.PlayerA.CurrentHP-damageToA), 0))
-				}
-
-				if !attackToBMiss {
-					state.PlayerB.CurrentHP = int(math.Max(float64(state.PlayerB.CurrentHP-damageToB), 0))
-				}
+				gameStatus, resultA, detailA, resultB, detailB := checkGameResult(state)
 
 				postGameDetailA := PostGameDetail{
-					Result:   "",
-					Detail:   "",
+					Result:   resultA,
+					Detail:   detailA,
 					Exp:      0,
 					Gold:     0,
 					LvlUp:    0,
@@ -551,77 +486,12 @@ func pvpRead(c *PVPClient) {
 				}
 
 				postGameDetailB := PostGameDetail{
-					Result:   "",
-					Detail:   "",
+					Result:   resultB,
+					Detail:   detailB,
 					Exp:      0,
 					Gold:     0,
 					LvlUp:    0,
 					StatGain: UnitStat{Atk: 0, Def: 0, Spd: 0, HP: 0},
-				}
-
-				//check winner if hp = 0
-				if state.PlayerA.CurrentHP == 0 && state.PlayerB.CurrentHP == 0 {
-					gameStatus = "draw"
-					postGameDetailA = PostGameDetail{
-						Result: "Draw",
-						Detail: "Both out of HP",
-					}
-					postGameDetailB = PostGameDetail{
-						Result: "Draw",
-						Detail: "Both out of HP",
-					}
-				} else if state.PlayerA.CurrentHP == 0 {
-					gameStatus = "Bwin"
-					postGameDetailA = PostGameDetail{
-						Result: "Lose",
-						Detail: "You out of HP",
-					}
-					postGameDetailB = PostGameDetail{
-						Result: "Win",
-						Detail: "Opponent out of HP",
-					}
-				} else if state.PlayerB.CurrentHP == 0 {
-					gameStatus = "Awin"
-					postGameDetailA = PostGameDetail{
-						Result: "Win",
-						Detail: "Opponent out of HP",
-					}
-					postGameDetailB = PostGameDetail{
-						Result: "Lose",
-						Detail: "You out of HP",
-					}
-				} else {
-					if len(state.PlayerA.Deck)+len(state.PlayerA.Hand) == 0 && len(state.PlayerB.Deck)+len(state.PlayerB.Hand) == 0 {
-						gameStatus = "draw"
-						postGameDetailA = PostGameDetail{
-							Result: "Draw",
-							Detail: "Both out of Card",
-						}
-						postGameDetailB = PostGameDetail{
-							Result: "Draw",
-							Detail: "Both out of HP",
-						}
-					} else if len(state.PlayerA.Deck)+len(state.PlayerA.Hand) == 0 {
-						gameStatus = "Bwin"
-						postGameDetailA = PostGameDetail{
-							Result: "Lose",
-							Detail: "You out of Card",
-						}
-						postGameDetailB = PostGameDetail{
-							Result: "Win",
-							Detail: "Opponent out of Card",
-						}
-					} else if len(state.PlayerB.Deck)+len(state.PlayerB.Hand) == 0 {
-						gameStatus = "Awin"
-						postGameDetailA = PostGameDetail{
-							Result: "Win",
-							Detail: "Opponent out of Card",
-						}
-						postGameDetailB = PostGameDetail{
-							Result: "Lose",
-							Detail: "You out of Card",
-						}
-					}
 				}
 
 				//draw card
@@ -641,29 +511,19 @@ func pvpRead(c *PVPClient) {
 				respA := map[string]interface{}{
 					"type": "round_result",
 					"player": map[string]interface{}{
-						"hp":         state.PlayerA.CurrentHP,
-						"hand":       state.PlayerA.Hand,
-						"cardPlayed": match.Selected["A"],
-						"doDamage": func() int {
-							if attackToBMiss {
-								return -1
-							}
-							return damageToB
-						}(),
+						"hp":            state.PlayerA.CurrentHP,
+						"hand":          state.PlayerA.Hand,
+						"cardPlayed":    match.Selected["A"],
+						"doDamage":      damageToB,
 						"cardRemaining": A_CardRemaining,
 						"trueSight":     state.PlayerA.TrueSight,
 						"specialEvent":  specialEventA,
 					},
 					"opponent": map[string]interface{}{
-						"hp":         state.PlayerB.CurrentHP,
-						"handLength": len(state.PlayerB.Hand),
-						"cardPlayed": match.Selected["B"],
-						"doDamage": func() int {
-							if attackToAMiss {
-								return -1
-							}
-							return damageToA
-						}(),
+						"hp":            state.PlayerB.CurrentHP,
+						"handLength":    len(state.PlayerB.Hand),
+						"cardPlayed":    match.Selected["B"],
+						"doDamage":      damageToA,
 						"cardRemaining": B_CardRemaining,
 						"trueSight":     state.PlayerB.TrueSight,
 						"specialEvent":  specialEventB,
@@ -689,29 +549,19 @@ func pvpRead(c *PVPClient) {
 				respB := map[string]interface{}{
 					"type": "round_result",
 					"player": map[string]interface{}{
-						"hp":         state.PlayerB.CurrentHP,
-						"hand":       state.PlayerB.Hand,
-						"cardPlayed": match.Selected["B"],
-						"doDamage": func() int {
-							if attackToAMiss {
-								return -1
-							}
-							return damageToA
-						}(),
+						"hp":            state.PlayerB.CurrentHP,
+						"hand":          state.PlayerB.Hand,
+						"cardPlayed":    match.Selected["B"],
+						"doDamage":      damageToA,
 						"cardRemaining": B_CardRemaining,
 						"trueSight":     state.PlayerB.TrueSight,
 						"specialEvent":  specialEventB,
 					},
 					"opponent": map[string]interface{}{
-						"hp":         state.PlayerA.CurrentHP,
-						"handLength": len(state.PlayerA.Hand),
-						"cardPlayed": match.Selected["A"],
-						"doDamage": func() int {
-							if attackToBMiss {
-								return -1
-							}
-							return damageToB
-						}(),
+						"hp":            state.PlayerA.CurrentHP,
+						"handLength":    len(state.PlayerA.Hand),
+						"cardPlayed":    match.Selected["A"],
+						"doDamage":      damageToB,
 						"cardRemaining": A_CardRemaining,
 						"trueSight":     state.PlayerA.TrueSight,
 						"specialEvent":  specialEventA,

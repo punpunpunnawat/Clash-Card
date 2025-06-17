@@ -20,7 +20,7 @@ const SelectLevel = () => {
 	console.log(player);
 
 	const handleSelectLevel = (levelId: number) => {
-		navigate(`/bot-battle/${levelId}`);
+		navigate(`/campaign/${levelId}`);
 	};
 
 	useEffect(() => {

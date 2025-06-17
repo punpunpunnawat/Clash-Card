@@ -2,13 +2,12 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "./store";
 import Home from "./pages/Home";
-import EnemyBattle from "./pages/BotBattle";
 import SelectLevel from './pages/SelectLevel';
-import Lobby from './pages/PVPLobby/Lobby';
 import Login from "./pages/Login";
 import OldLogin from "./pages/OldLogin";
 import Upgrade from "./pages/Upgrade";
 import SelectClass from "./pages/SelectClass";
+import { Campaign, PvP } from "./pages/Battle";
 
 function App() {
   const userId = useSelector((state: RootState) => state.player?.id);
@@ -18,9 +17,9 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/bot-battle/:levelId" element={<EnemyBattle />} />
+        <Route path="/campaign/:levelId" element={<Campaign />} />
         <Route path="/level" element={<SelectLevel />} />
-        <Route path="/lobby/:id" element={<Lobby />} />
+        <Route path="/lobby/:id" element={<PvP />} />
         <Route path="/login" element={<Login />} />
         <Route path="/login-test" element={<OldLogin />} />
         <Route path="/upgrade" element={<Upgrade />} />

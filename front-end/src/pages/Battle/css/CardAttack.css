@@ -126,7 +126,7 @@
 	position: absolute;
 	color: white;
 	font-weight: bold;
-	font-size: 64px;
+	font-size: 32px;
 	animation: floatUp 2s ease-out forwards;
 	pointer-events: none;
 	left: 50%;

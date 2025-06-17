@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import type { CardProps } from "../../types/Card";
-import Card from "./../../components/Card/Card";
+import Card from "../../components/Card/Card";
 import "./css/PvP.css";
 import "./css/CardAttack.css";
 import type {
@@ -15,7 +15,7 @@ import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
 import PlayerStatus from "../../components/PlayerStatus";
 
-const Lobby = () => {
+const PvP = () => {
 	const { id: roomID } = useParams();
 	const navigate = useNavigate();
 	const ws = useRef<WebSocket | null>(null);
@@ -161,6 +161,47 @@ const Lobby = () => {
 		}, 500); // slightly longer than transition
 	};
 
+	const animateOpponentSelectCard = () => {
+		const hand = opponentHandRef.current;
+		const cardPlacer = opponentCardPlacerRef.current;
+
+		if (!hand || !cardPlacer) return;
+		const handRect = hand.getBoundingClientRect();
+		const cardPlacerRect = cardPlacer.getBoundingClientRect();
+
+		setOpponentSelectingCard(true);
+		// start at deck
+		setOpponentSelectStyle({
+			position: "fixed",
+			left: handRect.left + handRect.width / 3,
+			top: handRect.top,
+			width: handRect.width,
+			height: handRect.height,
+			transition: "all 0.5s ease",
+			zIndex: 1000,
+		});
+
+		setOpponentHandSize((prev) => prev - 1);
+
+		// trigger animation in next tick
+		setTimeout(() => {
+			setOpponentSelectStyle((prev) => ({
+				...prev,
+				left: cardPlacerRect.left + 10,
+				top: cardPlacerRect.top + 10,
+			}));
+		}, 50);
+
+		// after animation ends
+		setTimeout(() => {
+			setSelectedOpponentCard({
+				id: "temp",
+				type: "hidden",
+			});
+			setOpponentSelectingCard(false);
+		}, 500);
+	};
+
 	//Gamestate and round_result handler
 	useEffect(() => {
 		console.log(roundResult);
@@ -235,7 +276,8 @@ const Lobby = () => {
 								roundResult.player.doDamage === -1
 									? "Miss"
 									: roundResult.player.doDamage !== 0
-									? "- " + roundResult.player.doDamage.toString()
+									? "- " +
+									  roundResult.player.doDamage.toString()
 									: ""
 							);
 
@@ -243,7 +285,8 @@ const Lobby = () => {
 								roundResult.opponent.doDamage === -1
 									? "Miss"
 									: roundResult.opponent.doDamage !== 0
-									? "- " + roundResult.opponent.doDamage.toString()
+									? "- " +
+									  roundResult.opponent.doDamage.toString()
 									: ""
 							);
 
@@ -264,10 +307,7 @@ const Lobby = () => {
 							}));
 
 							setTimeout(() => {
-								if (
-									roundResult.gameStatus === "playerWin" ||
-									roundResult.gameStatus === "opponentWin"
-								) {
+								if (roundResult.gameStatus === "end") {
 									setGameState("END");
 									setPostGameDetail(
 										roundResult.postGameDetail
@@ -300,13 +340,13 @@ const Lobby = () => {
 							cardRemaining.opponent.scissors >
 						3
 					)
-					drawOpponentCard();
+						drawOpponentCard();
 
 					setHideCard(true);
-					setPlayerBattleAnimation("")
-					setOpponentBattleAnimation("")
-					setPlayerTakenDamage("")
-					setOpponentTakenDamage("")
+					setPlayerBattleAnimation("");
+					setOpponentBattleAnimation("");
+					setPlayerTakenDamage("");
+					setOpponentTakenDamage("");
 					setSelectedPlayerCard(null);
 					setSelectedOpponentCard(null);
 					setRoundResult(null);
@@ -372,45 +412,7 @@ const Lobby = () => {
 
 					case "selection_status":
 						if (msg.opponentSelected) {
-							const hand = opponentHandRef.current;
-							const cardPlacer = opponentCardPlacerRef.current;
-
-							if (!hand || !cardPlacer) return;
-							const handRect = hand.getBoundingClientRect();
-							const cardPlacerRect =
-								cardPlacer.getBoundingClientRect();
-
-							setOpponentSelectingCard(true);
-							// start at deck
-							setOpponentSelectStyle({
-								position: "fixed",
-								left: handRect.left + handRect.width / 3,
-								top: handRect.top,
-								width: handRect.width,
-								height: handRect.height,
-								transition: "all 0.5s ease",
-								zIndex: 1000,
-							});
-
-							setOpponentHandSize((prev) => prev - 1);
-
-							// trigger animation in next tick
-							setTimeout(() => {
-								setOpponentSelectStyle((prev) => ({
-									...prev,
-									left: cardPlacerRect.left + 10,
-									top: cardPlacerRect.top + 10,
-								}));
-							}, 50);
-
-							// after animation ends
-							setTimeout(() => {
-								setSelectedOpponentCard({
-									id: "temp",
-									type: "hidden",
-								});
-								setOpponentSelectingCard(false);
-							}, 500);
+							animateOpponentSelectCard();
 						}
 						break;
 
@@ -593,7 +595,12 @@ const Lobby = () => {
 		console.log("opponenet = " + opponentBattleAnimation);
 		console.log("player ta = " + playerTakenDamage);
 		console.log("opponenet ta = " + opponentTakenDamage);
-	}, [playerBattleAnimation, opponentBattleAnimation, playerTakenDamage, opponentTakenDamage]);
+	}, [
+		playerBattleAnimation,
+		opponentBattleAnimation,
+		playerTakenDamage,
+		opponentTakenDamage,
+	]);
 
 	//waiting page
 	if (gameState === "WAIT_OPPONENT")
@@ -858,4 +865,4 @@ const Lobby = () => {
 	);
 };
 
-export default Lobby;
+export default PvP;

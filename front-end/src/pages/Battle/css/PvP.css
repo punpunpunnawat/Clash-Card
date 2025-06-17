@@ -33,8 +33,7 @@
 	z-index: 2;
 }
 
-
-.PvP__player{
+.PvP__player {
 	position: absolute;
 }
 
@@ -44,9 +43,9 @@
 	left: 50%;
 	transform: translate(-50%, 0%);
 	display: inline-flex;
-    align-items: center;
-    perspective: 1000px;
-    overflow: visible
+	align-items: center;
+	perspective: 1000px;
+	overflow: visible;
 }
 
 .PvP__opoonent_hand {
@@ -55,11 +54,10 @@
 	left: 50%;
 	transform: translate(-50%, 0%);
 	display: inline-flex;
-    align-items: center;
-    perspective: 1000px;
-    overflow: visible
+	align-items: center;
+	perspective: 1000px;
+	overflow: visible;
 }
-
 
 .hand > div {
 	transition: transform 0.3s ease;
@@ -106,21 +104,17 @@
 
 .PvP-win__body {
 	display: flex;
-	flex: 1;
+	flex-direction: row;
 	height: 100vh;
 	gap: 128px;
 	padding: 128px;
-	justify-content: center;
 	align-items: center;
 }
 
 .PvP-win__body_menu {
 	display: flex;
 	flex-direction: column;
-	flex: 1;
 	background-color: rgba(20, 20, 20, 0.5);
-	backdrop-filter: blur(16px);
-	-webkit-backdrop-filter: blur(16px);
 	gap: 128px;
 	padding: 64px;
 	border-radius: 16px;
@@ -144,6 +138,52 @@
 	padding: 64px;
 	justify-content: center;
 
+	align-items: center;
+}
+
+.PvP-win__body_detail_exp-and-gold {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	background-color: rgba(20, 20, 20, 0.5);
+	padding: 16px;
+	border-radius: 16px;
+	height: fit-content;
+	gap: 8px;
+}
+
+.PvP-win__body_detail_exp-and-gold_exp,
+.PvP-win__body_detail_exp-and-gold_gold {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+.PvP-win__body_detail_exp-and-gold_exp_gain,
+.PvP-win__body_detail_exp-and-gold_gold_gain {
+	display: flex;
+	padding: 16px;
+	border-radius: 16px;
+	background-color: rgba(20, 20, 20, 0.5);
+	width: 64px;
+	box-sizing: border-box;
+	
+}
+
+.PvP-win__body_detail_exp-and-gold_exp_gain {
+	background-color: rgba(140, 140, 70);
+}
+.PvP-win__body_detail_exp-and-gold_gold_gain {
+	background-color: rgba(140, 70, 140);
+}
+
+.PvP-win__body_detail_header {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	padding: 64px;
+	justify-content: center;
 	align-items: center;
 }
 
@@ -216,4 +256,11 @@
 	position: absolute;
 	top: 16px;
 	right: 16px;
+}
+
+.PvP-win__body_detail {
+	display: flex;
+	flex-direction: row;
+	flex: 1;
+	align-items: center;
 }
