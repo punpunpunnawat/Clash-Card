@@ -5,6 +5,7 @@ import Card from "../../components/Card/Card";
 import "./css/PvP.css";
 import "./css/CardAttack.css";
 import type {
+	CardCount,
 	CardRemaining,
 	PlayerDetail,
 	PostGameDetail,
@@ -13,12 +14,15 @@ import type {
 import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
 import PlayerStatus from "../../components/PlayerStatus";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../store";
 
 const Campaign = () => {
 	const { levelId } = useParams();
 	const [matchID, setMatchID] = useState();
 	const navigate = useNavigate();
-	const ws = useRef<WebSocket | null>(null);
+	//const dispatch: AppDispatch = useDispatch();
+	const player = useSelector((state: RootState) => state.player);
 
 	//Player and Opponent Selected Card
 	const [selectedPlayerCard, setSelectedPlayerCard] =
@@ -92,8 +96,9 @@ const Campaign = () => {
 	>(null);
 
 	//overlay
-	// const [toggleOverlay, setToggleOverlay] = useState(false);
-	// const [eventMessage, setEventMessage] = useState("");
+	const [toggleTrueSightResult, setToggleTrueSightResult] =
+		useState<CardCount | null>(null);
+	const [toggleHelp, setToggleHelp] = useState(false);
 
 	//Ref
 	const playerDeckRef = useRef<HTMLDivElement>(null);
@@ -272,7 +277,9 @@ const Campaign = () => {
 					setSelectedOpponentCard(null);
 					setRoundResult(null);
 
-					setGameState("SELECT_CARD");
+					setTimeout(() => {
+						setGameState("SELECT_CARD");
+					}, 600);
 					break;
 				default:
 					break;
@@ -328,10 +335,16 @@ const Campaign = () => {
 	}, [levelId]);
 
 	const handleClickBackToMenu = () => {
-		navigate("/");
+		navigate("/", { replace: true });
 	};
 
 	const handleClickPlayAgain = () => {
+		window.location.reload();
+	};
+
+	const handleClickContinue = () => {
+		if (!levelId) return;
+		navigate(`/campaign/${Number(levelId) + 1}`, { replace: true });
 		window.location.reload();
 	};
 
@@ -476,12 +489,33 @@ const Campaign = () => {
 	};
 
 	const handleTrueSightUse = () => {
-		if (ws.current?.readyState !== WebSocket.OPEN) return;
-		ws.current.send(
-			JSON.stringify({
-				type: "use_true_sight",
+		if (gameState !== "SELECT_CARD" || playerDetail.trueSight <= 0) return;
+
+		fetch(`http://localhost:8080/api/battle/${matchID}/play/true-sight`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${localStorage.getItem("authToken")}`, // ถ้าต้องใช้
+			},
+		})
+			.then((res) => {
+				if (!res.ok) throw new Error("Network response was not ok");
+				return res.json();
 			})
-		);
+			.then((data) => {
+				console.log("Response from server:", data);
+				setToggleTrueSightResult(data.opponentHand);
+				setPlayerDetail((prev) => ({
+					...prev,
+					trueSight: data.trueSightLeft,
+				}));
+				setTimeout(() => {
+					setToggleTrueSightResult(null);
+				}, 3000);
+			})
+			.catch((err) => {
+				console.error("Fetch error:", err);
+			});
 	};
 
 	const findNewCard = (updatedCard: CardProps[]) => {
@@ -545,7 +579,7 @@ const Campaign = () => {
 	if (gameState === "LOADING")
 		return (
 			<div className="PvP-Loading">
-				<NavBar BackLabel="Back" />
+				<NavBar BackPath="/level" />
 				<div className="PvP-Loading__body">
 					<div className="PvP-Loading__body_text">
 						<div className="PvP-Loading__body_text_header">
@@ -564,32 +598,114 @@ const Campaign = () => {
 			<div className="PvP-win">
 				<NavBar />
 				<div className="PvP-win__body">
-					<div className="PvP-win__body_detail">
-						<div className="PvP-win__body_detail_header">
+					<div className="PvP-win__body_result">
+						<div className="PvP-win__body_result_header">
 							<img src="/LogoSmall.svg" width={120} height={24} />
 							<header>{postGameDetail?.result}</header>
 							<span>{postGameDetail?.detail}</span>
 						</div>
-						<div className="PvP-win__body_detail_exp-and-gold">
-							<div className="PvP-win__body_detail_exp-and-gold_exp">
-                <span style={{width: 64}}>Gold </span>
-								<div className="PvP-win__body_detail_exp-and-gold_exp_gain">+ {postGameDetail?.gold}</div>
+
+						<div className="PvP-win__body_result_reward">
+							<div className="PvP-win__body_result_reward_exp">
+								<span style={{ width: 64 }}>EXP</span>
+								<div
+									className="reward-box"
+									style={{
+										background: "rgba(140, 140, 70, 0.5)",
+									}}
+								>
+									{postGameDetail?.exp}
+								</div>
 							</div>
-							<div className="PvP-win__body_detail_exp-and-gold_gold">
-								<span style={{width: 64}}>Exp </span>
-								<div className="PvP-win__body_detail_exp-and-gold_gold_gain">+ {postGameDetail?.exp}</div>
+							<div className="PvP-win__body_result_reward_gold">
+								<span style={{ width: 64 }}>GOLD</span>
+								<div
+									className="reward-box"
+									style={{
+										background: "rgba(140, 70, 140, 0.5)",
+									}}
+								>
+									{postGameDetail?.gold}
+								</div>
 							</div>
+							{postGameDetail?.lvlUp != 0 && (
+								<>
+									<div className="PvP-win__body_result_reward_level">
+										<span style={{ width: 64 }}>Level</span>
+										<div className="reward-box">
+											{player.level -
+												(postGameDetail?.lvlUp ?? 0)}
+										</div>
+										<span>{">"}</span>
+										<div className="reward-box">
+											{player.level}
+										</div>
+									</div>
+									<div className="PvP-win__body_result_reward_atk">
+										<span style={{ width: 64 }}>ATK</span>
+										<div className="reward-box">
+											{player.stat.atk -
+												(postGameDetail?.statGain.atk ??
+													0)}
+										</div>
+										<span>{">"}</span>
+										<div className="reward-box">
+											{player.stat.atk}
+										</div>
+									</div>
+									<div className="PvP-win__body_result_reward_def">
+										<span style={{ width: 64 }}>DEF</span>
+										<div className="reward-box">
+											{player.stat.def -
+												(postGameDetail?.statGain.def ??
+													0)}
+										</div>
+										<span>{">"}</span>
+										<div className="reward-box">
+											{player.stat.def}
+										</div>
+									</div>
+									<div className="PvP-win__body_result_reward_spd">
+										<span style={{ width: 64 }}>SPD</span>
+										<div className="reward-box">
+											{player.stat.spd -
+												(postGameDetail?.statGain.spd ??
+													0)}
+										</div>
+										<span>{">"}</span>
+										<div className="reward-box">
+											{player.stat.spd}
+										</div>
+									</div>
+									<div className="PvP-win__body_result_reward_hp">
+										<span style={{ width: 64 }}>HP</span>
+										<div className="reward-box">
+											{player.stat.hp -
+												(postGameDetail?.statGain.hp ??
+													0)}
+										</div>
+										<span>{">"}</span>
+										<div className="reward-box">
+											{player.stat.hp}
+										</div>
+									</div>
+								</>
+							)}
 						</div>
 					</div>
 
 					<div className="PvP-win__body_menu">
 						<h2>What is your next move ?</h2>
+
 						<div className="PvP-win__body_menu_button">
-							<button onClick={handleClickBackToMenu}>
-								Back to menu
+							<button onClick={handleClickContinue}>
+								Continue
 							</button>
 							<button onClick={handleClickPlayAgain}>
-								Play Agian
+								Rematch
+							</button>
+							<button onClick={handleClickBackToMenu}>
+								Back to menu
 							</button>
 						</div>
 					</div>
@@ -600,7 +716,36 @@ const Campaign = () => {
 
 	//default page
 	return (
+		
 		<div className="PvP">
+			<NavBar/>
+			{/* Event Overlay */}
+			{toggleTrueSightResult && (
+				<div className="PvP__overlay">
+					{Object.entries(toggleTrueSightResult).flatMap(
+						([type, count]) =>
+							Array.from({ length: count }).map((_, i) => (
+								<Card
+									id={`${type}-${i}`}
+									type={type as "rock" | "paper" | "scissors"}
+								/>
+							))
+					)}
+				</div>
+			)}
+
+			{toggleHelp && (
+				<div className="PvP__overlay">
+					<img className="Home__overlay__close" src="/close.svg" onClick={() => setToggleHelp(false)}/>
+					?
+				</div>
+			)}
+
+			<div className="PvP_button">
+				<button onClick={() => navigate("/level")}>Leave</button>
+				<button onClick={() => setToggleHelp(true)}>?</button>
+			</div>
+
 			{/* Event Overlay */}
 			{/* {toggleOverlay && (
 				<div className="Home__overlay">
@@ -754,7 +899,7 @@ const Campaign = () => {
 			</div>
 
 			<div
-				className="PvP__opoonent_deck"
+				className="PvP__opponent_deck"
 				ref={opponentDeckRef}
 				style={{ transform: "scaleY(-1)" }}
 			>

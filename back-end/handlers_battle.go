@@ -708,10 +708,12 @@ func doDamage(
 	} else if winner == "draw" {
 		if state.PlayerA.Class == "warrior" && cardA.Type == "rock" {
 			damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK-state.PlayerB.Stat.DEF)/2, 1))
+			attackToBMiss = false
 			specialEventA = "Warrior Blood"
 		}
 		if state.PlayerB.Class == "warrior" && cardB.Type == "rock" {
 			damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF)/2, 1))
+			attackToAMiss = false
 			specialEventB = "Warrior Blood"
 		}
 	}
@@ -789,4 +791,49 @@ func findWinner(cardA Card, cardB Card) (winner string) {
 		winner = "B"
 	}
 	return winner
+}
+
+func TrueSightHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		matchID := vars["matchID"]
+		if matchID == "" {
+			http.Error(w, "Missing matchID", http.StatusBadRequest)
+			return
+		}
+
+		gameStatesMutex.Lock()
+		gs, ok := gameStates[matchID]
+		gameStatesMutex.Unlock()
+
+		if !ok {
+			http.Error(w, "Game not found", http.StatusNotFound)
+			return
+		}
+
+		gs.Lock()
+		defer gs.Unlock()
+
+		if gs.PlayerA.TrueSight <= 0 {
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(map[string]string{
+				"type":  "error",
+				"error": "No TrueSight left",
+			})
+			return
+		}
+
+		gs.PlayerA.TrueSight--
+
+		opponentCardCount := countCard(gs.PlayerB.Hand)
+
+		response := map[string]interface{}{
+			"type":          "true_sight_result",
+			"opponentHand":  opponentCardCount,
+			"trueSightLeft": gs.PlayerA.TrueSight,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}
 }

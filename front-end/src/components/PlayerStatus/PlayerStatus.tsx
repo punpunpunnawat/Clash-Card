@@ -54,7 +54,7 @@ const PlayerStatus = ({
 					<div className="player-status__detail_stat_spd">
 						<img src="/spd.svg" />
 						<span style={{ flex: 1, textAlign: "center" }}>
-							{stat.hp}
+							{stat.spd}
 						</span>
 					</div>
 				</div>

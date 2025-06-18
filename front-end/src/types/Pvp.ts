@@ -110,6 +110,6 @@ export type PostGameDetail = {
 		| "Both out of Card";
 	exp: number;
 	gold: number;
-	levelUp: number;
+	lvlUp: number;
 	statGain: UnitStat;
 };

@@ -29,7 +29,7 @@ const SelectLevel = () => {
 
 	return (
 		<div className="SelectLevel">
-			<NavBar BackLabel="Back"/>
+			<NavBar BackPath="/"/>
 
 			<div className="SelectLevel__body">
 				<header className="SelectLevel__body_header">

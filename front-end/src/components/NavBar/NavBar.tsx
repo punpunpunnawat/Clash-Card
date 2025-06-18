@@ -7,9 +7,9 @@ import { useDispatch, useSelector } from "react-redux";
 import LevelBar from "./LevelBar";
 
 type NavBarProps = {
-	BackLabel?: string;
+	BackPath?: string;
 };
-const NavBar = ({ BackLabel }: NavBarProps) => {
+const NavBar = ({ BackPath }: NavBarProps) => {
 	const navigate = useNavigate();
 	const dispatch: AppDispatch = useDispatch();
 
@@ -23,7 +23,7 @@ const NavBar = ({ BackLabel }: NavBarProps) => {
 	const player = useSelector((state: RootState) => state.player);
 
 	const handleClickBack = () => {
-		navigate(-1);
+		navigate(BackPath??"/");
 	};
 
 	const handleClickLogout = () => {
@@ -37,8 +37,8 @@ const NavBar = ({ BackLabel }: NavBarProps) => {
 		return (
 			<div className="NavBar">
 				<div className="NavBar__left-side">
-					{BackLabel ? (
-						<button onClick={handleClickBack}>{BackLabel}</button>
+					{BackPath ? (
+						<button onClick={handleClickBack}>Back</button>
 					) : (
 						<img src="/LogoSmall.svg" />
 					)}

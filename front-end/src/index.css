@@ -92,12 +92,13 @@ h1 {
 }
 
 input {
-	height: 48px;
+	height: 40px;
 	border-radius: 8px;
 	border: none;
 	font-family: "MOON_Bold", sans-serif;
 	padding: 0px 32px 0px 32px;
 	font-size: 16px;
+	box-sizing: border-box;
 }
 
 input:focus {

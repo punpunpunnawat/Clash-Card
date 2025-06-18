@@ -27,6 +27,7 @@
 .Home__overlay {
 	position: fixed;
     padding: 32px;
+	gap: 16px;
     box-sizing: border-box;
 	top: 0;
 	left: 0;

@@ -4,12 +4,13 @@ import type { CardProps } from "../../types/Card";
 import Card from "../../components/Card/Card";
 import "./css/PvP.css";
 import "./css/CardAttack.css";
-import type {
-	CardRemaining,
-	PlayerDetail,
-	PostGameDetail,
-	RoundResult,
-	ServerMessage,
+import {
+	type CardCount,
+	type CardRemaining,
+	type PlayerDetail,
+	type PostGameDetail,
+	type RoundResult,
+	type ServerMessage,
 } from "../../types/Pvp";
 import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
@@ -92,8 +93,10 @@ const PvP = () => {
 	>(null);
 
 	//overlay
-	const [toggleOverlay, setToggleOverlay] = useState(false);
-	const [eventMessage, setEventMessage] = useState("");
+	//const [toggleTrueSightResukt, setToggleTrueSightResult] = useState(false);
+	const [toggleTrueSightAlert, setToggleTrueSightAlert] = useState(false);
+	const [toggleTrueSightResult, setToggleTrueSightResult] =
+		useState<CardCount | null>(null);
 
 	//Ref
 	const playerDeckRef = useRef<HTMLDivElement>(null);
@@ -351,7 +354,10 @@ const PvP = () => {
 					setSelectedOpponentCard(null);
 					setRoundResult(null);
 
-					setGameState("SELECT_CARD");
+					setTimeout(() => {
+						setGameState("SELECT_CARD");
+					}, 600)
+					
 					break;
 				default:
 					break;
@@ -433,42 +439,33 @@ const PvP = () => {
 							detail: "Opponent leave",
 							exp: 0,
 							gold: 0,
-							levelUp: 0,
+							lvlUp: 0,
 							statGain: { atk: 0, def: 0, spd: 0, hp: 0 },
 						});
 						break;
 
 					case "true_sight_result":
-						setToggleOverlay(true);
-						setEventMessage(
-							"Rock: " +
-								msg.opponentHand.rock +
-								" Paper: " +
-								msg.opponentHand.paper +
-								" Scissors: " +
-								msg.opponentHand.scissors
-						);
+						setToggleTrueSightResult(msg.opponentHand);
 						setPlayerDetail((prev) => ({
 							...prev,
 							trueSight: msg.trueSightLeft,
 						}));
 						setTimeout(() => {
-							setToggleOverlay(false);
-							setEventMessage("");
+							setToggleTrueSightResult(null);
 						}, 3000);
 
 						break;
 
 					case "true_sight_alert":
-						setToggleOverlay(true);
-						setEventMessage("Opponent revealed your cards");
+						setToggleTrueSightAlert(true);
+
 						setOpponentDetail((prev) => ({
 							...prev,
 							trueSight: prev.trueSight - 1,
 						}));
+
 						setTimeout(() => {
-							setToggleOverlay(false);
-							setEventMessage("");
+							setToggleTrueSightAlert(false);
 						}, 3000);
 						break;
 
@@ -490,7 +487,7 @@ const PvP = () => {
 		navigate("/");
 	};
 
-	const handleClickPlayAgain = () => {
+	const handleClickRematch = () => {
 		window.location.reload();
 	};
 
@@ -582,6 +579,8 @@ const PvP = () => {
 	};
 
 	const handleTrueSightUse = () => {
+		if (gameState !== "SELECT_CARD" || playerDetail.trueSight <= 0) return;
+
 		if (ws.current?.readyState !== WebSocket.OPEN) return;
 		ws.current.send(
 			JSON.stringify({
@@ -590,23 +589,11 @@ const PvP = () => {
 		);
 	};
 
-	useEffect(() => {
-		console.log("player = " + playerBattleAnimation);
-		console.log("opponenet = " + opponentBattleAnimation);
-		console.log("player ta = " + playerTakenDamage);
-		console.log("opponenet ta = " + opponentTakenDamage);
-	}, [
-		playerBattleAnimation,
-		opponentBattleAnimation,
-		playerTakenDamage,
-		opponentTakenDamage,
-	]);
-
 	//waiting page
 	if (gameState === "WAIT_OPPONENT")
 		return (
 			<div className="PvP-Loading">
-				<NavBar BackLabel="Back" />
+				<NavBar BackPath="/" />
 				<div className="PvP-Loading__body">
 					<div className="PvP-Loading__body_text">
 						<div className="PvP-Loading__body_text_header">
@@ -635,13 +622,15 @@ const PvP = () => {
 					</div>
 
 					<div className="PvP-win__body_menu">
-						<h2>What is your next move ?</h2>
+						<h2 style={{ flex: 1, justifyContent: "center" }}>
+							What is your next move ?
+						</h2>
 						<div className="PvP-win__body_menu_button">
+							<button onClick={handleClickRematch}>
+								Rematch
+							</button>
 							<button onClick={handleClickBackToMenu}>
 								Back to menu
-							</button>
-							<button onClick={handleClickPlayAgain}>
-								Play Agian
 							</button>
 						</div>
 					</div>
@@ -654,9 +643,23 @@ const PvP = () => {
 	return (
 		<div className="PvP">
 			{/* Event Overlay */}
-			{toggleOverlay && (
-				<div className="Home__overlay">
-					<h2>{eventMessage}</h2>
+			{toggleTrueSightResult && (
+				<div className="PvP__overlay">
+					{Object.entries(toggleTrueSightResult).flatMap(
+						([type, count]) =>
+							Array.from({ length: count }).map((_, i) => (
+								<Card
+									id={`${type}-${i}`}
+									type={type as "rock" | "paper" | "scissors"}
+								/>
+							))
+					)}
+				</div>
+			)}
+
+			{toggleTrueSightAlert && (
+				<div className="PvP__overlay">
+					<img src="/TrueSightCard.svg" />
 				</div>
 			)}
 
@@ -679,7 +682,7 @@ const PvP = () => {
 					const angleStep = 10; // ค่าที่ควบคุมความเอียง
 					const mid = (total - 1) / 2;
 					const angle = (index - mid) * angleStep;
-					const xOffset = (index - mid) * -30; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
+					const xOffset = (index - mid) * -30; // เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
 					const yOffset = Math.abs(index - mid) * 20; // ยิ่งห่างจากตรงกลาง ยิ่งต่ำลง
 					const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
 					return (
@@ -687,7 +690,7 @@ const PvP = () => {
 							key={card.id}
 							style={{
 								transform,
-								transition: "transform 0.5s ease", // 👈 ใส่ transition ตรงนี้
+								transition: "transform 0.5s ease", //ใส่ transition ตรงนี้
 							}}
 						>
 							<div className="card-wrapper">
@@ -805,11 +808,7 @@ const PvP = () => {
 				/>
 			</div>
 
-			<div
-				className="PvP__opoonent_deck"
-				ref={opponentDeckRef}
-				style={{ transform: "scaleY(-1)" }}
-			>
+			<div className="PvP__opponent_deck" ref={opponentDeckRef}>
 				{cardRemaining.opponent.rock +
 					cardRemaining.opponent.paper +
 					cardRemaining.opponent.scissors >
