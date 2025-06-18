@@ -113,3 +113,7 @@ html, body {
   height: 100%;
 }
 
+p {
+	font-family: "MOON_Light";
+	src: url("./fonts/MOON_Light.otf") format("opentype");
+}

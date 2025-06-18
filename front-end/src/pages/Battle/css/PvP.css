@@ -1,166 +1,166 @@
 /* ========== PvP Global Layout ========== */
 .PvP {
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
+	width: 100%;
+	height: 100vh;
+	overflow: hidden;
 }
 
 /* ========== Main Board ========== */
 .PvP__board {
-  display: flex;
-  gap: 40px;
-  position: absolute;
-  align-items: center;
-  justify-content: center;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+	display: flex;
+	gap: 40px;
+	position: absolute;
+	align-items: center;
+	justify-content: center;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 }
 
 .PvP__board_card-placer {
-  position: relative;
-  width: 170px;
-  height: 270px;
-  z-index: 1;
+	position: relative;
+	width: 170px;
+	height: 270px;
+	z-index: 1;
 }
 
 .PvP__board_card-placer > * {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: fit-content;
-  height: fit-content;
-  transform: translate(-50%, -50%);
-  z-index: 2;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: fit-content;
+	height: fit-content;
+	transform: translate(-50%, -50%);
+	z-index: 2;
 }
 
 /* ========== Player & Opponent Hands ========== */
 .PvP__player_hand,
 .PvP__opoonent_hand {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  perspective: 1000px;
-  overflow: visible;
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+	display: inline-flex;
+	align-items: center;
+	perspective: 1000px;
+	overflow: visible;
 }
 
 .PvP__player_hand {
-  bottom: 0;
+	bottom: 0;
 }
 
 .PvP__opoonent_hand {
-  top: 0;
+	top: 0;
 }
 
 .hand > div,
 .card-wrapper {
-  transition: transform 0.3s ease;
+	transition: transform 0.3s ease;
 }
 
 .card-wrapper:hover {
-  transform: scale(1.1);
-  z-index: 10;
+	transform: scale(1.1);
+	z-index: 10;
 }
 
 /* ========== Player Info ========== */
 .PvP__board-player,
 .PvP__board-opponent {
-  position: fixed;
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  z-index: 999;
-  padding: 0 10px;
-  box-sizing: border-box;
+	position: fixed;
+	left: 0;
+	width: 100%;
+	display: flex;
+	justify-content: space-between;
+	z-index: 999;
+	padding: 0 10px;
+	box-sizing: border-box;
 }
 
 .PvP__board-player {
-  bottom: 0;
+	bottom: 0;
 }
 
 .PvP__board-opponent {
-  top: 0;
+	top: 0;
 }
 
 /* ========== Win Screen ========== */
 .PvP-win {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
 }
 
 .PvP-win__body {
-  display: flex;
-  flex-direction: row;
-  height: 100vh;
-  gap: 128px;
-  padding: 128px;
-  align-items: center;
+	display: flex;
+	flex-direction: row;
+	height: 100vh;
+	gap: 128px;
+	padding: 128px;
+	align-items: center;
 }
 
 .PvP-win__body_menu {
-  display: flex;
-  flex-direction: column;
-  background-color: rgba(20, 20, 20, 0.5);
-  padding: 64px;
-  border-radius: 16px;
-  box-sizing: border-box;
-  height: fit-content;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  gap: 64px;
+	display: flex;
+	flex-direction: column;
+	background-color: rgba(20, 20, 20, 0.5);
+	padding: 64px;
+	border-radius: 16px;
+	box-sizing: border-box;
+	height: fit-content;
+	justify-content: center;
+	align-items: center;
+	flex: 1;
+	gap: 64px;
 }
 
 .PvP-win__body_menu_header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  text-align: center;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex: 1;
+	text-align: center;
 }
 
 .PvP-win__body_menu_button {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  gap: 16px;
+	display: flex;
+	width: 100%;
+	flex-direction: column;
+	gap: 16px;
 }
 
 .PvP-win__body_result {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  flex: 1;
-  align-items: center;
+	display: flex;
+	flex-direction: column;
+	gap: 32px;
+	flex: 1;
+	align-items: center;
 }
 
 .PvP-win__body_result_header {
-  display: flex;
-  flex-direction: column;
-  padding: 32px;
-  justify-content: center;
-  align-items: center;
+	display: flex;
+	flex-direction: column;
+	padding: 32px;
+	justify-content: center;
+	align-items: center;
 }
 
 .PvP-win__body_result_reward {
-  display: flex;
-  flex-direction: column;
-  width: 50%;
-  gap: 8px;
+	display: flex;
+	flex-direction: column;
+	width: 50%;
+	gap: 8px;
 }
 
 .reward-box {
-  display: flex;
-  flex: 1;
-  padding: 8px 16px;
-  border-radius: 8px;
-  background-color: rgba(20, 20, 20, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  justify-content: center;
+	display: flex;
+	flex: 1;
+	padding: 8px 16px;
+	border-radius: 8px;
+	background-color: rgba(20, 20, 20, 0.5);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	justify-content: center;
 }
 
 .PvP-win__body_result_reward_exp,
@@ -170,80 +170,80 @@
 .PvP-win__body_result_reward_def,
 .PvP-win__body_result_reward_spd,
 .PvP-win__body_result_reward_hp {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  width: 100%;
+	display: flex;
+	gap: 16px;
+	align-items: center;
+	width: 100%;
 }
 
 /* ========== Loading Screen ========== */
 .PvP-Loading {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
 }
 
 .PvP-Loading__body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  padding: 128px;
-  gap: 64px;
-  justify-content: center;
-  align-items: center;
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	padding: 128px;
+	gap: 64px;
+	justify-content: center;
+	align-items: center;
 }
 
 .PvP-Loading__body_text {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  font-family: "MOON_Light";
-  align-items: center;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	font-family: "MOON_Light";
+	align-items: center;
 }
 
 .PvP-Loading__body_text_header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+	display: flex;
+	align-items: center;
+	gap: 16px;
 }
 
 .PvP-Loading__body_text_header_lobby-ID {
-  font-family: "MOON_Bold";
-  display: flex;
-  color: white;
-  height: 40px;
-  padding: 0 32px;
-  justify-content: center;
-  align-items: center;
-  border-radius: 8px;
-  box-shadow: 1px solid rgba(255, 255, 255, 0.1);
-  transition: background-color 0.4s ease, border-color 0.2s ease;
+	font-family: "MOON_Bold";
+	display: flex;
+	color: white;
+	height: 40px;
+	padding: 0 32px;
+	justify-content: center;
+	align-items: center;
+	border-radius: 8px;
+	box-shadow: 1px solid rgba(255, 255, 255, 0.1);
+	transition: background-color 0.4s ease, border-color 0.2s ease;
 }
 
 /* ========== Misc Elements ========== */
 .PvP__player_deck {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
+	position: absolute;
+	bottom: 16px;
+	right: 16px;
 }
 
 .PvP__opponent_deck {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  transform: scaleY(-1);
+	position: absolute;
+	top: 16px;
+	left: 16px;
+	transform: scaleY(-1);
 }
 
 .PvP__player_status {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
+	position: absolute;
+	bottom: 16px;
+	left: 16px;
 }
 
 .PvP__opponent_status {
-  position: absolute;
-  top: 16px;
-  right: 16px;
+	position: absolute;
+	top: 16px;
+	right: 16px;
 }
 
 .PvP__overlay {
@@ -260,4 +260,19 @@
 	justify-content: center;
 	z-index: 9999;
 	backdrop-filter: blur(16px);
+}
+
+.PvP__overlay_leave {
+	display: flex;
+	position: absolute;
+	bottom: 32px;
+	right: 32px;
+	align-items: center;
+	gap: 16px;
+}
+
+.PvP__menu-button {
+	position: absolute;
+	right: 16px;
+	top: 50%;
 }

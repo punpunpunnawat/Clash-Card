@@ -22,7 +22,6 @@ const PlayerStatus = ({
 	trueSight,
 	onClickPassive,
 }: PlayerStatusProps) => {
-
 	const handleClickPassive = () => {
 		onClickPassive?.();
 	};
@@ -123,12 +122,18 @@ const PlayerStatus = ({
 					</div>
 				</div>
 			</div>
-			<button
-				className="player-status__passive"
-				onClick={handleClickPassive}
-			>
-				{trueSight}
-			</button>
+
+			<div className="player-status__passive">
+				<span className="player-status__passive_label">
+					True Sight{" "}
+				</span>
+				<button
+					onClick={handleClickPassive}
+					disabled={trueSight <= 0 || !onClickPassive}
+				>
+					{trueSight}
+				</button>
+			</div>
 		</div>
 	);
 };

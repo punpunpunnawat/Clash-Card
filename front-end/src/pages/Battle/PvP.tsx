@@ -97,6 +97,7 @@ const PvP = () => {
 	const [toggleTrueSightAlert, setToggleTrueSightAlert] = useState(false);
 	const [toggleTrueSightResult, setToggleTrueSightResult] =
 		useState<CardCount | null>(null);
+	const [toggleMenu, setToggleMenu] = useState(false);
 
 	//Ref
 	const playerDeckRef = useRef<HTMLDivElement>(null);
@@ -356,8 +357,8 @@ const PvP = () => {
 
 					setTimeout(() => {
 						setGameState("SELECT_CARD");
-					}, 600)
-					
+					}, 600);
+
 					break;
 				default:
 					break;
@@ -662,6 +663,67 @@ const PvP = () => {
 					<img src="/TrueSightCard.svg" />
 				</div>
 			)}
+
+			{toggleMenu && (
+				<div className="PvP__overlay">
+					<img
+						className="Home__overlay__close"
+						src="/close.svg"
+						onClick={() => setToggleMenu(false)}
+					/>
+					<div className="PvP__overlay_class-explain">
+						<img src="/WarriorCard.svg" />
+						<h3>Warrior - Warrior's Blood</h3>
+						<p>
+							When drawing with Rock,
+							<br />
+							deal half of your normal damage to the enemy.
+							<br />
+							(always hit)
+						</p>
+					</div>
+					<div className="PvP__overlay_class-explain">
+						<img src="/MageCard.svg" />
+						<h3>Mage - True Sight</h3>
+						<p>
+							When winning with Paper,
+							<br />
+							gain 1 True Sight token.
+							<br />
+							Use it to reveal your opponent's hand.
+							<br />
+						</p>
+					</div>
+					<div className="PvP__overlay_class-explain">
+						<img src="/AssassinCard.svg" />
+
+						<h3>Assassin - True Strike</h3>
+						<p>
+							When winning with Scissors,
+							<br />
+							ignore the opponent’s defense when dealing damage.
+							<br />
+							(always hit)
+						</p>
+					</div>
+					<div className="PvP__overlay_leave">
+						Scared ? you can leave anytime
+						<button
+							onClick={() => navigate("/level")}
+							style={{ background: "rgba(255,0,0,0.5)" }}
+						>
+							Leave
+						</button>
+					</div>
+				</div>
+			)}
+
+			<button
+				className="PvP__menu-button"
+				onClick={() => setToggleMenu(true)}
+			>
+				Menu
+			</button>
 
 			{/* Player */}
 			<div className="PvP__player_status">
