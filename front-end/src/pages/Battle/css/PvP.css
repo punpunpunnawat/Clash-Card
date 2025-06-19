@@ -149,7 +149,6 @@
 .PvP-win__body_result_reward {
 	display: flex;
 	flex-direction: column;
-	width: 50%;
 	gap: 8px;
 }
 

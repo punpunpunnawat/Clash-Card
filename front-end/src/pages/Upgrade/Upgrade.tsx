@@ -63,14 +63,14 @@ const Upgrade = () => {
 
 	return (
 		<div className="Upgrade">
-			<NavBar BackLabel="Back" />
+			<NavBar BackPath="/" />
 			<div className="Upgrade__body">
 				<h1>Upgrade and buy card</h1>
 				<div className="Upgrade__body_class-card">
 					{player?.class === "warrior" ? (
 						<div className="Upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Warrior</label>
-							<img src="WarriorCard.svg" />
+							<img src="cards/WarriorCard.svg" />
 							<button style={{ width: "100%" }} disabled>
 								Active
 							</button>
@@ -89,7 +89,7 @@ const Upgrade = () => {
 					{player?.class === "mage" ? (
 						<div className="Upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Mage</label>
-							<img src="MageCard.svg" />
+							<img src="cards/MageCard.svg" />
 							<button style={{ width: "100%" }} disabled>
 								Active
 							</button>
@@ -97,7 +97,7 @@ const Upgrade = () => {
 					) : (
 						<div className="Upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Mage</label>
-							<img src="MageCard.svg" style={{ opacity: 0.5 }} />
+							<img src="cards/MageCard.svg" style={{ opacity: 0.5 }} />
 							<button style={{ width: "100%" }}>1000 G</button>
 						</div>
 					)}
@@ -105,7 +105,7 @@ const Upgrade = () => {
 					{player?.class === "assassin" ? (
 						<div className="Upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Assassin</label>
-							<img src="AssassinCard.svg" />
+							<img src="cards/AssassinCard.svg" />
 							<button style={{ width: "100%" }} disabled>
 								Active
 							</button>
@@ -114,7 +114,7 @@ const Upgrade = () => {
 						<div className="Upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Assassin</label>
 							<img
-								src="AssassinCard.svg"
+								src="cards/AssassinCard.svg"
 								style={{ opacity: 0.5 }}
 							/>
 							<button style={{ width: "100%" }}>1000 G</button>
@@ -176,12 +176,12 @@ const Upgrade = () => {
 							STAT
 						</span>
 						{player.class === "warrior" ? (
-							<img src="WarriorCard.svg" />
+							<img src="cards/WarriorCard.svg" />
 						) : player.class === "mage" ? (
-							<img src="MageCard.svg" />
+							<img src="cards/MageCard.svg" />
 						) : (
 							player.class === "assassin" && (
-								<img src="AssassinCard.svg" />
+								<img src="cards/AssassinCard.svg" />
 							)
 						)}
 

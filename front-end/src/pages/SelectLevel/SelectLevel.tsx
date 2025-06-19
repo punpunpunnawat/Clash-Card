@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { fetchPlayer } from "../../store/slices/playerSlice";
 import NavBar from "../../components/NavBar";
 import "./SelectLevel.css";
+import { playBGM } from "../../managers/soundManager";
 
 const SelectLevel = () => {
 	const dispatch: AppDispatch = useDispatch();
@@ -16,7 +17,9 @@ const SelectLevel = () => {
 
 	const navigate = useNavigate();
 
-
+	useEffect(() => {
+		playBGM("menu");
+	}, []);
 	console.log(player);
 
 	const handleSelectLevel = (levelId: number) => {
@@ -29,7 +32,7 @@ const SelectLevel = () => {
 
 	return (
 		<div className="SelectLevel">
-			<NavBar BackPath="/"/>
+			<NavBar BackPath="/" />
 
 			<div className="SelectLevel__body">
 				<header className="SelectLevel__body_header">

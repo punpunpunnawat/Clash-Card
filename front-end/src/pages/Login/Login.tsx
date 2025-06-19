@@ -1,10 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 import NavBar from "../../components/NavBar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SelectClass from "../SelectClass";
+import { stopBGM } from "../../managers/soundManager";
 
 export default function Login() {
+
+	useEffect(() => {
+		stopBGM();
+	},[])
+
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
@@ -107,7 +113,7 @@ export default function Login() {
 			<NavBar />
 			<div className="Login__body">
 				<section className="Login__body_logo">
-					<img src="LogoBig.svg" alt="Logo" />
+					<img src="others/LogoBig.svg" alt="Logo" />
 				</section>
 				<section className="Login__body_main">
 					<div className="Login__body_main_select-mode">

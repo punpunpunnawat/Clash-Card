@@ -15,12 +15,15 @@ import {
 import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
 import PlayerStatus from "../../components/PlayerStatus";
+import { playBGM, sfx } from "../../managers/soundManager";
 
 const PvP = () => {
 	const { id: roomID } = useParams();
 	const navigate = useNavigate();
 	const ws = useRef<WebSocket | null>(null);
-
+	useEffect(() => {
+		playBGM("battle");
+	}, []);
 	//Player and Opponent Selected Card
 	const [selectedPlayerCard, setSelectedPlayerCard] =
 		useState<CardProps | null>(null);
@@ -135,7 +138,7 @@ const PvP = () => {
 		if (!deck || !hand) return;
 		const deckRect = deck.getBoundingClientRect();
 		const handRect = hand.getBoundingClientRect();
-
+		sfx.card.play();
 		setPlayerDrawingCard(newCard);
 
 		// start at deck
@@ -172,7 +175,7 @@ const PvP = () => {
 		if (!hand || !cardPlacer) return;
 		const handRect = hand.getBoundingClientRect();
 		const cardPlacerRect = cardPlacer.getBoundingClientRect();
-
+		sfx.card.play();
 		setOpponentSelectingCard(true);
 		// start at deck
 		setOpponentSelectStyle({
@@ -219,6 +222,7 @@ const PvP = () => {
 				case "SHOW_RESULT":
 					setTimeout(() => {
 						setHideCard(false);
+						sfx.card.play();
 						setTimeout(() => {
 							setGameState("DO_DAMAGE");
 						}, 1000);
@@ -294,6 +298,14 @@ const PvP = () => {
 									: ""
 							);
 
+							if (roundResult.player.doDamage >= 1)
+								sfx.hit.play();
+							else if (roundResult.player.doDamage == -1)
+								sfx.evade.play();
+							if (roundResult.opponent.doDamage >= 1)
+								sfx.hit.play();
+							else if (roundResult.opponent.doDamage == -1)
+								sfx.evade.play();
 							// update HP
 							setCurrentPlayerHP(Number(roundResult.player.hp));
 							setCurrentOpponentHP(
@@ -316,6 +328,12 @@ const PvP = () => {
 									setPostGameDetail(
 										roundResult.postGameDetail
 									);
+									if (
+										roundResult.postGameDetail.result ===
+										"Win"
+									) {
+										sfx.win.play();
+									} else sfx.lose.play();
 								} else {
 									setGameState("DRAW_CARD");
 								}
@@ -414,6 +432,7 @@ const PvP = () => {
 						});
 						setCurrentPlayerHP(msg.player.currentHP);
 						setCurrentOpponentHP(msg.opponent.currentHP);
+						sfx.card.play();
 						setGameState("SELECT_CARD");
 						break;
 
@@ -496,6 +515,7 @@ const PvP = () => {
 		const deck = opponentDeckRef.current;
 		const hand = opponentHandRef.current;
 		if (!deck || !hand) return;
+		sfx.card.play();
 		const deckRect = deck.getBoundingClientRect();
 		const handRect = hand.getBoundingClientRect();
 		setOpponentDrawingCard({ id: "temp", type: "hidden" });
@@ -537,6 +557,7 @@ const PvP = () => {
 		const handRect = hand.getBoundingClientRect();
 		const cardPlacerRect = cardPlacer.getBoundingClientRect();
 
+		sfx.card.play();
 		setPlayerSelectingCard(true);
 		// start at deck
 		setPlayerSelectStyle({
@@ -617,7 +638,7 @@ const PvP = () => {
 				<NavBar />
 				<div className="PvP-win__body">
 					<div className="PvP-win__body_header">
-						<img src="/LogoSmall.svg" width={120} height={24} />
+						<img src="others/LogoSmall.svg" width={120} height={24} />
 						<header>{postGameDetail?.result}</header>
 						<span>{postGameDetail?.detail}</span>
 					</div>
@@ -660,7 +681,7 @@ const PvP = () => {
 
 			{toggleTrueSightAlert && (
 				<div className="PvP__overlay">
-					<img src="/TrueSightCard.svg" />
+					<img src="/cards/TrueSightCard.svg" />
 				</div>
 			)}
 
@@ -668,11 +689,11 @@ const PvP = () => {
 				<div className="PvP__overlay">
 					<img
 						className="Home__overlay__close"
-						src="/close.svg"
+						src="/icons/close.svg"
 						onClick={() => setToggleMenu(false)}
 					/>
 					<div className="PvP__overlay_class-explain">
-						<img src="/WarriorCard.svg" />
+						<img src="/cards/WarriorCard.svg" />
 						<h3>Warrior - Warrior's Blood</h3>
 						<p>
 							When drawing with Rock,
@@ -683,7 +704,7 @@ const PvP = () => {
 						</p>
 					</div>
 					<div className="PvP__overlay_class-explain">
-						<img src="/MageCard.svg" />
+						<img src="/cards/MageCard.svg" />
 						<h3>Mage - True Sight</h3>
 						<p>
 							When winning with Paper,
@@ -695,7 +716,7 @@ const PvP = () => {
 						</p>
 					</div>
 					<div className="PvP__overlay_class-explain">
-						<img src="/AssassinCard.svg" />
+						<img src="/cards/AssassinCard.svg" />
 
 						<h3>Assassin - True Strike</h3>
 						<p>
@@ -709,7 +730,7 @@ const PvP = () => {
 					<div className="PvP__overlay_leave">
 						Scared ? you can leave anytime
 						<button
-							onClick={() => navigate("/level")}
+							onClick={() => navigate("/")}
 							style={{ background: "rgba(255,0,0,0.5)" }}
 						>
 							Leave
@@ -772,7 +793,7 @@ const PvP = () => {
 					cardRemaining.player.paper +
 					cardRemaining.player.scissors >
 				3 ? (
-					<img src="/BackOfCard.svg" width={150} height={250} />
+					<img src="/cards/BackOfCard.svg" width={150} height={250} />
 				) : (
 					<div style={{ width: 150, height: 250 }} />
 				)}
@@ -794,7 +815,7 @@ const PvP = () => {
 					ref={playerCardPlacerRef}
 				>
 					<img
-						src="/CardPlacer-Player.svg"
+						src="/cards/CardPlacer-Player.svg"
 						width={170}
 						height={270}
 					/>
@@ -826,7 +847,7 @@ const PvP = () => {
 					ref={opponentCardPlacerRef}
 				>
 					<img
-						src="/CardPlacer-Opponent.svg"
+						src="/cards/CardPlacer-Opponent.svg"
 						width={170}
 						height={270}
 					/>
@@ -875,7 +896,7 @@ const PvP = () => {
 					cardRemaining.opponent.paper +
 					cardRemaining.opponent.scissors >
 				3 ? (
-					<img src="/BackOfCard.svg" width={150} height={250} />
+					<img src="/cards/BackOfCard.svg" width={150} height={250} />
 				) : (
 					<div style={{ width: 150, height: 250 }} />
 				)}

@@ -17,16 +17,16 @@ const Card = (
       <div className="Card__inner">
         
         <div className="Card__back">
-          <img src="/BackOfCard.svg" width={150} height={250} />
+          <img src="/cards/BackOfCard.svg" width={150} height={250} />
         </div>
         <div className="Card__front">
           {type == "rock" ? (
-            <img src="/RockCard.svg" width={150} height={250} />
+            <img src="/cards/RockCard.svg" width={150} height={250} />
           ) : type == "paper" ? (
-            <img src="/PaperCard.svg" width={150} height={250} />
+            <img src="/cards/PaperCard.svg" width={150} height={250} />
           ) : (
             type == "scissors" && (
-              <img src="/ScissorsCard.svg" width={150} height={250} />
+              <img src="/cards/ScissorsCard.svg" width={150} height={250} />
             )
           )}
         </div>

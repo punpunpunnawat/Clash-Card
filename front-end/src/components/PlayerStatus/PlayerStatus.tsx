@@ -39,19 +39,19 @@ const PlayerStatus = ({
 			<div className="player-status__detail">
 				<div className="player-status__detail_stat">
 					<div className="player-status__detail_stat_atk">
-						<img src="/atk.svg" />
+						<img src="/icons/atk.svg" />
 						<span style={{ flex: 1, textAlign: "center" }}>
 							{stat.atk}
 						</span>
 					</div>
 					<div className="player-status__detail_stat_def">
-						<img src="/def.svg" />
+						<img src="/icons/def.svg" />
 						<span style={{ flex: 1, textAlign: "center" }}>
 							{stat.def}
 						</span>
 					</div>
 					<div className="player-status__detail_stat_spd">
-						<img src="/spd.svg" />
+						<img src="/icons/spd.svg" />
 						<span style={{ flex: 1, textAlign: "center" }}>
 							{stat.spd}
 						</span>
@@ -70,8 +70,8 @@ const PlayerStatus = ({
 						<img
 							src={
 								cardRemaining.rock > 0
-									? "/rock.svg"
-									: "/rock2.svg"
+									? "/icons/rock.svg"
+									: "/icons/rock2.svg"
 							}
 						/>
 						<span style={{ flex: 1, textAlign: "center" }}>
@@ -91,8 +91,8 @@ const PlayerStatus = ({
 						<img
 							src={
 								cardRemaining.paper > 0
-									? "/paper.svg"
-									: "/paper2.svg"
+									? "/icons/paper.svg"
+									: "/icons/paper2.svg"
 							}
 						/>
 						<span style={{ flex: 1, textAlign: "center" }}>
@@ -112,8 +112,8 @@ const PlayerStatus = ({
 						<img
 							src={
 								cardRemaining.scissors > 0
-									? "/scissors.svg"
-									: "/scissors2.svg"
+									? "/icons/scissors.svg"
+									: "/icons/scissors2.svg"
 							}
 						/>
 						<span style={{ flex: 1, textAlign: "center" }}>

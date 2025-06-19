@@ -24,14 +24,14 @@ const MenuCard = ({
     >
       <div className="MenuCard__inner">
         <div className="MenuCard__back">
-          {type === "Campaign" && <img src="/CampaignCard2.svg"/>}
-          {type === "PvP" && <img src="/PVPCard2.svg"/>}
-          {type === "Upgrade" && <img src="/UpgradeCard2.svg"/>}
+          {type === "Campaign" && <img src="/cards/CampaignCard2.svg"/>}
+          {type === "PvP" && <img src="/cards/PVPCard2.svg"/>}
+          {type === "Upgrade" && <img src="/cards/UpgradeCard2.svg"/>}
         </div>
         <div className="MenuCard__front">
-          {type === "Campaign" && <img src="/CampaignCard.svg"/>}
-          {type === "PvP" && <img src="/PVPCard.svg"/>}
-          {type === "Upgrade" && <img src="/UpgradeCard.svg"/>}
+          {type === "Campaign" && <img src="/cards/CampaignCard.svg"/>}
+          {type === "PvP" && <img src="/cards/PVPCard.svg"/>}
+          {type === "Upgrade" && <img src="/cards/UpgradeCard.svg"/>}
         </div>
       </div>
     </div>

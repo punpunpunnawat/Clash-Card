@@ -16,11 +16,15 @@ import LoadingCard from "../../components/LoadingCard";
 import PlayerStatus from "../../components/PlayerStatus";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../store";
+import { playBGM, sfx } from "../../managers/soundManager";
 
 const Campaign = () => {
 	const { levelId } = useParams();
 	const [matchID, setMatchID] = useState();
 	const navigate = useNavigate();
+	useEffect(() => {
+		playBGM("battle");
+	}, []);
 	//const dispatch: AppDispatch = useDispatch();
 	const player = useSelector((state: RootState) => state.player);
 
@@ -139,6 +143,7 @@ const Campaign = () => {
 							roundResult.opponent.cardPlayed
 						);
 						setHideCard(false);
+						sfx.card.play();
 						setTimeout(() => {
 							setGameState("DO_DAMAGE");
 						}, 1000);
@@ -214,7 +219,14 @@ const Campaign = () => {
 									  roundResult.opponent.doDamage.toString()
 									: ""
 							);
-
+							if (roundResult.player.doDamage >= 1)
+								sfx.hit.play();
+							else if (roundResult.player.doDamage == -1)
+								sfx.evade.play();
+							if (roundResult.opponent.doDamage >= 1)
+								sfx.hit.play();
+							else if (roundResult.opponent.doDamage == -1)
+								sfx.evade.play();
 							// update HP
 							setCurrentPlayerHP(Number(roundResult.player.hp));
 							setCurrentOpponentHP(
@@ -237,6 +249,15 @@ const Campaign = () => {
 									setPostGameDetail(
 										roundResult.postGameDetail
 									);
+									if (
+										roundResult.postGameDetail.result ===
+										"Win"
+									) {
+										sfx.win.play();
+									} else sfx.lose.play();
+
+									if (roundResult.postGameDetail.lvlUp > 0)
+										sfx.levelUp.play();
 								} else {
 									setGameState("DRAW_CARD");
 								}
@@ -354,6 +375,7 @@ const Campaign = () => {
 		if (!deck || !hand) return;
 		const deckRect = deck.getBoundingClientRect();
 		const handRect = hand.getBoundingClientRect();
+		sfx.card.play();
 		setOpponentDrawingCard({ id: "temp", type: "hidden" });
 		// start at deck
 		setOpponentDrawStyle({
@@ -434,6 +456,7 @@ const Campaign = () => {
 		const handRect = hand.getBoundingClientRect();
 		const cardPlacerRect = cardPlacer.getBoundingClientRect();
 
+		sfx.card.play();
 		setPlayerSelectingCard(true);
 		// start at deck
 		setPlayerSelectStyle({
@@ -533,7 +556,7 @@ const Campaign = () => {
 		if (!deck || !hand) return;
 		const deckRect = deck.getBoundingClientRect();
 		const handRect = hand.getBoundingClientRect();
-
+		sfx.card.play();
 		setPlayerDrawingCard(newCard);
 
 		// start at deck
@@ -600,7 +623,7 @@ const Campaign = () => {
 				<div className="PvP-win__body">
 					<div className="PvP-win__body_result">
 						<div className="PvP-win__body_result_header">
-							<img src="/LogoSmall.svg" width={120} height={24} />
+							<img src="/others/LogoSmall.svg" width={120} height={24} />
 							<header>{postGameDetail?.result}</header>
 							<span>{postGameDetail?.detail}</span>
 						</div>
@@ -736,11 +759,11 @@ const Campaign = () => {
 				<div className="PvP__overlay">
 					<img
 						className="Home__overlay__close"
-						src="/close.svg"
+						src="/icons/close.svg"
 						onClick={() => setToggleMenu(false)}
 					/>
 					<div className="PvP__overlay_class-explain">
-						<img src="/WarriorCard.svg" />
+						<img src="/cards/WarriorCard.svg" />
 						<h3>Warrior - Warrior's Blood</h3>
 						<p>
 							When drawing with Rock,
@@ -751,7 +774,7 @@ const Campaign = () => {
 						</p>
 					</div>
 					<div className="PvP__overlay_class-explain">
-						<img src="/MageCard.svg" />
+						<img src="/cards/MageCard.svg" />
 						<h3>Mage - True Sight</h3>
 						<p>
 							When winning with Paper,
@@ -763,7 +786,7 @@ const Campaign = () => {
 						</p>
 					</div>
 					<div className="PvP__overlay_class-explain">
-						<img src="/AssassinCard.svg" />
+						<img src="/cards/AssassinCard.svg" />
 
 						<h3>Assassin - True Strike</h3>
 						<p>
@@ -786,7 +809,12 @@ const Campaign = () => {
 				</div>
 			)}
 
-				<button className="PvP__menu-button" onClick={() => setToggleMenu(true)}>Menu</button>
+			<button
+				className="PvP__menu-button"
+				onClick={() => setToggleMenu(true)}
+			>
+				Menu
+			</button>
 
 			{/* Event Overlay */}
 			{/* {toggleOverlay && (
@@ -842,7 +870,7 @@ const Campaign = () => {
 					cardRemaining.player.paper +
 					cardRemaining.player.scissors >
 				3 ? (
-					<img src="/BackOfCard.svg" width={150} height={250} />
+					<img src="/cards/BackOfCard.svg" width={150} height={250} />
 				) : (
 					<div style={{ width: 150, height: 250 }} />
 				)}
@@ -864,7 +892,7 @@ const Campaign = () => {
 					ref={playerCardPlacerRef}
 				>
 					<img
-						src="/CardPlacer-Player.svg"
+						src="/cards/CardPlacer-Player.svg"
 						width={170}
 						height={270}
 					/>
@@ -896,7 +924,7 @@ const Campaign = () => {
 					ref={opponentCardPlacerRef}
 				>
 					<img
-						src="/CardPlacer-Opponent.svg"
+						src="/cards/CardPlacer-Opponent.svg"
 						width={170}
 						height={270}
 					/>
@@ -949,7 +977,7 @@ const Campaign = () => {
 					cardRemaining.opponent.paper +
 					cardRemaining.opponent.scissors >
 				3 ? (
-					<img src="/BackOfCard.svg" width={150} height={250} />
+					<img src="/cards/BackOfCard.svg" width={150} height={250} />
 				) : (
 					<div style={{ width: 150, height: 250 }} />
 				)}

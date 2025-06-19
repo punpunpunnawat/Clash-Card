@@ -40,7 +40,7 @@ const NavBar = ({ BackPath }: NavBarProps) => {
 					{BackPath ? (
 						<button onClick={handleClickBack}>Back</button>
 					) : (
-						<img src="/LogoSmall.svg" />
+						<img src="/others/LogoSmall.svg" />
 					)}
 				</div>
 				<div className="NavBar__right-side">
@@ -67,7 +67,7 @@ const NavBar = ({ BackPath }: NavBarProps) => {
 
 	return (
 		<div className="NavBar">
-			<img src="/LogoSmall.svg" />
+			<img src="/others/LogoSmall.svg" />
 		</div>
 	);
 };

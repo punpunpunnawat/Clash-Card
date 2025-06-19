@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import NavBar from "../../components/NavBar";
 import "./SelectClass.css";
+import { playBGM } from "../../managers/soundManager";
 
 type SelectClassProps = {
 	onSelectWarrior?: () => void;
@@ -35,6 +36,10 @@ const SelectClass = ({
 		},
 	};
 
+	useEffect(() => {
+		playBGM("menu");
+	}, []);
+
 	const handleSelectWarrior = () => {
 		onSelectWarrior?.();
 	};
@@ -54,7 +59,10 @@ const SelectClass = ({
 				<div className="select-class__body_class-card">
 					<div className="select-class__body_class-card_warrior">
 						<label style={{ fontSize: 24 }}>Warrior</label>
-						<img src="WarriorCard.svg" onClick={() => setSelectedClass("Warrior")}/>
+						<img
+							src="WarriorCard.svg"
+							onClick={() => setSelectedClass("Warrior")}
+						/>
 						<button
 							style={{ width: "100%" }}
 							onClick={handleSelectWarrior}
@@ -64,7 +72,10 @@ const SelectClass = ({
 					</div>
 					<div className="select-class__body_class-card_mage">
 						<label style={{ fontSize: 24 }}>Mage</label>
-						<img src="MageCard.svg" onClick={() => setSelectedClass("Mage")}/>
+						<img
+							src="MageCard.svg"
+							onClick={() => setSelectedClass("Mage")}
+						/>
 						<button
 							style={{ width: "100%" }}
 							onClick={handleSelectMage}
@@ -74,7 +85,10 @@ const SelectClass = ({
 					</div>
 					<div className="select-class__body_class-card_assassin">
 						<label style={{ fontSize: 24 }}>Assassin</label>
-						<img src="AssassinCard.svg" onClick={() => setSelectedClass("Assassin")}/>
+						<img
+							src="AssassinCard.svg"
+							onClick={() => setSelectedClass("Assassin")}
+						/>
 						<button
 							style={{ width: "100%" }}
 							onClick={handleSelectAssassin}

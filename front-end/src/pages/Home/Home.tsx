@@ -6,11 +6,17 @@ import type { AppDispatch } from "../../store";
 import { useEffect, useState } from "react";
 import { fetchPlayer } from "../../store/slices/playerSlice";
 import { useDispatch } from "react-redux";
+import { playBGM } from "../../managers/soundManager";
+
 const Home = () => {
 	const dispatch: AppDispatch = useDispatch();
 
 	const [toggleOverlay, setToggleOverlay] = useState(false);
-	const [lobbyID, setLobbyID] = useState("")
+	const [lobbyID, setLobbyID] = useState("");
+
+	useEffect(() => {
+		playBGM("menu");
+	}, []);
 
 	useEffect(() => {
 		const token = localStorage.getItem("authToken");
@@ -37,18 +43,23 @@ const Home = () => {
 		if (lobbyID.trim()) {
 			navigate(`/lobby/${lobbyID.trim()}`);
 		}
-	}
+	};
 
 	const handleClickCloseOverlay = () => {
 		setToggleOverlay(false);
 		setLobbyID("");
-	}
+	};
 
 	return (
 		<div className="Home">
+	
 			{toggleOverlay && (
 				<div className="Home__overlay">
-					<img className="Home__overlay__close" src="close.svg" onClick={handleClickCloseOverlay}/>
+					<img
+						className="Home__overlay__close"
+						src="icons/close.svg"
+						onClick={handleClickCloseOverlay}
+					/>
 					<input
 						type="text"
 						placeholder="LOBBY ID"
@@ -62,13 +73,10 @@ const Home = () => {
 			<NavBar />
 			<div className="Home__body">
 				<div className="Home__body_Logo">
-					<img src="/LogoBig.svg" />
+					<img src="others/LogoBig.svg" />
 				</div>
 				<div className="Home__body_MenuCard">
-					<MenuCard
-						type={"Campaign"}
-						onClick={handleClickCampaign}
-					/>
+					<MenuCard type={"Campaign"} onClick={handleClickCampaign} />
 					<MenuCard type={"PvP"} onClick={handleClickPvP} />
 					<MenuCard type={"Upgrade"} onClick={handleClickUpgrade} />
 				</div>
