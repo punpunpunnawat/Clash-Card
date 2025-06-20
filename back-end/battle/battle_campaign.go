@@ -1,23 +1,21 @@
-package main
+package battle
 
 import (
 	"bytes"
+	"clash_and_card/models"
+	"clash_and_card/user"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"math/rand"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
-
-// ----------- Models -----------
 
 type Card struct {
 	ID   string `json:"id"`
@@ -29,106 +27,15 @@ type GameState struct {
 	PlayingLevel int
 }
 
-// map เก็บสถานะเกมทุกแมตช์
 var gameStates = make(map[string]*GameState)
 var gameStatesMutex sync.Mutex
 
-// ----------- Utilities -----------
-// func logGameState(gs *GameState) {
-// 	gs.Lock()
-// 	defer gs.Unlock()
-
-// 	fmt.Println("------ GAME STATE ------")
-
-// 	fmt.Println("PlayerDeck:", len(gs.Player.Deck), "cards left")
-// 	fmt.Println("PlayerHand:", formatHand(gs.Player.Hand))
-// 	fmt.Printf("Player - HP: %d/%d | ATK: %d | DEF: %d | SPD: %d\n",
-// 		gs.Player.CurrentHP, gs.Player.Stat.HP, gs.Player.Stat.ATK, gs.Player.Stat.DEF, gs.Player.Stat.SPD)
-
-// 	fmt.Println("BotDeck:", len(gs.Bot.Deck), "cards left")
-// 	fmt.Println("BotHand:", formatHand(gs.Bot.Hand))
-// 	fmt.Printf("Bot - HP: %d/%d | ATK: %d | DEF: %d | SPD: %d\n",
-// 		gs.Bot.CurrentHP, gs.Bot.Stat.HP, gs.Bot.Stat.ATK, gs.Bot.Stat.DEF, gs.Bot.Stat.SPD)
-
-// 	fmt.Println("------------------------")
-// }
-
-func formatHand(hand []Card) string {
-	var result []string
-	for _, c := range hand {
-		result = append(result, fmt.Sprintf("(ID:%s, Type:%s)", c.ID, c.Type))
-	}
-	return strings.Join(result, ", ")
-}
-
-func getUserByIDFromDB(db *sql.DB, userID string) (*User, error) {
-	var user User
-	query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, gold, created_at, class FROM users WHERE id = ?`
-	row := db.QueryRow(query, userID)
-	err := row.Scan(
-		&user.ID,
-		&user.Username,
-		&user.Email,
-		&user.Stat.Atk,
-		&user.Stat.Def,
-		&user.Stat.HP,
-		&user.Stat.Spd,
-		&user.Level,
-		&user.CurrentCampaignLevel,
-		&user.Exp,
-		&user.Gold,
-		&user.CreatedAt,
-		&user.Class,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
-func getDeckByUserIDFromDB(db *sql.DB, userID string) ([]Card, error) {
-	rows, err := db.Query("SELECT card_type, quantity FROM decks WHERE user_id = ?", userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var cards []Card
-	idCounter := 1
-
-	for rows.Next() {
-		var cardType string
-		var quantity int
-		if err := rows.Scan(&cardType, &quantity); err != nil {
-			return nil, err
-		}
-
-		// สร้างการ์ดตามจำนวน quantity
-		for i := 0; i < quantity; i++ {
-			cardID := "c" + strconv.Itoa(idCounter)
-			cards = append(cards, Card{ID: cardID, Type: cardType})
-			idCounter++
-		}
-	}
-
-	if len(cards) == 0 {
-		return nil, fmt.Errorf("deck is empty")
-	}
-
-	// shuffle การ์ด
-	rand.Shuffle(len(cards), func(i, j int) {
-		cards[i], cards[j] = cards[j], cards[i]
-	})
-
-	return cards, nil
-}
-
-func newShuffledDeck() []Card {
+func newShuffledDeck(level int) []Card {
 	var cards []Card
 	types := []string{"rock", "paper", "scissors"}
 	idCounter := 1
 	for _, t := range types {
-		for i := 0; i < 1; i++ {
+		for i := 0; i < 5+(level); i++ {
 			cards = append(cards, Card{ID: "bot" + strconv.Itoa(idCounter), Type: t})
 			idCounter++
 		}
@@ -137,15 +44,6 @@ func newShuffledDeck() []Card {
 		cards[i], cards[j] = cards[j], cards[i]
 	})
 	return cards
-}
-
-func drawCards(deck *[]Card, n int) []Card {
-	if len(*deck) < n {
-		n = len(*deck)
-	}
-	hand := (*deck)[:n]
-	*deck = (*deck)[n:]
-	return hand
 }
 
 func generateBotStats(level int) (atk, def, spd, hp int) {
@@ -162,22 +60,7 @@ func generateBotStats(level int) (atk, def, spd, hp int) {
 	return
 }
 
-func countCard(card []Card) map[string]int {
-
-	countByType := map[string]int{
-		"rock":     0,
-		"paper":    0,
-		"scissors": 0,
-	}
-
-	for _, card := range card {
-		countByType[card.Type]++
-	}
-
-	return countByType
-}
-
-func handlePlayerWin(userID string, db *sql.DB, wonLevel int) (statGain UnitStat, levelGain, expGain, goldGain int, err error) {
+func handlePlayerWin(userID string, db *sql.DB, wonLevel int) (statGain models.UnitStat, levelGain, expGain, goldGain int, err error) {
 	var currentLevel int
 	err = db.QueryRow(`SELECT current_campaign_level FROM users WHERE id = ?`, userID).Scan(&currentLevel)
 	if err != nil {
@@ -282,22 +165,6 @@ func handlePlayerWin(userID string, db *sql.DB, wonLevel int) (statGain UnitStat
 	return
 }
 
-func removeCardFromHand(hand *[]Card, cardID string) bool {
-	found := false
-	newHand := (*hand)[:0] // reuse slice memory
-
-	for _, card := range *hand {
-		if card.ID == cardID && !found {
-			found = true
-			continue // ข้ามอันนี้เพื่อ "ลบ"
-		}
-		newHand = append(newHand, card)
-	}
-
-	*hand = newHand
-	return found
-}
-
 // ----------- Handlers -----------
 
 func StartBattleHandler(db *sql.DB) http.HandlerFunc {
@@ -320,7 +187,7 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		userID, err := extractUserIDFromToken(tokenStr)
+		userID, err := user.ExtractUserIDFromToken(tokenStr)
 		if err != nil {
 			fmt.Println("[ERROR] Failed to extract user ID from token:", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -351,7 +218,7 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 		}
 		fmt.Println("[INFO] Deck fetched for user:", userID, "| deck len:", len(deck))
 
-		botDeck := newShuffledDeck()
+		botDeck := newShuffledDeck(req.BotLevel)
 		playerHand := drawCards(&deck, 3)
 		botHand := drawCards(&botDeck, 3)
 		botATK, botDEF, botSPD, botHP := generateBotStats(req.BotLevel)
@@ -397,29 +264,6 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 		gameStatesMutex.Lock()
 		gameStates[matchID] = gameState
 		gameStatesMutex.Unlock()
-
-		// res := map[string]interface{}{
-		// 	"matchId":       matchID,
-		// 	"playerHand":    gameState.PVPState.PlayerA.Hand,
-		// 	"playerHP":      gameState.PVPState.PlayerA.CurrentHP,
-		// 	"enemyHandSize": len(gameState.PVPState.PlayerB.Hand),
-		// 	"enemyHP":       gameState.PVPState.PlayerB.CurrentHP,
-		// 	"playerStats": map[string]int{
-		// 		"ATK": gameState.PVPState.PlayerA.Stat.ATK,
-		// 		"DEF": gameState.PVPState.PlayerA.Stat.DEF,
-		// 		"SPD": gameState.PVPState.PlayerA.Stat.SPD,
-		// 	},
-		// 	"enemyStats": map[string]int{
-		// 		"ATK": gameState.PVPState.PlayerB.Stat.ATK,
-		// 		"DEF": gameState.PVPState.PlayerB.Stat.DEF,
-		// 		"SPD": gameState.PVPState.PlayerB.Stat.SPD,
-		// 	},
-		// 	"cardRemaining": map[string]interface{}{
-		// 		"player": countCard(append(gameState.PVPState.PlayerA.Deck, gameState.PVPState.PlayerA.Hand...)),
-		// 		"enemy":  countCard(append(gameState.PVPState.PlayerB.Deck, gameState.PVPState.PlayerB.Hand...)),
-		// 	},
-		// }
-
 		playerCardRemaining := countCard(append(gameState.PVPState.PlayerA.Deck, gameState.PVPState.PlayerA.Hand...))
 		botCardRemaining := countCard(append(gameState.PVPState.PlayerB.Deck, gameState.PVPState.PlayerB.Hand...))
 		res := map[string]interface{}{
@@ -456,39 +300,6 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 				"trueSight": gameState.PVPState.PlayerB.TrueSight,
 			},
 		}
-		// response := map[string]interface{}{
-		// 	"type": "initialData",
-		// 	"player": map[string]interface{}{
-		// 		"name":          state.PlayerA.Name,
-		// 		"level":         state.PlayerA.Level,
-		// 		"currentHP":     state.PlayerA.CurrentHP,
-		// 		"cardRemaining": A_CardRemaining,
-		// 		"hand":          state.PlayerA.Hand,
-		// 		"stat": map[string]interface{}{
-		// 			"atk": state.PlayerA.Stat.ATK,
-		// 			"def": state.PlayerA.Stat.DEF,
-		// 			"spd": state.PlayerA.Stat.SPD,
-		// 			"hp":  state.PlayerA.Stat.HP,
-		// 		},
-		// 		"class":     state.PlayerA.Class,
-		// 		"trueSight": state.PlayerA.TrueSight,
-		// 	},
-		// 	"opponent": map[string]interface{}{
-		// 		"name":          state.PlayerB.Name,
-		// 		"level":         state.PlayerB.Level,
-		// 		"currentHP":     state.PlayerB.CurrentHP,
-		// 		"cardRemaining": B_CardRemaining,
-		// 		"handSize":      len(state.PlayerB.Hand),
-		// 		"stat": map[string]interface{}{
-		// 			"atk": state.PlayerB.Stat.ATK,
-		// 			"def": state.PlayerB.Stat.DEF,
-		// 			"spd": state.PlayerB.Stat.SPD,
-		// 			"hp":  state.PlayerB.Stat.HP,
-		// 		},
-		// 		"class":     state.PlayerB.Class,
-		// 		"trueSight": state.PlayerB.TrueSight,
-		// 	},
-		// }
 
 		fmt.Println("[DEBUG] Created matchID:", matchID)
 		fmt.Printf("[DEBUG] Stored gameState for matchID: %s | PlayerHand: %+v\n", matchID, playerHand)
@@ -518,7 +329,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		}
 		fmt.Println("[DEBUG] token:", tokenStr)
 
-		userID, err := extractUserIDFromToken(tokenStr)
+		userID, err := user.ExtractUserIDFromToken(tokenStr)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
@@ -580,13 +391,13 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		gameStatus, result, detail, _, _ := checkGameResult(&gs.PVPState)
 		fmt.Printf("[DEBUG] gameStatus: %s | result: %s | detail: %s\n", gameStatus, result, detail)
 
-		postGameDetail := PostGameDetail{
+		postGameDetail := models.PostGameDetail{
 			Result:   result,
 			Detail:   detail,
 			Exp:      0,
 			Gold:     0,
 			LvlUp:    0,
-			StatGain: UnitStat{Atk: 0, Def: 0, Spd: 0, HP: 0},
+			StatGain: models.UnitStat{Atk: 0, Def: 0, Spd: 0, HP: 0},
 		}
 
 		if gameStatus == "end" && result == "Win" {
@@ -596,7 +407,7 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 			} else {
 				fmt.Printf("[DEBUG] Rewards - EXP: %d, Gold: %d, LvlUp: %d, StatGain: %+v\n", expGain, goldGain, levelGain, statGain)
 			}
-			postGameDetail = PostGameDetail{
+			postGameDetail = models.PostGameDetail{
 				Result:   result,
 				Detail:   detail,
 				Exp:      expGain,
@@ -642,17 +453,19 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 				"specialEvent":  specialEventB,
 			},
 			"gameStatus": func() string {
-				if gameStatus == "Awin" {
+				switch gameStatus {
+				case "Awin":
 					return "playerWin"
-				} else if gameStatus == "Bwin" {
+				case "Bwin":
 					return "opponentWin"
 				}
 				return gameStatus
 			}(),
 			"roundWinner": func() string {
-				if winner == "A" {
+				switch winner {
+				case "A":
 					return "player"
-				} else if winner == "B" {
+				case "B":
 					return "opponent"
 				}
 				return "draw"
@@ -663,134 +476,6 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(res)
 	}
 
-}
-
-func doDamage(
-	state *PVPState,
-	cardA Card,
-	cardB Card,
-	winner string,
-) (damageToA int, damageToB int, specialEventA string, specialEventB string) {
-
-	damageToB = 0
-	damageToA = 0
-	specialEventA = "nothing"
-	specialEventB = "nothing"
-
-	evasionA := math.Max(0.15, math.Min(0.1+float64(state.PlayerA.Stat.SPD-state.PlayerB.Stat.SPD)*0.01, 0.75))
-	evasionB := math.Max(0.15, math.Min(0.1+float64(state.PlayerB.Stat.SPD-state.PlayerA.Stat.SPD)*0.01, 0.75))
-
-	attackToAMiss := rand.Float64() < evasionA
-	attackToBMiss := rand.Float64() < evasionB
-
-	if winner == "A" {
-		damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK-state.PlayerB.Stat.DEF), 1))
-
-		if state.PlayerA.Class == "assassin" && cardA.Type == "scissors" {
-			damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK), 1))
-			attackToBMiss = false
-			specialEventA = "True Strike"
-		} else if state.PlayerA.Class == "mage" && cardA.Type == "paper" {
-			state.PlayerA.TrueSight += 1
-			specialEventA = "True Sight"
-		}
-	} else if winner == "B" {
-		damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF), 1))
-
-		if state.PlayerB.Class == "assassin" && cardB.Type == "scissors" {
-			damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK), 1))
-			attackToAMiss = false
-			specialEventB = "True Strike"
-		} else if state.PlayerB.Class == "mage" && cardB.Type == "paper" {
-			state.PlayerB.TrueSight += 1
-			specialEventB = "True Sight"
-		}
-	} else if winner == "draw" {
-		if state.PlayerA.Class == "warrior" && cardA.Type == "rock" {
-			damageToB = int(math.Max(float64(state.PlayerA.Stat.ATK-state.PlayerB.Stat.DEF)/2, 1))
-			attackToBMiss = false
-			specialEventA = "Warrior Blood"
-		}
-		if state.PlayerB.Class == "warrior" && cardB.Type == "rock" {
-			damageToA = int(math.Max(float64(state.PlayerB.Stat.ATK-state.PlayerA.Stat.DEF)/2, 1))
-			attackToAMiss = false
-			specialEventB = "Warrior Blood"
-		}
-	}
-
-	if damageToA != 0 {
-		if attackToAMiss {
-			damageToA = -1
-		} else {
-			state.PlayerA.CurrentHP = int(math.Max(float64(state.PlayerA.CurrentHP-damageToA), 0))
-		}
-	}
-
-	if damageToB != 0 {
-		if attackToBMiss {
-			damageToB = -1
-		} else {
-			state.PlayerB.CurrentHP = int(math.Max(float64(state.PlayerB.CurrentHP-damageToB), 0))
-		}
-	}
-
-	return
-}
-
-func checkGameResult(state *PVPState) (gameStatus, resultA, detailA, resultB, detailB string) {
-	playerOutOfHP := state.PlayerA.CurrentHP == 0
-	opponentOutOfHP := state.PlayerB.CurrentHP == 0
-	playerOutOfCard := len(state.PlayerA.Deck)+len(state.PlayerA.Hand) == 0
-	opponentOutOfCard := len(state.PlayerB.Deck)+len(state.PlayerB.Hand) == 0
-	gameStatus = "onGoing"
-	switch {
-	case playerOutOfHP && opponentOutOfHP:
-		gameStatus = "end"
-		resultA, detailA = "Draw", "Both out of HP"
-		resultB, detailB = "Draw", "Both out of HP"
-
-	case playerOutOfHP:
-		gameStatus = "end"
-		resultA, detailA = "Lose", "You out of HP"
-		resultB, detailB = "Win", "Opponent out of HP"
-
-	case opponentOutOfHP:
-		gameStatus = "end"
-		resultA, detailA = "Win", "Opponent out of HP"
-		resultB, detailB = "Lose", "You out of HP"
-
-	case playerOutOfCard && opponentOutOfCard:
-		gameStatus = "end"
-		resultA, detailA = "Draw", "Both out of Card"
-		resultB, detailB = "Draw", "Both out of Card"
-
-	case playerOutOfCard:
-		gameStatus = "end"
-		resultA, detailA = "Lose", "You out of Card"
-		resultB, detailB = "Win", "Opponent out of Card"
-
-	case opponentOutOfCard:
-		gameStatus = "end"
-		resultA, detailA = "Win", "Opponent out of Card"
-		resultB, detailB = "Lose", "You out of Card"
-	}
-
-	return
-}
-
-func findWinner(cardA Card, cardB Card) (winner string) {
-	if cardA.Type == cardB.Type {
-		winner = "draw"
-	} else if cardA.Type == "rock" && cardB.Type == "scissors" {
-		winner = "A"
-	} else if cardA.Type == "scissors" && cardB.Type == "paper" {
-		winner = "A"
-	} else if cardA.Type == "paper" && cardB.Type == "rock" {
-		winner = "A"
-	} else {
-		winner = "B"
-	}
-	return winner
 }
 
 func TrueSightHandler() http.HandlerFunc {

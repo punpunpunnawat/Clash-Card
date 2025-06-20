@@ -1,6 +1,10 @@
 package main
 
 import (
+	"clash_and_card/battle"
+	"clash_and_card/upgrade"
+	"clash_and_card/user"
+
 	"log"
 	"net/http"
 
@@ -17,21 +21,21 @@ func main() {
 
 	// เพิ่ม middleware CORS
 	r.Use(middlewareCORS)
-	r.HandleFunc("/api/login", loginHandler(db)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/login", user.LoginHandler(db)).Methods("POST", "OPTIONS")
 
-	r.HandleFunc("/api/check-email", checkEmailHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/register", registerHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/user", GetUserHandler(db)).Methods("GET", "OPTIONS")
-	r.HandleFunc("/api/deck", GetUserDeckHandler(db)).Methods("GET", "OPTIONS")
+	r.HandleFunc("/api/check-email", user.CheckEmailHandler(db)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/register", user.RegisterHandler(db)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/user", user.GetUserHandler(db)).Methods("GET", "OPTIONS")
+	r.HandleFunc("/api/deck", user.GetUserDeckHandler(db)).Methods("GET", "OPTIONS")
 
-	r.HandleFunc("/api/battle/start", StartBattleHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/battle/{matchID}/play", PlayCardHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/battle/{matchID}/play/true-sight", TrueSightHandler()).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/battle/start", battle.StartBattleHandler(db)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/battle/{matchID}/play", battle.PlayCardHandler(db)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/battle/{matchID}/play/true-sight", battle.TrueSightHandler()).Methods("POST", "OPTIONS")
 
-	r.HandleFunc("/api/upgrade-stat", UpgradeStatHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/buy-card", BuyCardHandler(db)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/upgrade-stat", upgrade.UpgradeStatHandler(db)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/buy-card", upgrade.BuyCardHandler(db)).Methods("POST", "OPTIONS")
 
-	r.HandleFunc("/ws/pvp", HandlePVPWebSocket(db))
+	r.HandleFunc("/ws/pvp", battle.HandlePVPWebSocket(db))
 	//r.HandleFunc("/ws/pvp", HandlePVPWebSocket)
 
 	log.Println("Server running at :8080")

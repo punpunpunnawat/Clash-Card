@@ -1,5 +1,4 @@
-// main.go
-package main
+package user
 
 import (
 	"database/sql"
@@ -32,7 +31,7 @@ func isEmailExists(db *sql.DB, email string) (bool, error) {
 	return exists, err
 }
 
-func loginHandler(db *sql.DB) http.HandlerFunc {
+func LoginHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req LoginRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -70,7 +69,7 @@ func loginHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func checkEmailHandler(db *sql.DB) http.HandlerFunc {
+func CheckEmailHandler(db *sql.DB) http.HandlerFunc {
 	type Req struct {
 		Email string `json:"email"`
 	}
@@ -111,7 +110,7 @@ func initDeck(class string) (rock int, paper int, scissors int) {
 	}
 }
 
-func registerHandler(db *sql.DB) http.HandlerFunc {
+func RegisterHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -178,7 +177,7 @@ func registerHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func extractUserIDFromToken(tokenStr string) (string, error) {
+func ExtractUserIDFromToken(tokenStr string) (string, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})

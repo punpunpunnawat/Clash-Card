@@ -1,6 +1,8 @@
-package main
+package battle
 
 import (
+	"clash_and_card/models"
+	"clash_and_card/user"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -137,28 +139,6 @@ func loadPVPStateFromDB(db *sql.DB, userAID, userBID string) (*PVPState, error) 
 	return state, nil
 }
 
-func logPVPState(roomID string, ps *PVPState) {
-	ps.Lock()
-	defer ps.Unlock()
-
-	fmt.Println("====== PVP STATE ======")
-	fmt.Println("Room ID:", roomID)
-
-	fmt.Println("--- Player A ---")
-	fmt.Println("ID:", ps.PlayerA.Name, "Level:", ps.PlayerA.Level)
-	fmt.Println("Deck:", len(ps.PlayerA.Deck), "cards left")
-	fmt.Println("Hand:", formatHand(ps.PlayerA.Hand))
-	fmt.Println("ATK:", ps.PlayerA.Stat.ATK, "HP:", ps.PlayerA.CurrentHP, "/", ps.PlayerA.Stat.HP, "DEF:", ps.PlayerA.Stat.DEF, "SPD:", ps.PlayerA.Stat.SPD)
-
-	fmt.Println("--- Player B ---")
-	fmt.Println("ID:", ps.PlayerB.Name, "Level:", ps.PlayerB.Level)
-	fmt.Println("Deck:", len(ps.PlayerB.Deck), "cards left")
-	fmt.Println("Hand:", formatHand(ps.PlayerB.Hand))
-	fmt.Println("ATK:", ps.PlayerB.Stat.ATK, "HP:", ps.PlayerB.CurrentHP, "/", ps.PlayerB.Stat.HP, "DEF:", ps.PlayerB.Stat.DEF, "SPD:", ps.PlayerB.Stat.SPD)
-
-	fmt.Println("========================")
-}
-
 // Handler
 func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +152,8 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 		header := http.Header{}
 		header.Add("Sec-WebSocket-Protocol", tokenStr) // ส่งกลับ client ด้วย
 
-		userID, err := extractUserIDFromToken(tokenStr)
+		userID, err := user.ExtractUserIDFromToken(tokenStr)
+
 		if err != nil {
 			http.Error(w, "invalid token", http.StatusUnauthorized)
 			return
@@ -220,11 +201,8 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 		}
 
 		match.Clients[slot] = client
-
-		// ปลดล็อกก่อนเลย ถ้าจะทำงานหนักหรือเรียก DB ข้างนอก
 		pvpManager.lock.Unlock()
 
-		// โหลดสถานะ DB เฉพาะเมื่อครบ 2 คน
 		if len(match.Clients) == 2 {
 			clientA := match.Clients["A"]
 			clientB := match.Clients["B"]
@@ -236,7 +214,6 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 					return
 				}
 
-				// ส่งข้อมูลกลับ client ต้องล็อกก่อนดึง client ใหม่
 				pvpManager.lock.Lock()
 				match, ok := pvpManager.rooms[roomID]
 				if !ok {
@@ -399,11 +376,12 @@ func pvpRead(c *PVPClient) {
 			state.Lock()
 
 			var hand []Card
-			if c.slot == "A" {
+			switch c.slot {
+			case "A":
 				hand = state.PlayerA.Hand
-			} else if c.slot == "B" {
+			case "B":
 				hand = state.PlayerB.Hand
-			} else {
+			default:
 				state.Unlock()
 				fmt.Println("Invalid slot:", c.slot)
 				return
@@ -429,8 +407,9 @@ func pvpRead(c *PVPClient) {
 
 			state.Unlock()
 
-			// ส่งให้ฝั่งตรงข้ามเท่านั้น
-			if c.slot == "A" {
+			//sent to opponent
+			switch c.slot {
+			case "A":
 				responseForB := map[string]interface{}{
 					"type":             "selection_status",
 					"playerSelected":   match.Selected["B"] != nil,
@@ -445,7 +424,7 @@ func pvpRead(c *PVPClient) {
 					default:
 					}
 				}
-			} else if c.slot == "B" {
+			case "B":
 				// สร้าง response ที่แยกฝั่ง
 				responseForA := map[string]interface{}{
 					"type":             "selection_status",
@@ -476,22 +455,22 @@ func pvpRead(c *PVPClient) {
 
 				gameStatus, resultA, detailA, resultB, detailB := checkGameResult(state)
 
-				postGameDetailA := PostGameDetail{
+				postGameDetailA := models.PostGameDetail{
 					Result:   resultA,
 					Detail:   detailA,
 					Exp:      0,
 					Gold:     0,
 					LvlUp:    0,
-					StatGain: UnitStat{Atk: 0, Def: 0, Spd: 0, HP: 0},
+					StatGain: models.UnitStat{Atk: 0, Def: 0, Spd: 0, HP: 0},
 				}
 
-				postGameDetailB := PostGameDetail{
+				postGameDetailB := models.PostGameDetail{
 					Result:   resultB,
 					Detail:   detailB,
 					Exp:      0,
 					Gold:     0,
 					LvlUp:    0,
-					StatGain: UnitStat{Atk: 0, Def: 0, Spd: 0, HP: 0},
+					StatGain: models.UnitStat{Atk: 0, Def: 0, Spd: 0, HP: 0},
 				}
 
 				//draw card

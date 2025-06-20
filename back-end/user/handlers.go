@@ -1,6 +1,7 @@
-package main
+package user
 
 import (
+	"clash_and_card/models"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -28,7 +29,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		userID, err := extractUserIDFromToken(tokenStr)
+		userID, err := ExtractUserIDFromToken(tokenStr)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			fmt.Println("❌ Token extraction failed:", err)
@@ -114,7 +115,7 @@ func GetUserDeckHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		userID, err := extractUserIDFromToken(tokenStr)
+		userID, err := ExtractUserIDFromToken(tokenStr)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
@@ -127,9 +128,9 @@ func GetUserDeckHandler(db *sql.DB) http.HandlerFunc {
 		}
 		defer rows.Close()
 
-		var deck []DeckCard
+		var deck []models.DeckCard
 		for rows.Next() {
-			var card DeckCard
+			var card models.DeckCard
 			if err := rows.Scan(&card.CardType, &card.Quantity); err != nil {
 				http.Error(w, "Error reading card", http.StatusInternalServerError)
 				return

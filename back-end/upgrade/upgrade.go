@@ -1,6 +1,7 @@
-package main
+package upgrade
 
 import (
+	"clash_and_card/user"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -22,7 +23,7 @@ func UpgradeStatHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		userID, err := extractUserIDFromToken(tokenStr)
+		userID, err := user.ExtractUserIDFromToken(tokenStr)
 		if err != nil || userID == "0" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
@@ -97,7 +98,7 @@ func BuyCardHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		userID, err := extractUserIDFromToken(tokenStr)
+		userID, err := user.ExtractUserIDFromToken(tokenStr)
 		if err != nil || userID == "0" {
 			fmt.Println("Unauthorized:", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)

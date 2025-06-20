@@ -1,4 +1,4 @@
-package main
+package models
 
 type UnitStat struct {
 	Atk int `json:"atk"`
