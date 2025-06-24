@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import type { CardProps } from "../../types/Card";
 import Card from "../../components/Card/Card";
-import "./css/PvP.css";
+import "./css/Battle.css";
 import "./css/CardAttack.css";
 import {
 	type CardCount,
@@ -11,11 +11,13 @@ import {
 	type PostGameDetail,
 	type RoundResult,
 	type ServerMessage,
-} from "../../types/Pvp";
+} from "../../types/Battle";
 import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
 import PlayerStatus from "../../components/PlayerStatus";
 import { playBGM, sfx } from "../../managers/soundManager";
+import ClassSkillOverlay from "../../components/ClassSkillOverlay";
+import GameEnd from "./Overlay/GameEnd/GameEnd";
 
 const PvP = () => {
 	const { id: roomID } = useParams();
@@ -100,7 +102,7 @@ const PvP = () => {
 	const [toggleTrueSightAlert, setToggleTrueSightAlert] = useState(false);
 	const [toggleTrueSightResult, setToggleTrueSightResult] =
 		useState<CardCount | null>(null);
-	const [toggleMenu, setToggleMenu] = useState(false);
+	const [toggleClassSkill, setToggleClassSkill] = useState(false);
 
 	//Ref
 	const playerDeckRef = useRef<HTMLDivElement>(null);
@@ -507,7 +509,7 @@ const PvP = () => {
 		navigate("/");
 	};
 
-	const handleClickRematch = () => {
+	const handleClickPlayAgain = () => {
 		window.location.reload();
 	};
 
@@ -614,13 +616,13 @@ const PvP = () => {
 	//waiting page
 	if (gameState === "WAIT_OPPONENT")
 		return (
-			<div className="PvP-Loading">
+			<div className="battle-Loading">
 				<NavBar BackPath="/" />
-				<div className="PvP-Loading__body">
-					<div className="PvP-Loading__body_text">
-						<div className="PvP-Loading__body_text_header">
+				<div className="battle-Loading__body">
+					<div className="battle-Loading__body_text">
+						<div className="battle-Loading__body_text_header">
 							<h2>Lobby ID</h2>
-							<div className="PvP-Loading__body_text_header_lobby-ID">
+							<div className="battle-Loading__body_text_header_lobby-ID">
 								{roomID}
 							</div>
 						</div>
@@ -633,40 +635,25 @@ const PvP = () => {
 
 	//game ended page
 	if (gameState === "END") {
-		return (
-			<div className="PvP-win">
-				<NavBar />
-				<div className="PvP-win__body">
-					<div className="PvP-win__body_header">
-						<img src="others/LogoSmall.svg" width={120} height={24} />
-						<header>{postGameDetail?.result}</header>
-						<span>{postGameDetail?.detail}</span>
-					</div>
-
-					<div className="PvP-win__body_menu">
-						<h2 style={{ flex: 1, justifyContent: "center" }}>
-							What is your next move ?
-						</h2>
-						<div className="PvP-win__body_menu_button">
-							<button onClick={handleClickRematch}>
-								Rematch
-							</button>
-							<button onClick={handleClickBackToMenu}>
-								Back to menu
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-		);
+		//game ended page
+		if (gameState === "END" && postGameDetail) {
+			return (
+				<GameEnd
+					postGameDetail={postGameDetail}
+					type="pvp"
+					onClickPlayAgain={handleClickPlayAgain}
+					onClickkBackToMenu={handleClickBackToMenu}
+				/>
+			);
+		}
 	}
 
 	//default page
 	return (
-		<div className="PvP">
+		<div className="battle">
 			{/* Event Overlay */}
 			{toggleTrueSightResult && (
-				<div className="PvP__overlay">
+				<div className="battle__overlay">
 					{Object.entries(toggleTrueSightResult).flatMap(
 						([type, count]) =>
 							Array.from({ length: count }).map((_, i) => (
@@ -680,74 +667,32 @@ const PvP = () => {
 			)}
 
 			{toggleTrueSightAlert && (
-				<div className="PvP__overlay">
+				<div className="battle__overlay">
 					<img src="/cards/TrueSightCard.svg" />
 				</div>
 			)}
 
-			{toggleMenu && (
-				<div className="PvP__overlay">
-					<img
-						className="Home__overlay__close"
-						src="/icons/close.svg"
-						onClick={() => setToggleMenu(false)}
-					/>
-					<div className="PvP__overlay_class-explain">
-						<img src="/cards/WarriorCard.svg" />
-						<h3>Warrior - Warrior's Blood</h3>
-						<p>
-							When drawing with Rock,
-							<br />
-							deal half of your normal damage to the enemy.
-							<br />
-							(always hit)
-						</p>
-					</div>
-					<div className="PvP__overlay_class-explain">
-						<img src="/cards/MageCard.svg" />
-						<h3>Mage - True Sight</h3>
-						<p>
-							When winning with Paper,
-							<br />
-							gain 1 True Sight token.
-							<br />
-							Use it to reveal your opponent's hand.
-							<br />
-						</p>
-					</div>
-					<div className="PvP__overlay_class-explain">
-						<img src="/cards/AssassinCard.svg" />
-
-						<h3>Assassin - True Strike</h3>
-						<p>
-							When winning with Scissors,
-							<br />
-							ignore the opponent’s defense when dealing damage.
-							<br />
-							(always hit)
-						</p>
-					</div>
-					<div className="PvP__overlay_leave">
-						Scared ? you can leave anytime
-						<button
-							onClick={() => navigate("/")}
-							style={{ background: "rgba(255,0,0,0.5)" }}
-						>
-							Leave
-						</button>
-					</div>
-				</div>
+			{toggleClassSkill && (
+				<ClassSkillOverlay
+					onClickClose={() => setToggleClassSkill(false)}
+				/>
 			)}
 
-			<button
-				className="PvP__menu-button"
-				onClick={() => setToggleMenu(true)}
-			>
-				Menu
-			</button>
+			<div className="battle__menu-button">
+				MENU
+				<button onClick={() => setToggleClassSkill(true)}>
+					Class Skill
+				</button>
+				<button
+					onClick={() => navigate("/")}
+					style={{ background: "rgba(255, 70, 70, 0.5)", width: "100%" }}
+				>
+					Leave
+				</button>
+			</div>
 
 			{/* Player */}
-			<div className="PvP__player_status">
+			<div className="battle__player_status">
 				<PlayerStatus
 					level={playerDetail.level}
 					playerClass={playerDetail.class}
@@ -759,7 +704,7 @@ const PvP = () => {
 				/>
 			</div>
 
-			<div className="PvP__player_hand" ref={playerHandRef}>
+			<div className="battle__player_hand" ref={playerHandRef}>
 				{playerHand?.map((card, index) => {
 					const total = playerHand.length;
 					const angleStep = 10; // ค่าที่ควบคุมความเอียง
@@ -788,7 +733,7 @@ const PvP = () => {
 				})}
 			</div>
 
-			<div className="PvP__player_deck" ref={playerDeckRef}>
+			<div className="battle__player_deck" ref={playerDeckRef}>
 				{cardRemaining.player.rock +
 					cardRemaining.player.paper +
 					cardRemaining.player.scissors >
@@ -809,9 +754,9 @@ const PvP = () => {
 			)}
 
 			{/* Card Placer */}
-			<div className="PvP__board">
+			<div className="battle__board">
 				<div
-					className="PvP__board_card-placer"
+					className="battle__board_card-placer"
 					ref={playerCardPlacerRef}
 				>
 					<img
@@ -843,7 +788,7 @@ const PvP = () => {
 				</div>
 
 				<div
-					className="PvP__board_card-placer"
+					className="battle__board_card-placer"
 					ref={opponentCardPlacerRef}
 				>
 					<img
@@ -880,7 +825,7 @@ const PvP = () => {
 			)}
 
 			{/* Opponent */}
-			<div className="PvP__opponent_status">
+			<div className="battle__opponent_status">
 				<PlayerStatus
 					level={opponentDetail.level}
 					playerClass={opponentDetail.class}
@@ -891,7 +836,7 @@ const PvP = () => {
 				/>
 			</div>
 
-			<div className="PvP__opponent_deck" ref={opponentDeckRef}>
+			<div className="battle__opponent_deck" ref={opponentDeckRef}>
 				{cardRemaining.opponent.rock +
 					cardRemaining.opponent.paper +
 					cardRemaining.opponent.scissors >
@@ -902,7 +847,7 @@ const PvP = () => {
 				)}
 			</div>
 
-			<div className="PvP__opoonent_hand" ref={opponentHandRef}>
+			<div className="battle__opoonent_hand" ref={opponentHandRef}>
 				{Array.from({ length: opponentHandSize }).map((_, index) => {
 					const total = opponentHandSize;
 					const angleStep = 10; // ค่าที่ควบคุมความเอียง

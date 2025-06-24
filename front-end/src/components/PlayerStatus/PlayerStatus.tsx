@@ -1,4 +1,4 @@
-import type { CardCount } from "../../types/Pvp";
+import type { CardCount } from "../../types/Battle";
 import type { PlayerClass, UnitStat } from "../../types/UnitStat";
 import HealthBar from "../HealthBar";
 import "./PlayerStatus.css";

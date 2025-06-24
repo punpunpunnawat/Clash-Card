@@ -1,0 +1,189 @@
+/* ========== battle Global Layout ========== */
+.battle {
+	width: 100%;
+	height: 100vh;
+	overflow: hidden;
+}
+
+/* ========== Main Board ========== */
+.battle__board {
+	display: flex;
+	gap: 40px;
+	position: absolute;
+	align-items: center;
+	justify-content: center;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.battle__board_card-placer {
+	position: relative;
+	width: 170px;
+	height: 270px;
+	z-index: 1;
+}
+
+.battle__board_card-placer > * {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: fit-content;
+	height: fit-content;
+	transform: translate(-50%, -50%);
+	z-index: 2;
+}
+
+/* ========== Player & Opponent Hands ========== */
+.battle__player_hand,
+.battle__opoonent_hand {
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+	display: inline-flex;
+	align-items: center;
+	perspective: 1000px;
+	overflow: visible;
+}
+
+.battle__player_hand {
+	bottom: 0;
+}
+
+.battle__opoonent_hand {
+	top: 0;
+}
+
+.hand > div,
+.card-wrapper {
+	transition: transform 0.3s ease;
+}
+
+.card-wrapper:hover {
+	transform: scale(1.1);
+	z-index: 10;
+}
+
+/* ========== Player Info ========== */
+.battle__board-player,
+.battle__board-opponent {
+	position: fixed;
+	left: 0;
+	width: 100%;
+	display: flex;
+	justify-content: space-between;
+	z-index: 999;
+	padding: 0 10px;
+	box-sizing: border-box;
+}
+
+.battle__board-player {
+	bottom: 0;
+}
+
+.battle__board-opponent {
+	top: 0;
+}
+
+
+/* ========== Loading Screen ========== */
+.battle-Loading {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+.battle-Loading__body {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	padding: 128px;
+	gap: 64px;
+	justify-content: center;
+	align-items: center;
+}
+
+.battle-Loading__body_text {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	font-family: "MOON_Light";
+	align-items: center;
+}
+
+.battle-Loading__body_text_header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.battle-Loading__body_text_header_lobby-ID {
+	font-family: "MOON_Bold";
+	display: flex;
+	color: white;
+	height: 40px;
+	padding: 0 32px;
+	justify-content: center;
+	align-items: center;
+	border-radius: 8px;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+	transition: background-color 0.4s ease, border-color 0.2s ease;
+}
+
+/* ========== Misc Elements ========== */
+.battle__player_deck {
+	position: absolute;
+	bottom: 16px;
+	right: 16px;
+}
+
+.battle__opponent_deck {
+	position: absolute;
+	top: 16px;
+	left: 16px;
+	transform: scaleY(-1);
+}
+
+.battle__player_status {
+	position: absolute;
+	bottom: 16px;
+	left: 16px;
+}
+
+.battle__opponent_status {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+}
+
+.battle__menu-button {
+	position: absolute;
+	right: 16px;
+	top: 50%;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	align-items: center;
+	background-color: rgba(20, 20, 20, 0.5);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+	padding: 16px;
+	transform: translateY(-50%);
+	border-radius: 16px;
+}
+
+.battle__overlay {
+		position: fixed;
+    padding: 32px;
+	gap: 16px;
+    box-sizing: border-box;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background-color: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+	backdrop-filter: blur(16px);
+}

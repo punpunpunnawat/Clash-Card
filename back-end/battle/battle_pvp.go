@@ -508,17 +508,19 @@ func pvpRead(c *PVPClient) {
 						"specialEvent":  specialEventB,
 					},
 					"gameStatus": func() string {
-						if gameStatus == "Awin" {
+						switch gameStatus {
+						case "Awin":
 							return "playerWin"
-						} else if gameStatus == "Bwin" {
+						case "Bwin":
 							return "opponentWin"
 						}
 						return gameStatus
 					}(),
 					"roundWinner": func() string {
-						if winner == "A" {
+						switch winner {
+						case "A":
 							return "player"
-						} else if winner == "B" {
+						case "B":
 							return "opponent"
 						}
 						return "draw"
@@ -546,17 +548,19 @@ func pvpRead(c *PVPClient) {
 						"specialEvent":  specialEventA,
 					},
 					"gameStatus": func() string {
-						if gameStatus == "Bwin" {
+						switch gameStatus {
+						case "Bwin":
 							return "playerWin"
-						} else if gameStatus == "Awin" {
+						case "Awin":
 							return "opponentWin"
 						}
 						return gameStatus
 					}(),
 					"roundWinner": func() string {
-						if winner == "B" {
+						switch winner {
+						case "B":
 							return "player"
-						} else if winner == "A" {
+						case "A":
 							return "opponent"
 						}
 						return "draw"
@@ -608,13 +612,14 @@ func pvpRead(c *PVPClient) {
 			var player *PlayerData
 			var opponent *PlayerData
 
-			if c.slot == "A" {
+			switch c.slot {
+			case "A":
 				player = &state.PlayerA
 				opponent = &state.PlayerB
-			} else if c.slot == "B" {
+			case "B":
 				player = &state.PlayerB
 				opponent = &state.PlayerA
-			} else {
+			default:
 				state.Unlock()
 				fmt.Println("Invalid slot:", c.slot)
 				return
@@ -711,9 +716,10 @@ func pvpRemoveClient(c *PVPClient) {
 
 	// แจ้งอีกฝั่งก่อนลบ
 	var opponent *PVPClient
-	if c.slot == "A" {
+	switch c.slot {
+	case "A":
 		opponent = match.Clients["B"]
-	} else if c.slot == "B" {
+	case "B":
 		opponent = match.Clients["A"]
 	}
 

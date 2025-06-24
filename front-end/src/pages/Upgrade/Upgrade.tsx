@@ -62,13 +62,13 @@ const Upgrade = () => {
 	};
 
 	return (
-		<div className="Upgrade">
+		<div className="upgrade">
 			<NavBar BackPath="/" />
-			<div className="Upgrade__body">
+			<div className="upgrade__body">
 				<h1>Upgrade and buy card</h1>
-				<div className="Upgrade__body_class-card">
+				<div className="upgrade__body_class-card">
 					{player?.class === "warrior" ? (
-						<div className="Upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Warrior</label>
 							<img src="cards/WarriorCard.svg" />
 							<button style={{ width: "100%" }} disabled>
@@ -76,10 +76,10 @@ const Upgrade = () => {
 							</button>
 						</div>
 					) : (
-						<div className="Upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Warrior</label>
 							<img
-								src="WarriorCard.svg"
+								src="cards/WarriorCard.svg"
 								style={{ opacity: 0.5 }}
 							/>
 							<button style={{ width: "100%" }}>1000 G</button>
@@ -87,7 +87,7 @@ const Upgrade = () => {
 					)}
 
 					{player?.class === "mage" ? (
-						<div className="Upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Mage</label>
 							<img src="cards/MageCard.svg" />
 							<button style={{ width: "100%" }} disabled>
@@ -95,15 +95,18 @@ const Upgrade = () => {
 							</button>
 						</div>
 					) : (
-						<div className="Upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Mage</label>
-							<img src="cards/MageCard.svg" style={{ opacity: 0.5 }} />
+							<img
+								src="cards/MageCard.svg"
+								style={{ opacity: 0.5 }}
+							/>
 							<button style={{ width: "100%" }}>1000 G</button>
 						</div>
 					)}
 
 					{player?.class === "assassin" ? (
-						<div className="Upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Assassin</label>
 							<img src="cards/AssassinCard.svg" />
 							<button style={{ width: "100%" }} disabled>
@@ -111,7 +114,7 @@ const Upgrade = () => {
 							</button>
 						</div>
 					) : (
-						<div className="Upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_warrior">
 							<label style={{ fontSize: 24 }}>Assassin</label>
 							<img
 								src="cards/AssassinCard.svg"
@@ -121,112 +124,214 @@ const Upgrade = () => {
 						</div>
 					)}
 				</div>
-				<div className="Upgrade__body_detail">
-					<div className="Upgrade__body_detail_stat">
-						<div className="Upgrade__body_detail_stat_atk">
-							<span style={{ fontSize: 24, width: 60 }}>ATK</span>
-							<span style={{ fontSize: 24, width: 60 }}>
-								{player?.stat.atk}
-							</span>
-							<button
-								onClick={() => handleClickUpgradeStat("atk")}
-							>
-								1 P
-							</button>
-						</div>
-						<div className="Upgrade__body_detail_stat_def">
-							<span style={{ fontSize: 24, width: 60 }}>DEF</span>
-							<span style={{ fontSize: 24, width: 60 }}>
-								{player?.stat.def}
-							</span>
-							<button
-								onClick={() => handleClickUpgradeStat("def")}
-							>
-								1 P
-							</button>
-						</div>
-						<div className="Upgrade__body_detail_stat_spd">
-							<span style={{ fontSize: 24, width: 60 }}>SPD</span>
-							<span style={{ fontSize: 24, width: 60 }}>
-								{player?.stat.spd}
-							</span>
-							<button
-								onClick={() => handleClickUpgradeStat("spd")}
-							>
-								1 P
-							</button>
-						</div>
-						<div className="Upgrade__body_detail_stat_hp">
-							<span style={{ fontSize: 24, width: 60 }}>HP</span>
-							<span style={{ fontSize: 24, width: 60 }}>
-								{player?.stat.hp}
-							</span>
-							<button
-								onClick={() => handleClickUpgradeStat("hp")}
-							>
-								1 P
-							</button>
-						</div>
-					</div>
-					<div className="Upgrade__body_detail_active-class">
-						<span
-							className="side-text-left"
-							style={{ fontSize: 24 }}
-						>
-							STAT
-						</span>
-						{player.class === "warrior" ? (
-							<img src="cards/WarriorCard.svg" />
-						) : player.class === "mage" ? (
-							<img src="cards/MageCard.svg" />
-						) : (
-							player.class === "assassin" && (
-								<img src="cards/AssassinCard.svg" />
-							)
-						)}
+				<div className="select-class__body_detail">
 
-						<span
-							className="side-text-right"
-							style={{ fontSize: 24 }}
-						>
-							DECK
-						</span>
+					<div className="select-class__body_detail_skill">
+						<h4>Skill</h4>
+						<div className="select-class__body_detail_skill_explain">
+							<span>
+								{player.class === "warrior"
+									? "When drawing with Rock, deal half of your damage. (always hit)"
+									: player.class === "mage"
+									? "When winning with Paper, gain 1 True Sight token. Use to reveal opponent's hand."
+									: "When winning with Scissors, ignore the opponent’s defense. (always hit)"}
+							</span>
+						</div>
 					</div>
-					<div className="Upgrade__body_detail_card">
-						<div className="Upgrade__body_detail_card_rock">
-							<span style={{ fontSize: 24, width: 128 }}>
-								Rock
-							</span>
-							<span style={{ fontSize: 24, width: 60 }}>
-								x {deck.rock}
-							</span>
-							<button onClick={() => handleClickBuyCard("rock")}>
-								500 G
-							</button>
+
+					<div className="select-class__body_detail_stat">
+						<h4>Stat</h4>
+						<div className="select-class__body_detail_stat_quantity">
+							<div className="select-class__body_detail_stat_quantity_atk">
+								<span
+									style={{
+										fontSize: 16,
+										width: 32,
+										textAlign: "start",
+									}}
+								>
+									ATK
+								</span>
+								<span className="number-box">
+									{player.stat.atk}
+								</span>
+								<span
+									style={{
+										fontSize: 16,
+										width: 96,
+										textAlign: "end",
+									}}
+								>
+									<button
+										onClick={() =>
+											handleClickUpgradeStat("atk")
+										}
+									>
+										1 P
+									</button>
+								</span>
+							</div>
+							<div className="select-class__body_detail_stat_quantity_def">
+								<span
+									style={{
+										fontSize: 16,
+										width: 32,
+										textAlign: "start",
+									}}
+								>
+									DEF
+								</span>
+								<span className="number-box">
+									{player.stat.def}
+								</span>
+								<span
+									style={{
+										fontSize: 16,
+										width: 96,
+										textAlign: "end",
+									}}
+								>
+									<button
+										onClick={() =>
+											handleClickUpgradeStat("def")
+										}
+									>
+										1 P
+									</button>
+								</span>
+							</div>
+							<div className="select-class__body_detail_stat_quantity_spd">
+								<span
+									style={{
+										fontSize: 16,
+										width: 32,
+										textAlign: "start",
+									}}
+								>
+									SPD
+								</span>
+								<span className="number-box">
+									{player.stat.spd}
+								</span>
+								<span
+									style={{
+										fontSize: 16,
+										width: 96,
+										textAlign: "end",
+									}}
+								>
+									<button
+										onClick={() =>
+											handleClickUpgradeStat("spd")
+										}
+									>
+										1 P
+									</button>
+								</span>
+							</div>
+							<div className="select-class__body_detail_stat_quantity_hp">
+								<span
+									style={{
+										fontSize: 16,
+										width: 32,
+										textAlign: "start",
+									}}
+								>
+									HP
+								</span>
+								<span className="number-box">
+									{player.stat.hp}
+								</span>
+								<span
+									style={{
+										fontSize: 16,
+										width: 96,
+										textAlign: "end",
+									}}
+								>
+									<button
+										onClick={() =>
+											handleClickUpgradeStat("hp")
+										}
+									>
+										1 P
+									</button>
+								</span>
+							</div>
 						</div>
-						<div className="Upgrade__body_detail_card_paper">
-							<span style={{ fontSize: 24, width: 128 }}>
-								Paper
-							</span>
-							<span style={{ fontSize: 24, width: 60 }}>
-								x {deck.paper}
-							</span>
-							<button onClick={() => handleClickBuyCard("paper")}>
-								500 G
-							</button>
-						</div>
-						<div className="Upgrade__body_detail_card_scissors">
-							<span style={{ fontSize: 24, width: 128 }}>
-								Scissors
-							</span>
-							<span style={{ fontSize: 24, width: 60 }}>
-								x {deck.scissors}
-							</span>
-							<button
-								onClick={() => handleClickBuyCard("scissors")}
-							>
-								500 G
-							</button>
+					</div>
+
+					<div className="select-class__body_detail_card">
+						<h4>Deck</h4>
+						<div className="select-class__body_detail_card_quantity">
+							<div className="select-class__body_detail_card_quantity_rock">
+								<span
+									style={{
+										fontSize: 16,
+										width: 128,
+										textAlign: "start",
+									}}
+								>
+									Rock Card
+								</span>
+								<span
+									className="number-box"
+									style={{ width: 16 }}
+								>
+									{deck.rock}
+								</span>
+								<button
+									onClick={() => handleClickBuyCard("rock")}
+								>
+									500 G
+								</button>
+							</div>
+							<div className="select-class__body_detail_card_quantity_paper">
+								<span
+									style={{
+										fontSize: 16,
+										width: 128,
+										textAlign: "start",
+									}}
+								>
+									Paper Card
+								</span>
+								<span
+									className="number-box"
+									style={{ width: 16 }}
+								>
+									{deck.paper}
+								</span>
+								<button
+									onClick={() => handleClickBuyCard("paper")}
+								>
+									500 G
+								</button>
+							</div>
+							<div className="select-class__body_detail_card_quantity_scissors">
+								<span
+									style={{
+										fontSize: 16,
+										width: 128,
+										textAlign: "start",
+									}}
+								>
+									Scissors Card
+								</span>
+								<span
+									className="number-box"
+									style={{ width: 16 }}
+								>
+									{deck.scissors}
+								</span>
+								<button
+									onClick={() =>
+										handleClickBuyCard("scissors")
+									}
+								>
+									500 G
+								</button>
+							</div>
 						</div>
 					</div>
 				</div>

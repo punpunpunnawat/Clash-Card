@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import type { CardProps } from "../../types/Card";
 import Card from "../../components/Card/Card";
-import "./css/PvP.css";
+import "./css/Battle.css";
 import "./css/CardAttack.css";
 import type {
 	CardCount,
@@ -10,13 +10,15 @@ import type {
 	PlayerDetail,
 	PostGameDetail,
 	RoundResult,
-} from "../../types/Pvp";
+} from "../../types/Battle";
 import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
 import PlayerStatus from "../../components/PlayerStatus";
-import { useSelector } from "react-redux";
-import type { RootState } from "../../store";
+// import { useSelector } from "react-redux";
+// import type { RootState } from "../../store";
 import { playBGM, sfx } from "../../managers/soundManager";
+import ClassSkillOverlay from "../../components/ClassSkillOverlay";
+import GameEnd from "./Overlay/GameEnd/GameEnd";
 
 const Campaign = () => {
 	const { levelId } = useParams();
@@ -26,7 +28,7 @@ const Campaign = () => {
 		playBGM("battle");
 	}, []);
 	//const dispatch: AppDispatch = useDispatch();
-	const player = useSelector((state: RootState) => state.player);
+	// const player = useSelector((state: RootState) => state.player);
 
 	//Player and Opponent Selected Card
 	const [selectedPlayerCard, setSelectedPlayerCard] =
@@ -102,7 +104,7 @@ const Campaign = () => {
 	//overlay
 	const [toggleTrueSightResult, setToggleTrueSightResult] =
 		useState<CardCount | null>(null);
-	const [toggleMenu, setToggleMenu] = useState(false);
+	const [toggleClassSkill, setToggleClassSkill] = useState(false);
 
 	//Ref
 	const playerDeckRef = useRef<HTMLDivElement>(null);
@@ -262,8 +264,7 @@ const Campaign = () => {
 									setGameState("DRAW_CARD");
 								}
 							}, 1500);
-							// เกมจบหรือยัง
-						}, 300); // ตรงกับเวลาของ attack animation
+						}, 300);
 					}
 					break;
 
@@ -601,11 +602,11 @@ const Campaign = () => {
 	//waiting page
 	if (gameState === "LOADING")
 		return (
-			<div className="PvP-Loading">
+			<div className="battle-Loading">
 				<NavBar BackPath="/level" />
-				<div className="PvP-Loading__body">
-					<div className="PvP-Loading__body_text">
-						<div className="PvP-Loading__body_text_header">
+				<div className="battle-Loading__body">
+					<div className="battle-Loading__body_text">
+						<div className="battle-Loading__body_text_header">
 							<h2>Loading</h2>
 						</div>
 						<span>Please Wait</span>
@@ -616,133 +617,24 @@ const Campaign = () => {
 		);
 
 	//game ended page
-	if (gameState === "END") {
+	if (gameState === "END" && postGameDetail) {
 		return (
-			<div className="PvP-win">
-				<NavBar />
-				<div className="PvP-win__body">
-					<div className="PvP-win__body_result">
-						<div className="PvP-win__body_result_header">
-							<img src="/others/LogoSmall.svg" width={120} height={24} />
-							<header>{postGameDetail?.result}</header>
-							<span>{postGameDetail?.detail}</span>
-						</div>
-
-						<div className="PvP-win__body_result_reward">
-							<div className="PvP-win__body_result_reward_exp">
-								<span style={{ width: 64 }}>EXP</span>
-								<div
-									className="reward-box"
-									style={{
-										background: "rgba(140, 140, 70, 0.5)",
-									}}
-								>
-									{postGameDetail?.exp}
-								</div>
-							</div>
-							<div className="PvP-win__body_result_reward_gold">
-								<span style={{ width: 64 }}>GOLD</span>
-								<div
-									className="reward-box"
-									style={{
-										background: "rgba(140, 70, 140, 0.5)",
-									}}
-								>
-									{postGameDetail?.gold}
-								</div>
-							</div>
-							{postGameDetail?.lvlUp != 0 && (
-								<>
-									<div className="PvP-win__body_result_reward_level">
-										<span style={{ width: 64 }}>Level</span>
-										<div className="reward-box">
-											{player.level -
-												(postGameDetail?.lvlUp ?? 0)}
-										</div>
-										<span>{">"}</span>
-										<div className="reward-box">
-											{player.level}
-										</div>
-									</div>
-									<div className="PvP-win__body_result_reward_atk">
-										<span style={{ width: 64 }}>ATK</span>
-										<div className="reward-box">
-											{player.stat.atk -
-												(postGameDetail?.statGain.atk ??
-													0)}
-										</div>
-										<span>{">"}</span>
-										<div className="reward-box">
-											{player.stat.atk}
-										</div>
-									</div>
-									<div className="PvP-win__body_result_reward_def">
-										<span style={{ width: 64 }}>DEF</span>
-										<div className="reward-box">
-											{player.stat.def -
-												(postGameDetail?.statGain.def ??
-													0)}
-										</div>
-										<span>{">"}</span>
-										<div className="reward-box">
-											{player.stat.def}
-										</div>
-									</div>
-									<div className="PvP-win__body_result_reward_spd">
-										<span style={{ width: 64 }}>SPD</span>
-										<div className="reward-box">
-											{player.stat.spd -
-												(postGameDetail?.statGain.spd ??
-													0)}
-										</div>
-										<span>{">"}</span>
-										<div className="reward-box">
-											{player.stat.spd}
-										</div>
-									</div>
-									<div className="PvP-win__body_result_reward_hp">
-										<span style={{ width: 64 }}>HP</span>
-										<div className="reward-box">
-											{player.stat.hp -
-												(postGameDetail?.statGain.hp ??
-													0)}
-										</div>
-										<span>{">"}</span>
-										<div className="reward-box">
-											{player.stat.hp}
-										</div>
-									</div>
-								</>
-							)}
-						</div>
-					</div>
-
-					<div className="PvP-win__body_menu">
-						<h2>What is your next move ?</h2>
-
-						<div className="PvP-win__body_menu_button">
-							<button onClick={handleClickContinue}>
-								Continue
-							</button>
-							<button onClick={handleClickPlayAgain}>
-								Rematch
-							</button>
-							<button onClick={handleClickBackToMenu}>
-								Back to menu
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
+			<GameEnd
+				postGameDetail={postGameDetail}
+				type="campaign"
+				onClickContinue={handleClickContinue}
+				onClickPlayAgain={handleClickPlayAgain}
+				onClickkBackToMenu={handleClickBackToMenu}
+			/>
 		);
 	}
 
 	//default page
 	return (
-		<div className="PvP">
+		<div className="battle">
 			{/* Event Overlay */}
 			{toggleTrueSightResult && (
-				<div className="PvP__overlay">
+				<div className="battle__overlay">
 					{Object.entries(toggleTrueSightResult).flatMap(
 						([type, count]) =>
 							Array.from({ length: count }).map((_, i) => (
@@ -755,76 +647,30 @@ const Campaign = () => {
 				</div>
 			)}
 
-			{toggleMenu && (
-				<div className="PvP__overlay">
-					<img
-						className="Home__overlay__close"
-						src="/icons/close.svg"
-						onClick={() => setToggleMenu(false)}
-					/>
-					<div className="PvP__overlay_class-explain">
-						<img src="/cards/WarriorCard.svg" />
-						<h3>Warrior - Warrior's Blood</h3>
-						<p>
-							When drawing with Rock,
-							<br />
-							deal half of your normal damage to the enemy.
-							<br />
-							(always hit)
-						</p>
-					</div>
-					<div className="PvP__overlay_class-explain">
-						<img src="/cards/MageCard.svg" />
-						<h3>Mage - True Sight</h3>
-						<p>
-							When winning with Paper,
-							<br />
-							gain 1 True Sight token.
-							<br />
-							Use it to reveal your opponent's hand.
-							<br />
-						</p>
-					</div>
-					<div className="PvP__overlay_class-explain">
-						<img src="/cards/AssassinCard.svg" />
-
-						<h3>Assassin - True Strike</h3>
-						<p>
-							When winning with Scissors,
-							<br />
-							ignore the opponent’s defense when dealing damage.
-							<br />
-							(always hit)
-						</p>
-					</div>
-					<div className="PvP__overlay_leave">
-						Scared ? you can leave anytime
-						<button
-							onClick={() => navigate("/level")}
-							style={{ background: "rgba(255,0,0,0.5)" }}
-						>
-							Leave
-						</button>
-					</div>
-				</div>
+			{toggleClassSkill && (
+				<ClassSkillOverlay
+					onClickClose={() => setToggleClassSkill(false)}
+				/>
 			)}
 
-			<button
-				className="PvP__menu-button"
-				onClick={() => setToggleMenu(true)}
-			>
-				Menu
-			</button>
-
-			{/* Event Overlay */}
-			{/* {toggleOverlay && (
-				<div className="Home__overlay">
-					<h2>{eventMessage}</h2>
-				</div>
-			)} */}
+			<div className="battle__menu-button">
+				MENU
+				<button onClick={() => setToggleClassSkill(true)}>
+					Class Skill
+				</button>
+				<button
+					onClick={() => navigate("/level")}
+					style={{
+						background: "rgba(255, 70, 70, 0.5)",
+						width: "100%",
+					}}
+				>
+					Leave
+				</button>
+			</div>
 
 			{/* Player */}
-			<div className="PvP__player_status">
+			<div className="battle__player_status">
 				<PlayerStatus
 					level={playerDetail.level}
 					playerClass={playerDetail.class}
@@ -836,7 +682,7 @@ const Campaign = () => {
 				/>
 			</div>
 
-			<div className="PvP__player_hand" ref={playerHandRef}>
+			<div className="battle__player_hand" ref={playerHandRef}>
 				{playerHand?.map((card, index) => {
 					const total = playerHand.length;
 					const angleStep = 10; // ค่าที่ควบคุมความเอียง
@@ -865,7 +711,7 @@ const Campaign = () => {
 				})}
 			</div>
 
-			<div className="PvP__player_deck" ref={playerDeckRef}>
+			<div className="battle__player_deck" ref={playerDeckRef}>
 				{cardRemaining.player.rock +
 					cardRemaining.player.paper +
 					cardRemaining.player.scissors >
@@ -886,9 +732,9 @@ const Campaign = () => {
 			)}
 
 			{/* Card Placer */}
-			<div className="PvP__board">
+			<div className="battle__board">
 				<div
-					className="PvP__board_card-placer"
+					className="battle__board_card-placer"
 					ref={playerCardPlacerRef}
 				>
 					<img
@@ -920,7 +766,7 @@ const Campaign = () => {
 				</div>
 
 				<div
-					className="PvP__board_card-placer"
+					className="battle__board_card-placer"
 					ref={opponentCardPlacerRef}
 				>
 					<img
@@ -957,7 +803,7 @@ const Campaign = () => {
 			)}
 
 			{/* Opponent */}
-			<div className="PvP__opponent_status">
+			<div className="battle__opponent_status">
 				<PlayerStatus
 					level={opponentDetail.level}
 					playerClass={opponentDetail.class}
@@ -969,7 +815,7 @@ const Campaign = () => {
 			</div>
 
 			<div
-				className="PvP__opponent_deck"
+				className="battle__opponent_deck"
 				ref={opponentDeckRef}
 				style={{ transform: "scaleY(-1)" }}
 			>
@@ -983,7 +829,7 @@ const Campaign = () => {
 				)}
 			</div>
 
-			<div className="PvP__opoonent_hand" ref={opponentHandRef}>
+			<div className="battle__opoonent_hand" ref={opponentHandRef}>
 				{Array.from({ length: opponentHandSize }).map((_, index) => {
 					const total = opponentHandSize;
 					const angleStep = 10; // ค่าที่ควบคุมความเอียง

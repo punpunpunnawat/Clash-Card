@@ -20,6 +20,7 @@ type LoginRequest struct {
 }
 
 type RegisterRequest struct {
+	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Class    string `json:"class"`
@@ -146,7 +147,7 @@ func RegisterHandler(db *sql.DB) http.HandlerFunc {
                 class, stat_point
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			userID,
-			"Player", req.Email, string(hashedPassword), 20, 10, 10, 50, 1, 1, 0, 0, time.Now(), req.Class, 0,
+			req.Username, req.Email, string(hashedPassword), 20, 10, 10, 50, 1, 1, 0, 0, time.Now(), req.Class, 0,
 		)
 		if err != nil {
 			http.Error(w, "Server error", http.StatusInternalServerError)

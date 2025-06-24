@@ -1,4 +1,3 @@
-// managers/soundManager.ts
 import { Howl } from 'howler';
 
 // BGM
@@ -10,7 +9,6 @@ const bgmTracks = {
 let currentBGM: Howl | null = null;
 let currentTrackName: keyof typeof bgmTracks | null = null;
 
-// จะเล่นเพลงใหม่ ก็ต่อเมื่อชื่อเพลงไม่ตรงกับอันที่เล่นอยู่
 export const playBGM = (name: keyof typeof bgmTracks) => {
   if (currentTrackName === name) return; // ถ้าเล่นเพลงเดิมอยู่ ไม่ทำอะไร
 
@@ -23,7 +21,6 @@ export const playBGM = (name: keyof typeof bgmTracks) => {
   currentBGM.play();
 };
 
-// ใช้ตอนออกจาก PvP → กลับไปเริ่มเพลงเมนูใหม่
 export const restartMenuBGM = () => {
   if (currentBGM) {
     currentBGM.stop();

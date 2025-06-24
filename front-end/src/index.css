@@ -74,13 +74,13 @@ header {
 
 button:hover {
 	background-color: rgba(0, 0, 0, 0.05);
-	border: 1px solid rgba(255, 255, 255, 0.2);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 	cursor: url('./cursor/cursor-warrior-hover.svg') 0 0, pointer
 }
 
 button:active {
 	background-color: rgba(0, 0, 0, 0);
-	border: 1px solid rgba(255, 255, 255, 0.4);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 h2 {
@@ -116,4 +116,18 @@ html, body {
 p {
 	font-family: "MOON_Light";
 	src: url("./fonts/MOON_Light.otf") format("opentype");
+}
+
+.number-box {
+	display: flex;
+	flex: 1;
+	padding: 8px 16px;
+	border-radius: 8px;
+	background-color: rgba(20, 20, 20, 0.5);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+	justify-content: center;
+}
+
+h4 {
+	margin: 0px;
 }

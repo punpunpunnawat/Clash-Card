@@ -19,10 +19,10 @@ const LoadingCard = () => {
 				style={{ transform: `rotateY(${rotation}deg)` }}
 			>
 				<div className="LoadingCard__back">
-					<img src="/BackOfCard.svg" width={150} height={250} />
+					<img src="/cards/BackOfCard.svg" width={150} height={250} />
 				</div>
 				<div className="LoadingCard__front">
-					<img src="/LoadingCard.svg" width={150} height={250} />
+					<img src="/cards/LoadingCard.svg" width={150} height={250} />
 				</div>
 			</div>
 		</div>

@@ -16,7 +16,7 @@ export interface Player {
 }
 
 const initialState: Player = {
-  id: "0",
+  id: "",
   username: "",
   email: "",
   stat: {

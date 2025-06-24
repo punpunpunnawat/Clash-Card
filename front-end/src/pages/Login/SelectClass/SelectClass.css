@@ -44,58 +44,60 @@
 	display: flex;
     box-sizing: border-box;
     width: 100%;
-	padding: 32px;
-	gap: 64px;
+	padding: 16px;
+	gap: 16px;
 	background-color: rgba(0, 0, 0, 0.1);
 	border-radius: 24px;
 }
 
-.select-class__body_detail_stat {
-	display: flex;
-	flex-direction: column;
-	flex: 1;
-	gap: 16px;
-	justify-content: center;
-	align-items: center;
-}
-
+.select-class__body_detail_skill,
+.select-class__body_detail_stat,
 .select-class__body_detail_card {
 	display: flex;
 	flex-direction: column;
-	flex: 1;
-	gap: 16px;
+	gap: 8px;
 	justify-content: center;
 	align-items: center;
+	padding: 24px;
+	background-color: rgba(0, 0, 0, 0.1);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+	border-radius: 16px;
+	font-family: "MOON_Light";
+	src: url("./fonts/MOON_Light.otf") format("opentype");
 }
 
-.select-class__body_detail_stat_atk,
-.select-class__body_detail_stat_def,
-.select-class__body_detail_stat_spd,
-.select-class__body_detail_stat_hp {
+.select-class__body_detail_skill {
+	flex: 1;
+}
+
+
+.select-class__body_detail_stat_quantity_atk,
+.select-class__body_detail_stat_quantity_def,
+.select-class__body_detail_stat_quantity_spd,
+.select-class__body_detail_stat_quantity_hp {
 	display: flex;
 	gap: 16px;
 	align-items: center;
 }
 
-.select-class__body_detail_card_rock,
-.select-class__body_detail_card_paper,
-.select-class__body_detail_card_scissors {
+.select-class__body_detail_card_quantity_rock,
+.select-class__body_detail_card_quantity_paper,
+.select-class__body_detail_card_quantity_scissors {
 	display: flex;
 	gap: 16px;
 	align-items: center;
-}
-
-.side-text-left {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 16px;
-}
-
-.side-text-right {
-  writing-mode: vertical-rl;
-  font-size: 16px;
 }
 
 .select-class__body_detail_active-class {
     display: flex;
+}
+
+.select-class__body_detail_skill_explain,
+.select-class__body_detail_stat_quantity,
+.select-class__body_detail_card_quantity {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: 8px;
+	justify-content: center;
 }

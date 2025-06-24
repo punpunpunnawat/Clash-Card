@@ -2,19 +2,25 @@ import { useNavigate } from "react-router-dom";
 import "./Login.css";
 import NavBar from "../../components/NavBar";
 import { useEffect, useState } from "react";
-import SelectClass from "../SelectClass";
+import SelectClass from "./SelectClass";
 import { stopBGM } from "../../managers/soundManager";
+import { fetchPlayer } from "../../store/slices/playerSlice";
+import type { AppDispatch } from "../../store";
+import { useDispatch } from "react-redux";
 
 export default function Login() {
-
+	const dispatch: AppDispatch = useDispatch();
 	useEffect(() => {
 		stopBGM();
-	},[])
+	}, []);
 
+	const [username, setUsername] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
-	const [mode, setMode] = useState<"login" | "register" | "selectClass">("login");
+	const [mode, setMode] = useState<"login" | "register" | "selectClass">(
+		"login"
+	);
 
 	const navigate = useNavigate();
 
@@ -35,6 +41,7 @@ export default function Login() {
 
 			const data = await res.json();
 			localStorage.setItem("authToken", data.token);
+			await dispatch(fetchPlayer());
 			navigate("/");
 		} catch (err) {
 			console.error("Unexpected error:", err);
@@ -61,13 +68,13 @@ export default function Login() {
 				return;
 			}
 			const data = await res.json();
-			console.log(data)
-			if(data) setMode("selectClass")
+			if (data.exists === true) alert("This EMAIL already in used: ");
+			else setMode("selectClass");
+			console.log(data);
 		} catch (err) {
 			alert("Network error: " + err);
 		}
 	};
-
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -76,16 +83,21 @@ export default function Login() {
 	};
 
 	const handleSelectClass = async (selectedClass: string) => {
-				if (password !== confirmPassword) {
+		if (password !== confirmPassword) {
 			alert("Passwords do not match");
 			return;
 		}
-		console.log(email, password, selectedClass)
+		console.log(email, password, selectedClass);
 		try {
 			const res = await fetch("http://localhost:8080/api/register", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email, password, class: selectedClass }),
+				body: JSON.stringify({
+					username,
+					email,
+					password,
+					class: selectedClass,
+				}),
 			});
 
 			if (!res.ok) {
@@ -95,19 +107,25 @@ export default function Login() {
 			}
 
 			const data = await res.json();
-			console.log(data)
+			console.log(data);
 			localStorage.setItem("authToken", data.token);
 			navigate("/");
 		} catch (err) {
 			alert("Network error: " + err);
 		}
-	}
+	};
 
-	if(mode==="selectClass") return (
-		<div>
-			<SelectClass onSelectWarrior={() => handleSelectClass("warrior")} onSelectMage={() => handleSelectClass("mage")} onSelectAssassin={() => handleSelectClass("assassin")}/>
-		</div>
-	)
+	if (mode === "selectClass")
+		return (
+			<div>
+				<SelectClass
+					onSelectWarrior={() => handleSelectClass("warrior")}
+					onSelectMage={() => handleSelectClass("mage")}
+					onSelectAssassin={() => handleSelectClass("assassin")}
+				/>
+			</div>
+		);
+
 	return (
 		<div className="Login">
 			<NavBar />
@@ -135,6 +153,13 @@ export default function Login() {
 						className="Login__body_main_form"
 						onSubmit={handleSubmit}
 					>
+						<input
+							type="text"
+							placeholder="USERNAME"
+							value={username}
+							onChange={(e) => setUsername(e.target.value)}
+							required
+						/>
 						<input
 							type="email"
 							placeholder="EMAIL"
