@@ -79,6 +79,7 @@ func UpgradeStatHandler(db *sql.DB) http.HandlerFunc {
 		w.Write([]byte(`{"message":"Stat upgraded successfully"}`))
 	}
 }
+
 func BuyCardHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Buy call")
@@ -188,5 +189,79 @@ func BuyCardHandler(db *sql.DB) http.HandlerFunc {
 		fmt.Println("Card purchased successfully for user:", userID)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"message":"Card purchased successfully"}`))
+	}
+}
+
+func ChangeClassHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		var tokenStr string
+		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
+		if tokenStr == "" {
+			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		userID, err := user.ExtractUserIDFromToken(tokenStr)
+		if err != nil || userID == "0" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		var req struct {
+			Class string `json:"class"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Class == "" {
+			http.Error(w, "Invalid class", http.StatusBadRequest)
+			return
+		}
+
+		validClasses := map[string]bool{
+			"warrior":  true,
+			"mage":     true,
+			"assassin": true,
+		}
+		if !validClasses[req.Class] {
+			http.Error(w, "Invalid class type", http.StatusBadRequest)
+			return
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			http.Error(w, "Failed to start transaction", http.StatusInternalServerError)
+			return
+		}
+		defer tx.Rollback()
+
+		var gold int
+		err = tx.QueryRow(`SELECT gold FROM users WHERE id = ? FOR UPDATE`, userID).Scan(&gold)
+		if err != nil {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+		if gold < 1000 {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"message":"Not enough gold to change class"}`))
+			return
+		}
+
+		_, err = tx.Exec(`UPDATE users SET class = ?, gold = gold - 1000 WHERE id = ?`, req.Class, userID)
+		if err != nil {
+			http.Error(w, "Failed to update class", http.StatusInternalServerError)
+			return
+		}
+
+		if err = tx.Commit(); err != nil {
+			http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message":"Class changed successfully"}`))
 	}
 }

@@ -18,6 +18,27 @@ const Upgrade = () => {
 	console.log(player);
 	console.log(deck);
 
+	const handleClickChangeClass = async (newClass: string) => {
+		try {
+			const res = await fetch("http://localhost:8080/api/change-class", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${localStorage.getItem(
+						"authToken"
+					)}`,
+				},
+				body: JSON.stringify({ class: newClass }),
+			});
+
+			if (!res.ok) throw new Error("Change class failed");
+
+			await dispatch(fetchPlayer());
+		} catch (err) {
+			console.error(err);
+		}
+	}
+
 	const handleClickUpgradeStat = async (statType: string) => {
 		try {
 			const res = await fetch("http://localhost:8080/api/upgrade-stat", {
@@ -28,12 +49,12 @@ const Upgrade = () => {
 						"authToken"
 					)}`,
 				},
-				body: JSON.stringify({ type: statType }), // เช่น { type: "atk" }
+				body: JSON.stringify({ type: statType }),
 			});
 
 			if (!res.ok) throw new Error("Upgrade failed");
 
-			await dispatch(fetchPlayer()); // ดึง stat ใหม่มาโชว์
+			await dispatch(fetchPlayer());
 		} catch (err) {
 			console.error(err);
 		}
@@ -49,13 +70,13 @@ const Upgrade = () => {
 						"authToken"
 					)}`,
 				},
-				body: JSON.stringify({ type: cardType }), // เช่น { type: "rock" }
+				body: JSON.stringify({ type: cardType }),
 			});
 
 			if (!res.ok) throw new Error("Buy failed");
 
-			await dispatch(fetchDeck()); // ดึง deck ใหม่
-			await dispatch(fetchPlayer()); // เผื่อมีหัก gold ด้วย
+			await dispatch(fetchDeck());
+			await dispatch(fetchPlayer());
 		} catch (err) {
 			console.error(err);
 		}
@@ -82,12 +103,12 @@ const Upgrade = () => {
 								src="cards/WarriorCard.svg"
 								style={{ opacity: 0.5 }}
 							/>
-							<button style={{ width: "100%" }}>1000 G</button>
+							<button style={{ width: "100%" }} onClick={() => handleClickChangeClass("warrior")}>1000 G</button>
 						</div>
 					)}
 
 					{player?.class === "mage" ? (
-						<div className="upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_mage">
 							<label style={{ fontSize: 24 }}>Mage</label>
 							<img src="cards/MageCard.svg" />
 							<button style={{ width: "100%" }} disabled>
@@ -95,18 +116,18 @@ const Upgrade = () => {
 							</button>
 						</div>
 					) : (
-						<div className="upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_mage">
 							<label style={{ fontSize: 24 }}>Mage</label>
 							<img
 								src="cards/MageCard.svg"
 								style={{ opacity: 0.5 }}
 							/>
-							<button style={{ width: "100%" }}>1000 G</button>
+							<button style={{ width: "100%" }} onClick={() => handleClickChangeClass("mage")}>1000 G</button>
 						</div>
 					)}
 
 					{player?.class === "assassin" ? (
-						<div className="upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_assassin">
 							<label style={{ fontSize: 24 }}>Assassin</label>
 							<img src="cards/AssassinCard.svg" />
 							<button style={{ width: "100%" }} disabled>
@@ -114,18 +135,18 @@ const Upgrade = () => {
 							</button>
 						</div>
 					) : (
-						<div className="upgrade__body_class-card_warrior">
+						<div className="upgrade__body_class-card_assassin">
 							<label style={{ fontSize: 24 }}>Assassin</label>
 							<img
 								src="cards/AssassinCard.svg"
 								style={{ opacity: 0.5 }}
 							/>
-							<button style={{ width: "100%" }}>1000 G</button>
+							<button style={{ width: "100%" }} onClick={() => handleClickChangeClass("assassin")}>1000 G</button>
 						</div>
 					)}
 				</div>
-				<div className="select-class__body_detail">
 
+				<div className="select-class__body_detail">
 					<div className="select-class__body_detail_skill">
 						<h4>Skill</h4>
 						<div className="select-class__body_detail_skill_explain">

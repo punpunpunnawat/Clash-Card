@@ -14,8 +14,6 @@ import type {
 import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
 import PlayerStatus from "../../components/PlayerStatus";
-// import { useSelector } from "react-redux";
-// import type { RootState } from "../../store";
 import { playBGM, sfx } from "../../managers/soundManager";
 import ClassSkillOverlay from "../../components/ClassSkillOverlay";
 import GameEnd from "./Overlay/GameEnd/GameEnd";
@@ -24,27 +22,22 @@ const Campaign = () => {
 	const { levelId } = useParams();
 	const [matchID, setMatchID] = useState();
 	const navigate = useNavigate();
-	useEffect(() => {
-		playBGM("battle");
-	}, []);
-	//const dispatch: AppDispatch = useDispatch();
-	// const player = useSelector((state: RootState) => state.player);
 
-	//Player and Opponent Selected Card
-	const [selectedPlayerCard, setSelectedPlayerCard] =
-		useState<CardProps | null>(null);
-	const [selectedOpponentCard, setSelectedOpponentCard] =
-		useState<CardProps | null>(null);
+	//GAME STATE
+	type GameState =
+		| "LOADING"
+		| "SELECT_CARD"
+		| "CARD_SELECTED"
+		| "BOTH_SELECTED"
+		| "SHOW_RESULT"
+		| "DO_DAMAGE"
+		| "DRAW_CARD"
+		| "END";
 
-	//Player and Opponent hand
-	const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
-	const [opponentHandSize, setOpponentHandSize] = useState<number>(0);
+	// Game State
+	const [gameState, setGameState] = useState<GameState>("LOADING");
 
-	//Player and Opponent current HP
-	const [currentPlayerHP, setCurrentPlayerHP] = useState(0);
-	const [currentOpponentHP, setCurrentOpponentHP] = useState(0);
-
-	//Player and Opponent current stat
+	// Player & Opponent Detail
 	const [playerDetail, setPlayerDetail] = useState<PlayerDetail>({
 		name: "player",
 		level: 0,
@@ -59,22 +52,35 @@ const Campaign = () => {
 		class: "none",
 		trueSight: 0,
 	});
+	const [currentPlayerHP, setCurrentPlayerHP] = useState(0);
+	const [currentOpponentHP, setCurrentOpponentHP] = useState(0);
 
-	//match data
-	const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
+	// Card & Hand Management
+	const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
+	const [opponentHandSize, setOpponentHandSize] = useState<number>(0);
 	const [cardRemaining, setCardRemaining] = useState<CardRemaining>({
 		player: { rock: 0, paper: 0, scissors: 0 },
 		opponent: { rock: 0, paper: 0, scissors: 0 },
 	});
+	const [selectedPlayerCard, setSelectedPlayerCard] =
+		useState<CardProps | null>(null);
+	const [selectedOpponentCard, setSelectedOpponentCard] =
+		useState<CardProps | null>(null);
+
+	// Round Result / Postgame
+	const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
 	const [postGameDetail, setPostGameDetail] = useState<PostGameDetail | null>(
 		null
 	);
 
-	//hide card bool
+	// UI States
 	const [hideCard, setHideCard] = useState(true);
 	const [hidePlayerCard, setHidePlayerCard] = useState(true);
+	const [toggleTrueSightResult, setToggleTrueSightResult] =
+		useState<CardCount | null>(null);
+	const [toggleClassSkill, setToggleClassSkill] = useState(false);
 
-	//Animate
+	// Animations
 	const [playerDrawingCard, setPlayerDrawingCard] =
 		useState<CardProps | null>(null);
 	const [opponentDrawingCard, setOpponentDrawingCard] =
@@ -87,11 +93,9 @@ const Campaign = () => {
 	const [playerSelectingCard, setPlayerSelectingCard] = useState(false);
 	const [playerSelectStyle, setPlayerSelectStyle] =
 		useState<React.CSSProperties>({});
-
 	const [opponentSelectingCard, setOpponentSelectingCard] = useState(false);
 	const [opponentSelectStyle, setOpponentSelectStyle] =
 		useState<React.CSSProperties>({});
-
 	const [playerBattleAnimation, setPlayerBattleAnimation] = useState("");
 	const [opponentBattleAnimation, setOpponentBattleAnimation] = useState("");
 	const [playerTakenDamage, setPlayerTakenDamage] = useState<string | null>(
@@ -101,12 +105,7 @@ const Campaign = () => {
 		string | null
 	>(null);
 
-	//overlay
-	const [toggleTrueSightResult, setToggleTrueSightResult] =
-		useState<CardCount | null>(null);
-	const [toggleClassSkill, setToggleClassSkill] = useState(false);
-
-	//Ref
+	// Refs
 	const playerDeckRef = useRef<HTMLDivElement>(null);
 	const playerHandRef = useRef<HTMLDivElement>(null);
 	const playerCardPlacerRef = useRef<HTMLDivElement>(null);
@@ -114,17 +113,56 @@ const Campaign = () => {
 	const opponentHandRef = useRef<HTMLDivElement>(null);
 	const opponentCardPlacerRef = useRef<HTMLDivElement>(null);
 
-	//GAME STATE
-	type GameState =
-		| "LOADING"
-		| "SELECT_CARD"
-		| "CARD_SELECTED"
-		| "BOTH_SELECTED"
-		| "SHOW_RESULT"
-		| "DO_DAMAGE"
-		| "DRAW_CARD"
-		| "END";
-	const [gameState, setGameState] = useState<GameState>("LOADING");
+	useEffect(() => {
+		playBGM("battle");
+	}, []);
+
+	//Initial
+	useEffect(() => {
+		fetch("http://localhost:8080/api/battle/start", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+			},
+			body: JSON.stringify({ levelId: Number(levelId) }),
+		})
+			.then((res) => res.json())
+			.then((data) => {
+				//set hand
+				setPlayerHand(data.player.hand);
+				setOpponentHandSize(data.opponent.handSize);
+
+				//setCardRemaining
+				setCardRemaining({
+					player: data.player.cardRemaining,
+					opponent: data.opponent.cardRemaining,
+				});
+
+				//set Stat
+				setPlayerDetail({
+					name: data.player.name,
+					level: data.player.level,
+					stat: data.player.stat,
+					class: data.player.class,
+					trueSight: 0,
+				});
+				setOpponentDetail({
+					name: data.opponent.name,
+					level: data.opponent.level,
+					stat: data.opponent.stat,
+					class: data.opponent.class,
+					trueSight: 0,
+				});
+				setCurrentPlayerHP(data.player.currentHP);
+				setCurrentOpponentHP(data.opponent.currentHP);
+				setMatchID(data.matchID);
+				setGameState("SELECT_CARD");
+			})
+			.catch((err) => {
+				console.error("Error starting battle:", err);
+			});
+	}, [levelId]);
 
 	//Gamestate and round_result handler
 	useEffect(() => {
@@ -309,143 +347,7 @@ const Campaign = () => {
 		}
 	}, [gameState, roundResult]);
 
-	//Initial
-	useEffect(() => {
-		fetch("http://localhost:8080/api/battle/start", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-			},
-			body: JSON.stringify({ levelId: Number(levelId) }),
-		})
-			.then((res) => res.json())
-			.then((data) => {
-				//set hand
-				setPlayerHand(data.player.hand);
-				setOpponentHandSize(data.opponent.handSize);
-
-				//setCardRemaining
-				setCardRemaining({
-					player: data.player.cardRemaining,
-					opponent: data.opponent.cardRemaining,
-				});
-
-				//set Stat
-				setPlayerDetail({
-					name: data.player.name,
-					level: data.player.level,
-					stat: data.player.stat,
-					class: data.player.class,
-					trueSight: 0,
-				});
-				setOpponentDetail({
-					name: data.opponent.name,
-					level: data.opponent.level,
-					stat: data.opponent.stat,
-					class: data.opponent.class,
-					trueSight: 0,
-				});
-				setCurrentPlayerHP(data.player.currentHP);
-				setCurrentOpponentHP(data.opponent.currentHP);
-				setMatchID(data.matchID);
-				setGameState("SELECT_CARD");
-			})
-			.catch((err) => {
-				console.error("Error starting battle:", err);
-			});
-	}, [levelId]);
-
-	const handleClickBackToMenu = () => {
-		navigate("/", { replace: true });
-	};
-
-	const handleClickPlayAgain = () => {
-		window.location.reload();
-	};
-
-	const handleClickContinue = () => {
-		if (!levelId) return;
-		navigate(`/campaign/${Number(levelId) + 1}`, { replace: true });
-		window.location.reload();
-	};
-
-	const drawOpponentCard = () => {
-		const deck = opponentDeckRef.current;
-		const hand = opponentHandRef.current;
-		if (!deck || !hand) return;
-		const deckRect = deck.getBoundingClientRect();
-		const handRect = hand.getBoundingClientRect();
-		sfx.card.play();
-		setOpponentDrawingCard({ id: "temp", type: "hidden" });
-		// start at deck
-		setOpponentDrawStyle({
-			position: "fixed",
-			left: deckRect.left,
-			top: deckRect.top,
-			width: deckRect.width,
-			height: deckRect.height,
-			transition: "all 0.5s ease",
-			zIndex: 1000,
-		});
-
-		// trigger animation in next tick
-		setTimeout(() => {
-			setOpponentDrawStyle((prev) => ({
-				...prev,
-				left: handRect.left + handRect.width - deckRect.width / 2,
-				top: handRect.top + handRect.height / 2 - deckRect.height / 2,
-			}));
-		}, 50);
-
-		// after animation ends
-		setTimeout(() => {
-			setOpponentHandSize(roundResult?.opponent.handLength ?? 0);
-			setOpponentDrawingCard(null);
-		}, 500);
-	};
-
-	const animateOpponentSelectCard = () => {
-		const hand = opponentHandRef.current;
-		const cardPlacer = opponentCardPlacerRef.current;
-
-		if (!hand || !cardPlacer) return;
-		const handRect = hand.getBoundingClientRect();
-		const cardPlacerRect = cardPlacer.getBoundingClientRect();
-
-		setOpponentSelectingCard(true);
-		// start at deck
-		setOpponentSelectStyle({
-			position: "fixed",
-			left: handRect.left + handRect.width / 3,
-			top: handRect.top,
-			width: handRect.width,
-			height: handRect.height,
-			transition: "all 0.5s ease",
-			zIndex: 1000,
-		});
-
-		setOpponentHandSize((prev) => prev - 1);
-
-		// trigger animation in next tick
-		setTimeout(() => {
-			setOpponentSelectStyle((prev) => ({
-				...prev,
-				left: cardPlacerRect.left + 10,
-				top: cardPlacerRect.top + 10,
-			}));
-		}, 50);
-
-		// after animation ends
-		setTimeout(() => {
-			setSelectedOpponentCard({
-				id: "temp",
-				type: "hidden",
-			});
-			setOpponentSelectingCard(false);
-		}, 500);
-	};
-
+	//handle function
 	const handlePlayerCardSelect = (cardID: string) => {
 		if (gameState !== "SELECT_CARD") return;
 
@@ -503,7 +405,7 @@ const Campaign = () => {
 			.then((data) => {
 				setGameState("CARD_SELECTED");
 				setRoundResult(data);
-				animateOpponentSelectCard();
+				animateOpponentCardSelect();
 				setGameState("BOTH_SELECTED");
 			})
 			.catch((err) => {
@@ -519,7 +421,7 @@ const Campaign = () => {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${localStorage.getItem("authToken")}`, // ถ้าต้องใช้
+				Authorization: `Bearer ${localStorage.getItem("authToken")}`,
 			},
 		})
 			.then((res) => {
@@ -542,13 +444,54 @@ const Campaign = () => {
 			});
 	};
 
-	const findNewCard = (updatedCard: CardProps[]) => {
-		const currentIds = playerHand.map((card) => card.id);
-		const filteredNewCards = updatedCard.filter(
-			(card) => !currentIds.includes(card.id)
-		);
-		const newCard = filteredNewCards[0];
-		return newCard;
+	const handleClickBackToMenu = () => {
+		navigate("/", { replace: true });
+	};
+
+	const handleClickPlayAgain = () => {
+		window.location.reload();
+	};
+
+	const handleClickContinue = () => {
+		if (!levelId) return;
+		navigate(`/campaign/${Number(levelId) + 1}`, { replace: true });
+		window.location.reload();
+	};
+
+	//function
+	const drawOpponentCard = () => {
+		const deck = opponentDeckRef.current;
+		const hand = opponentHandRef.current;
+		if (!deck || !hand) return;
+		const deckRect = deck.getBoundingClientRect();
+		const handRect = hand.getBoundingClientRect();
+		sfx.card.play();
+		setOpponentDrawingCard({ id: "temp", type: "hidden" });
+		// start at deck
+		setOpponentDrawStyle({
+			position: "fixed",
+			left: deckRect.left,
+			top: deckRect.top,
+			width: deckRect.width,
+			height: deckRect.height,
+			transition: "all 0.5s ease",
+			zIndex: 1000,
+		});
+
+		// trigger animation in next tick
+		setTimeout(() => {
+			setOpponentDrawStyle((prev) => ({
+				...prev,
+				left: handRect.left + handRect.width - deckRect.width / 2,
+				top: handRect.top + handRect.height / 2 - deckRect.height / 2,
+			}));
+		}, 50);
+
+		// after animation ends
+		setTimeout(() => {
+			setOpponentHandSize(roundResult?.opponent.handLength ?? 0);
+			setOpponentDrawingCard(null);
+		}, 500);
 	};
 
 	const drawPlayerCard = (newCard: CardProps) => {
@@ -587,17 +530,55 @@ const Campaign = () => {
 		}, 500); // slightly longer than transition
 	};
 
-	useEffect(() => {
-		console.log("player = " + playerBattleAnimation);
-		console.log("opponenet = " + opponentBattleAnimation);
-		console.log("player ta = " + playerTakenDamage);
-		console.log("opponenet ta = " + opponentTakenDamage);
-	}, [
-		playerBattleAnimation,
-		opponentBattleAnimation,
-		playerTakenDamage,
-		opponentTakenDamage,
-	]);
+	const findNewCard = (updatedCard: CardProps[]) => {
+		const currentIds = playerHand.map((card) => card.id);
+		const filteredNewCards = updatedCard.filter(
+			(card) => !currentIds.includes(card.id)
+		);
+		const newCard = filteredNewCards[0];
+		return newCard;
+	};
+
+	const animateOpponentCardSelect = () => {
+		const hand = opponentHandRef.current;
+		const cardPlacer = opponentCardPlacerRef.current;
+
+		if (!hand || !cardPlacer) return;
+		const handRect = hand.getBoundingClientRect();
+		const cardPlacerRect = cardPlacer.getBoundingClientRect();
+
+		setOpponentSelectingCard(true);
+		// start at deck
+		setOpponentSelectStyle({
+			position: "fixed",
+			left: handRect.left + handRect.width / 3,
+			top: handRect.top,
+			width: handRect.width,
+			height: handRect.height,
+			transition: "all 0.5s ease",
+			zIndex: 1000,
+		});
+
+		setOpponentHandSize((prev) => prev - 1);
+
+		// trigger animation in next tick
+		setTimeout(() => {
+			setOpponentSelectStyle((prev) => ({
+				...prev,
+				left: cardPlacerRect.left + 10,
+				top: cardPlacerRect.top + 10,
+			}));
+		}, 50);
+
+		// after animation ends
+		setTimeout(() => {
+			setSelectedOpponentCard({
+				id: "temp",
+				type: "hidden",
+			});
+			setOpponentSelectingCard(false);
+		}, 500);
+	};
 
 	//waiting page
 	if (gameState === "LOADING")

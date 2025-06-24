@@ -32,6 +32,7 @@ func main() {
 	r.HandleFunc("/api/battle/{matchID}/play", battle.PlayCardHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/battle/{matchID}/play/true-sight", battle.TrueSightHandler()).Methods("POST", "OPTIONS")
 
+	r.HandleFunc("/api/change-class", upgrade.ChangeClassHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/upgrade-stat", upgrade.UpgradeStatHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/buy-card", upgrade.BuyCardHandler(db)).Methods("POST", "OPTIONS")
 

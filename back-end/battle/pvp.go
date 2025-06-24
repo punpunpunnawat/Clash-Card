@@ -309,7 +309,6 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 						clientB.send <- respJSON
 					}
 				}
-				//logPVPState(roomID, state)
 				pvpStatesMu.Lock()
 				pvpStates[roomID] = state
 				pvpStatesMu.Unlock()

@@ -32,6 +32,7 @@
 .upgrade__body_class-card_assassin img {
   transition: transform 0.3s ease;
   cursor: pointer;
+  z-index: 2;
 }
 
 .upgrade__body_class-card_warrior img:hover,

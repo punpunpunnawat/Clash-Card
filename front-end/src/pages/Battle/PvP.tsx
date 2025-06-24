@@ -23,24 +23,23 @@ const PvP = () => {
 	const { id: roomID } = useParams();
 	const navigate = useNavigate();
 	const ws = useRef<WebSocket | null>(null);
-	useEffect(() => {
-		playBGM("battle");
-	}, []);
-	//Player and Opponent Selected Card
-	const [selectedPlayerCard, setSelectedPlayerCard] =
-		useState<CardProps | null>(null);
-	const [selectedOpponentCard, setSelectedOpponentCard] =
-		useState<CardProps | null>(null);
 
-	//Player and Opponent hand
-	const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
-	const [opponentHandSize, setOpponentHandSize] = useState<number>(0);
+	//GAME STATE
+	type GameState =
+		| "LOADING"
+		| "WAIT_OPPONENT"
+		| "SELECT_CARD"
+		| "CARD_SELECTED"
+		| "BOTH_SELECTED"
+		| "SHOW_RESULT"
+		| "DO_DAMAGE"
+		| "DRAW_CARD"
+		| "END";
+		
+	// Game State
+	const [gameState, setGameState] = useState<GameState>("WAIT_OPPONENT");
 
-	//Player and Opponent current HP
-	const [currentPlayerHP, setCurrentPlayerHP] = useState(0);
-	const [currentOpponentHP, setCurrentOpponentHP] = useState(0);
-
-	//Player and Opponent current stat
+	// Player & Opponent Detail
 	const [playerDetail, setPlayerDetail] = useState<PlayerDetail>({
 		name: "player",
 		level: 0,
@@ -55,22 +54,36 @@ const PvP = () => {
 		class: "none",
 		trueSight: 0,
 	});
+	const [currentPlayerHP, setCurrentPlayerHP] = useState(0);
+	const [currentOpponentHP, setCurrentOpponentHP] = useState(0);
 
-	//match data
-	const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
+	// Card & Hand Management
+	const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
+	const [opponentHandSize, setOpponentHandSize] = useState<number>(0);
 	const [cardRemaining, setCardRemaining] = useState<CardRemaining>({
 		player: { rock: 0, paper: 0, scissors: 0 },
 		opponent: { rock: 0, paper: 0, scissors: 0 },
 	});
+	const [selectedPlayerCard, setSelectedPlayerCard] =
+		useState<CardProps | null>(null);
+	const [selectedOpponentCard, setSelectedOpponentCard] =
+		useState<CardProps | null>(null);
+
+	// Round Result / Postgame
+	const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
 	const [postGameDetail, setPostGameDetail] = useState<PostGameDetail | null>(
 		null
 	);
 
-	//hide card bool
+	// UI States
 	const [hideCard, setHideCard] = useState(true);
 	const [hidePlayerCard, setHidePlayerCard] = useState(true);
+	const [toggleTrueSightAlert, setToggleTrueSightAlert] = useState(false);
+	const [toggleTrueSightResult, setToggleTrueSightResult] =
+		useState<CardCount | null>(null);
+	const [toggleClassSkill, setToggleClassSkill] = useState(false);
 
-	//Animate
+	// Animations
 	const [playerDrawingCard, setPlayerDrawingCard] =
 		useState<CardProps | null>(null);
 	const [opponentDrawingCard, setOpponentDrawingCard] =
@@ -83,11 +96,9 @@ const PvP = () => {
 	const [playerSelectingCard, setPlayerSelectingCard] = useState(false);
 	const [playerSelectStyle, setPlayerSelectStyle] =
 		useState<React.CSSProperties>({});
-
 	const [opponentSelectingCard, setOpponentSelectingCard] = useState(false);
 	const [opponentSelectStyle, setOpponentSelectStyle] =
 		useState<React.CSSProperties>({});
-
 	const [playerBattleAnimation, setPlayerBattleAnimation] = useState("");
 	const [opponentBattleAnimation, setOpponentBattleAnimation] = useState("");
 	const [playerTakenDamage, setPlayerTakenDamage] = useState<string | null>(
@@ -97,14 +108,7 @@ const PvP = () => {
 		string | null
 	>(null);
 
-	//overlay
-	//const [toggleTrueSightResukt, setToggleTrueSightResult] = useState(false);
-	const [toggleTrueSightAlert, setToggleTrueSightAlert] = useState(false);
-	const [toggleTrueSightResult, setToggleTrueSightResult] =
-		useState<CardCount | null>(null);
-	const [toggleClassSkill, setToggleClassSkill] = useState(false);
-
-	//Ref
+	// Refs
 	const playerDeckRef = useRef<HTMLDivElement>(null);
 	const playerHandRef = useRef<HTMLDivElement>(null);
 	const playerCardPlacerRef = useRef<HTMLDivElement>(null);
@@ -112,104 +116,128 @@ const PvP = () => {
 	const opponentHandRef = useRef<HTMLDivElement>(null);
 	const opponentCardPlacerRef = useRef<HTMLDivElement>(null);
 
-	//GAME STATE
-	type GameState =
-		| "WAIT_OPPONENT"
-		| "SELECT_CARD"
-		| "CARD_SELECTED"
-		| "BOTH_SELECTED"
-		| "SHOW_RESULT"
-		| "DO_DAMAGE"
-		| "DRAW_CARD"
-		| "END";
-	const [gameState, setGameState] = useState<GameState>("WAIT_OPPONENT");
+	useEffect(() => {
+		playBGM("battle");
+	}, []);
 
-	//CARD FUNC
-	const findNewCard = (updatedCard: CardProps[]) => {
-		const currentIds = playerHand.map((card) => card.id);
-		const filteredNewCards = updatedCard.filter(
-			(card) => !currentIds.includes(card.id)
+	//Web socket message handler
+	useEffect(() => {
+		if (!roomID) return;
+
+		const token = localStorage.getItem("authToken")!;
+
+		ws.current = new WebSocket(
+			`ws://localhost:8080/ws/pvp?room=${roomID}`,
+			[token]
 		);
-		const newCard = filteredNewCards[0];
-		return newCard;
-	};
+		ws.current.onmessage = (e) => {
+			try {
+				const msg = JSON.parse(e.data) as ServerMessage;
+				console.log(msg);
+				switch (msg.type) {
+					case "slot_assigned":
+						//setPlayerSlot(msg.slot);
+						break;
 
-	const drawPlayerCard = (newCard: CardProps) => {
-		const deck = playerDeckRef.current;
-		const hand = playerHandRef.current;
-		if (!deck || !hand) return;
-		const deckRect = deck.getBoundingClientRect();
-		const handRect = hand.getBoundingClientRect();
-		sfx.card.play();
-		setPlayerDrawingCard(newCard);
+					case "initialData":
+						console.log(msg);
+						//set hand
+						setPlayerHand(msg.player.hand);
+						setOpponentHandSize(msg.opponent.handSize);
 
-		// start at deck
-		setPlayerDrawStyle({
-			position: "fixed",
-			left: deckRect.left,
-			top: deckRect.top,
-			width: deckRect.width,
-			height: deckRect.height,
-			transition: "all 0.5s ease",
-			zIndex: 1000,
-		});
+						//setCardRemaining
+						setCardRemaining({
+							player: msg.player.cardRemaining,
+							opponent: msg.opponent.cardRemaining,
+						});
 
-		// trigger animation in next tick
-		setTimeout(() => {
-			setPlayerDrawStyle((prev) => ({
-				...prev,
-				left: handRect.left + handRect.width - deckRect.width / 2,
-				top: handRect.top + handRect.height / 2 - deckRect.height / 2,
-			}));
-		}, 50);
+						//set Stat
+						setPlayerDetail({
+							name: msg.player.name,
+							level: msg.player.level,
+							stat: msg.player.stat,
+							class: msg.player.class,
+							trueSight: 0,
+						});
+						setOpponentDetail({
+							name: msg.opponent.name,
+							level: msg.opponent.level,
+							stat: msg.opponent.stat,
+							class: msg.opponent.class,
+							trueSight: 0,
+						});
+						setCurrentPlayerHP(msg.player.currentHP);
+						setCurrentOpponentHP(msg.opponent.currentHP);
+						sfx.card.play();
+						setGameState("SELECT_CARD");
+						break;
 
-		// after animation ends
-		setTimeout(() => {
-			setPlayerHand(roundResult?.player.hand ?? []);
-			setPlayerDrawingCard(null); // remove floating card
-		}, 500); // slightly longer than transition
-	};
+					case "selection_status":
+						if (msg.opponentSelected) {
+							animateOpponentCardSelect();
+						}
+						break;
 
-	const animateOpponentSelectCard = () => {
-		const hand = opponentHandRef.current;
-		const cardPlacer = opponentCardPlacerRef.current;
+					case "round_result":
+						setTimeout(() => {
+							setRoundResult(msg);
 
-		if (!hand || !cardPlacer) return;
-		const handRect = hand.getBoundingClientRect();
-		const cardPlacerRect = cardPlacer.getBoundingClientRect();
-		sfx.card.play();
-		setOpponentSelectingCard(true);
-		// start at deck
-		setOpponentSelectStyle({
-			position: "fixed",
-			left: handRect.left + handRect.width / 3,
-			top: handRect.top,
-			width: handRect.width,
-			height: handRect.height,
-			transition: "all 0.5s ease",
-			zIndex: 1000,
-		});
+							//trigger show result event
+							setGameState("BOTH_SELECTED");
+						}, 600);
 
-		setOpponentHandSize((prev) => prev - 1);
+						break;
 
-		// trigger animation in next tick
-		setTimeout(() => {
-			setOpponentSelectStyle((prev) => ({
-				...prev,
-				left: cardPlacerRect.left + 10,
-				top: cardPlacerRect.top + 10,
-			}));
-		}, 50);
+					case "opponent_left":
+						setGameState("END");
+						setPostGameDetail({
+							result: "Win",
+							detail: "Opponent leave",
+							exp: 0,
+							gold: 0,
+							lvlUp: 0,
+							statGain: { atk: 0, def: 0, spd: 0, hp: 0 },
+						});
+						break;
 
-		// after animation ends
-		setTimeout(() => {
-			setSelectedOpponentCard({
-				id: "temp",
-				type: "hidden",
-			});
-			setOpponentSelectingCard(false);
-		}, 500);
-	};
+					case "true_sight_result":
+						setToggleTrueSightResult(msg.opponentHand);
+						setPlayerDetail((prev) => ({
+							...prev,
+							trueSight: msg.trueSightLeft,
+						}));
+						setTimeout(() => {
+							setToggleTrueSightResult(null);
+						}, 3000);
+
+						break;
+
+					case "true_sight_alert":
+						setToggleTrueSightAlert(true);
+
+						setOpponentDetail((prev) => ({
+							...prev,
+							trueSight: prev.trueSight - 1,
+						}));
+
+						setTimeout(() => {
+							setToggleTrueSightAlert(false);
+						}, 3000);
+						break;
+
+					default:
+						console.warn("Unknown message type:", msg);
+						break;
+				}
+			} catch (err) {
+				console.error("Invalid message", err);
+			}
+		};
+
+		ws.current.onclose = () => null;
+
+		return () => ws.current?.close();
+	}, [roomID]);
 
 	//Gamestate and round_result handler
 	useEffect(() => {
@@ -386,166 +414,12 @@ const PvP = () => {
 		}
 	}, [gameState, roundResult]);
 
-	//Web socket message handler
-	useEffect(() => {
-		if (!roomID) return;
-
-		const token = localStorage.getItem("authToken")!;
-
-		ws.current = new WebSocket(
-			`ws://localhost:8080/ws/pvp?room=${roomID}`,
-			[token]
-		);
-		ws.current.onmessage = (e) => {
-			try {
-				const msg = JSON.parse(e.data) as ServerMessage;
-				console.log(msg);
-				switch (msg.type) {
-					case "slot_assigned":
-						//setPlayerSlot(msg.slot);
-						break;
-
-					case "initialData":
-						console.log(msg);
-						//set hand
-						setPlayerHand(msg.player.hand);
-						setOpponentHandSize(msg.opponent.handSize);
-
-						//setCardRemaining
-						setCardRemaining({
-							player: msg.player.cardRemaining,
-							opponent: msg.opponent.cardRemaining,
-						});
-
-						//set Stat
-						setPlayerDetail({
-							name: msg.player.name,
-							level: msg.player.level,
-							stat: msg.player.stat,
-							class: msg.player.class,
-							trueSight: 0,
-						});
-						setOpponentDetail({
-							name: msg.opponent.name,
-							level: msg.opponent.level,
-							stat: msg.opponent.stat,
-							class: msg.opponent.class,
-							trueSight: 0,
-						});
-						setCurrentPlayerHP(msg.player.currentHP);
-						setCurrentOpponentHP(msg.opponent.currentHP);
-						sfx.card.play();
-						setGameState("SELECT_CARD");
-						break;
-
-					case "selection_status":
-						if (msg.opponentSelected) {
-							animateOpponentSelectCard();
-						}
-						break;
-
-					case "round_result":
-						setTimeout(() => {
-							setRoundResult(msg);
-
-							//trigger show result event
-							setGameState("BOTH_SELECTED");
-						}, 600);
-
-						break;
-
-					case "opponent_left":
-						setGameState("END");
-						setPostGameDetail({
-							result: "Win",
-							detail: "Opponent leave",
-							exp: 0,
-							gold: 0,
-							lvlUp: 0,
-							statGain: { atk: 0, def: 0, spd: 0, hp: 0 },
-						});
-						break;
-
-					case "true_sight_result":
-						setToggleTrueSightResult(msg.opponentHand);
-						setPlayerDetail((prev) => ({
-							...prev,
-							trueSight: msg.trueSightLeft,
-						}));
-						setTimeout(() => {
-							setToggleTrueSightResult(null);
-						}, 3000);
-
-						break;
-
-					case "true_sight_alert":
-						setToggleTrueSightAlert(true);
-
-						setOpponentDetail((prev) => ({
-							...prev,
-							trueSight: prev.trueSight - 1,
-						}));
-
-						setTimeout(() => {
-							setToggleTrueSightAlert(false);
-						}, 3000);
-						break;
-
-					default:
-						console.warn("⚠️ Unknown message type:", msg);
-						break;
-				}
-			} catch (err) {
-				console.error("Invalid message", err);
-			}
-		};
-
-		ws.current.onclose = () => null;
-
-		return () => ws.current?.close();
-	}, [roomID]);
-
 	const handleClickBackToMenu = () => {
 		navigate("/");
 	};
 
 	const handleClickPlayAgain = () => {
 		window.location.reload();
-	};
-
-	const drawOpponentCard = () => {
-		const deck = opponentDeckRef.current;
-		const hand = opponentHandRef.current;
-		if (!deck || !hand) return;
-		sfx.card.play();
-		const deckRect = deck.getBoundingClientRect();
-		const handRect = hand.getBoundingClientRect();
-		setOpponentDrawingCard({ id: "temp", type: "hidden" });
-		// start at deck
-		setOpponentDrawStyle({
-			position: "fixed",
-			left: deckRect.left,
-			top: deckRect.top,
-			width: deckRect.width,
-			height: deckRect.height,
-			transition: "all 0.5s ease",
-			zIndex: 1000,
-		});
-
-		// trigger animation in next tick
-		setTimeout(() => {
-			setOpponentDrawStyle((prev) => ({
-				...prev,
-				left: handRect.left + handRect.width - deckRect.width / 2,
-				top: handRect.top + handRect.height / 2 - deckRect.height / 2,
-			}));
-		}, 50);
-
-		// after animation ends
-		setTimeout(() => {
-			setOpponentHandSize(roundResult?.opponent.handLength ?? 0);
-			setOpponentDrawingCard(null);
-		}, 500);
 	};
 
 	const handlePlayerCardSelect = (cardID: string) => {
@@ -611,6 +485,128 @@ const PvP = () => {
 				type: "use_true_sight",
 			})
 		);
+	};
+
+	//CARD FUNC
+	const findNewCard = (updatedCard: CardProps[]) => {
+		const currentIds = playerHand.map((card) => card.id);
+		const filteredNewCards = updatedCard.filter(
+			(card) => !currentIds.includes(card.id)
+		);
+		const newCard = filteredNewCards[0];
+		return newCard;
+	};
+
+	const drawPlayerCard = (newCard: CardProps) => {
+		const deck = playerDeckRef.current;
+		const hand = playerHandRef.current;
+		if (!deck || !hand) return;
+		const deckRect = deck.getBoundingClientRect();
+		const handRect = hand.getBoundingClientRect();
+		sfx.card.play();
+		setPlayerDrawingCard(newCard);
+
+		// start at deck
+		setPlayerDrawStyle({
+			position: "fixed",
+			left: deckRect.left,
+			top: deckRect.top,
+			width: deckRect.width,
+			height: deckRect.height,
+			transition: "all 0.5s ease",
+			zIndex: 1000,
+		});
+
+		// trigger animation in next tick
+		setTimeout(() => {
+			setPlayerDrawStyle((prev) => ({
+				...prev,
+				left: handRect.left + handRect.width - deckRect.width / 2,
+				top: handRect.top + handRect.height / 2 - deckRect.height / 2,
+			}));
+		}, 50);
+
+		// after animation ends
+		setTimeout(() => {
+			setPlayerHand(roundResult?.player.hand ?? []);
+			setPlayerDrawingCard(null); // remove floating card
+		}, 500); // slightly longer than transition
+	};
+
+	const animateOpponentCardSelect = () => {
+		const hand = opponentHandRef.current;
+		const cardPlacer = opponentCardPlacerRef.current;
+
+		if (!hand || !cardPlacer) return;
+		const handRect = hand.getBoundingClientRect();
+		const cardPlacerRect = cardPlacer.getBoundingClientRect();
+		sfx.card.play();
+		setOpponentSelectingCard(true);
+		// start at deck
+		setOpponentSelectStyle({
+			position: "fixed",
+			left: handRect.left + handRect.width / 3,
+			top: handRect.top,
+			width: handRect.width,
+			height: handRect.height,
+			transition: "all 0.5s ease",
+			zIndex: 1000,
+		});
+
+		setOpponentHandSize((prev) => prev - 1);
+
+		// trigger animation in next tick
+		setTimeout(() => {
+			setOpponentSelectStyle((prev) => ({
+				...prev,
+				left: cardPlacerRect.left + 10,
+				top: cardPlacerRect.top + 10,
+			}));
+		}, 50);
+
+		// after animation ends
+		setTimeout(() => {
+			setSelectedOpponentCard({
+				id: "temp",
+				type: "hidden",
+			});
+			setOpponentSelectingCard(false);
+		}, 500);
+	};
+
+	const drawOpponentCard = () => {
+		const deck = opponentDeckRef.current;
+		const hand = opponentHandRef.current;
+		if (!deck || !hand) return;
+		sfx.card.play();
+		const deckRect = deck.getBoundingClientRect();
+		const handRect = hand.getBoundingClientRect();
+		setOpponentDrawingCard({ id: "temp", type: "hidden" });
+		// start at deck
+		setOpponentDrawStyle({
+			position: "fixed",
+			left: deckRect.left,
+			top: deckRect.top,
+			width: deckRect.width,
+			height: deckRect.height,
+			transition: "all 0.5s ease",
+			zIndex: 1000,
+		});
+
+		// trigger animation in next tick
+		setTimeout(() => {
+			setOpponentDrawStyle((prev) => ({
+				...prev,
+				left: handRect.left + handRect.width - deckRect.width / 2,
+				top: handRect.top + handRect.height / 2 - deckRect.height / 2,
+			}));
+		}, 50);
+
+		// after animation ends
+		setTimeout(() => {
+			setOpponentHandSize(roundResult?.opponent.handLength ?? 0);
+			setOpponentDrawingCard(null);
+		}, 500);
 	};
 
 	//waiting page
@@ -685,7 +681,10 @@ const PvP = () => {
 				</button>
 				<button
 					onClick={() => navigate("/")}
-					style={{ background: "rgba(255, 70, 70, 0.5)", width: "100%" }}
+					style={{
+						background: "rgba(255, 70, 70, 0.5)",
+						width: "100%",
+					}}
 				>
 					Leave
 				</button>

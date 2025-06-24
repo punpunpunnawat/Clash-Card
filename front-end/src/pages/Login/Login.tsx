@@ -10,9 +10,7 @@ import { useDispatch } from "react-redux";
 
 export default function Login() {
 	const dispatch: AppDispatch = useDispatch();
-	useEffect(() => {
-		stopBGM();
-	}, []);
+	const navigate = useNavigate();
 
 	const [username, setUsername] = useState("");
 	const [email, setEmail] = useState("");
@@ -22,7 +20,9 @@ export default function Login() {
 		"login"
 	);
 
-	const navigate = useNavigate();
+	useEffect(() => {
+		stopBGM();
+	}, []);
 
 	const handleLogin = async () => {
 		try {
@@ -136,13 +136,13 @@ export default function Login() {
 				<section className="Login__body_main">
 					<div className="Login__body_main_select-mode">
 						<button
-							style={{ flex: 1 }}
+							style={{ flex: 1, boxShadow:mode=="login"?undefined:"none", backgroundColor:mode=="login"?undefined:"transparent" }}
 							onClick={() => setMode("login")}
 						>
 							Login
 						</button>
 						<button
-							style={{ flex: 1 }}
+							style={{ flex: 1, boxShadow:mode=="register"?undefined:"none", backgroundColor:mode=="register"?undefined:"transparent" }}
 							onClick={() => setMode("register")}
 						>
 							Register
@@ -153,13 +153,15 @@ export default function Login() {
 						className="Login__body_main_form"
 						onSubmit={handleSubmit}
 					>
-						<input
-							type="text"
-							placeholder="USERNAME"
-							value={username}
-							onChange={(e) => setUsername(e.target.value)}
-							required
-						/>
+						{mode === "register" && (
+							<input
+								type="text"
+								placeholder="USERNAME"
+								value={username}
+								onChange={(e) => setUsername(e.target.value)}
+								required
+							/>
+						)}
 						<input
 							type="email"
 							placeholder="EMAIL"

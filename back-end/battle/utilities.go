@@ -9,41 +9,6 @@ import (
 	"strconv"
 )
 
-// func (g *GameState) Unlock() {
-// 	panic("unimplemented")
-// }
-
-// func (g *GameState) Lock() {
-// 	panic("unimplemented")
-// }
-
-// func logGameState(gs *GameState) {
-// 	gs.Lock()
-// 	defer gs.Unlock()
-
-// 	fmt.Println("------ GAME STATE ------")
-
-// 	fmt.Println("PlayerDeck:", len(gs.PVPState.PlayerA.Deck), "cards left")
-// 	fmt.Println("PlayerHand:", formatHand(gs.PVPState.PlayerA.Hand))
-// 	fmt.Printf("Player - HP: %d/%d | ATK: %d | DEF: %d | SPD: %d\n",
-// 		gs.PVPState.PlayerA.CurrentHP, gs.PVPState.PlayerA.Stat.HP, gs.PVPState.PlayerA.Stat.ATK, gs.PVPState.PlayerA.Stat.DEF, gs.PVPState.PlayerA.Stat.SPD)
-
-// 	fmt.Println("BotDeck:", len(gs.PVPState.PlayerB.Deck), "cards left")
-// 	fmt.Println("BotHand:", formatHand(gs.PVPState.PlayerB.Hand))
-// 	fmt.Printf("Bot - HP: %d/%d | ATK: %d | DEF: %d | SPD: %d\n",
-// 		gs.PVPState.PlayerB.CurrentHP, gs.PVPState.PlayerB.Stat.HP, gs.PVPState.PlayerB.Stat.ATK, gs.PVPState.PlayerB.Stat.DEF, gs.PVPState.PlayerB.Stat.SPD)
-
-// 	fmt.Println("------------------------")
-// }
-
-// func formatHand(hand []Card) string {
-// 	var result []string
-// 	for _, c := range hand {
-// 		result = append(result, fmt.Sprintf("(ID:%s, Type:%s)", c.ID, c.Type))
-// 	}
-// 	return strings.Join(result, ", ")
-// }
-
 func getUserByIDFromDB(db *sql.DB, userID string) (*models.User, error) {
 	var user models.User
 	query := `SELECT id, username, email, atk, def, hp, spd, level, current_campaign_level, exp, gold, created_at, class FROM users WHERE id = ?`
