@@ -18,6 +18,7 @@ export type PlayerDetail = {
 	name: string;
 	level: number;
 	class: PlayerClass;
+	currentHP: number;
 	trueSight: number;
 };
 
@@ -125,3 +126,29 @@ export type RoundResult = {
 	};
 	postGameDetail: PostGameDetail;
 };
+
+export type AnimationPerSide = {
+  drawingCard: CardProps | null;
+  drawStyle: React.CSSProperties;
+  selectingCard: boolean;
+  selectStyle: React.CSSProperties;
+  battleAnimation: string;
+  takenDamage: string | null;
+};
+
+export type AnimationState = {
+  player: AnimationPerSide;
+  opponent: AnimationPerSide;
+};
+
+export type BattleRefsPerSide = {
+    deck: React.RefObject<HTMLDivElement|null>;
+    hand: React.RefObject<HTMLDivElement|null>;
+    cardPlacer: React.RefObject<HTMLDivElement|null>;
+};
+
+export type BattleRefs = {
+    player: BattleRefsPerSide;
+	opponent: BattleRefsPerSide;
+};
+

@@ -71,12 +71,10 @@
 
 .dodge-left {
 	animation: dodgeLeft 1s ease-out forwards;
-	z-index: 2;
 }
 
 .dodge-right {
 	animation: dodgeRight 1s ease-out forwards;
-	z-index: 2;
 }
 
 
@@ -153,4 +151,8 @@
 
 .true-strike-right {
 	animation: trueStrikeRight 1s ease-out forwards;
+}
+
+.card {
+	z-index: 3;
 }

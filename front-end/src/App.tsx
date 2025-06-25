@@ -15,6 +15,9 @@ import SelectClass from "./pages/Login/SelectClass";
 import { Campaign, PvP } from "./pages/Battle";
 import { useEffect, useState, type JSX } from "react";
 import { fetchPlayer } from "./store/slices/playerSlice";
+import LoadingCard from "./components/LoadingCard";
+
+import "./App.css"
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
 	const userId = useSelector((state: RootState) => state.player.id);
@@ -41,7 +44,9 @@ function App() {
 	}, [dispatch]);
 
 	if (!authLoaded) {
-		return <div>Loading...</div>;
+		return <div className="loading">
+			<LoadingCard/>
+		</div>;
 	}
 
 	return (
