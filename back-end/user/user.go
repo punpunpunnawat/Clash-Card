@@ -15,8 +15,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 		authHeader := r.Header.Get("Authorization")
 		fmt.Println("🔑 Authorization Header:", authHeader)
 		if authHeader == "" {
-			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
-			fmt.Println("❌ Missing Authorization header")
+			fmt.Println("Missing Authorization header")
 			return
 		}
 
@@ -24,15 +23,13 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
 		fmt.Println("🧾 Extracted Token:", tokenStr)
 		if tokenStr == "" {
-			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
-			fmt.Println("❌ Invalid Authorization format")
+			fmt.Println("Invalid Authorization format")
 			return
 		}
 
 		userID, err := ExtractUserIDFromToken(tokenStr)
 		if err != nil {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
-			fmt.Println("❌ Token extraction failed:", err)
+			fmt.Println("Token extraction failed:", err)
 			return
 		}
 
@@ -80,11 +77,11 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 
 		if err == sql.ErrNoRows {
 			http.Error(w, "User not found", http.StatusNotFound)
-			fmt.Println("❌ User not found for ID:", userID)
+			fmt.Println("User not found for ID:", userID)
 			return
 		} else if err != nil {
 			http.Error(w, "Server error", http.StatusInternalServerError)
-			fmt.Println("❌ SQL Scan Error:", err)
+			fmt.Println("SQL Scan Error:", err)
 			return
 		}
 
@@ -93,9 +90,9 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(user)
 		if err != nil {
-			fmt.Println("❌ Failed to encode user JSON:", err)
+			fmt.Println("Failed to encode user JSON:", err)
 		} else {
-			fmt.Println("📤 User JSON sent")
+			fmt.Println("User JSON sent")
 		}
 	}
 }

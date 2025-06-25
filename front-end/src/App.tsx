@@ -14,11 +14,16 @@ import Upgrade from "./pages/Upgrade";
 import SelectClass from "./pages/Login/SelectClass";
 import { Campaign, PvP } from "./pages/Battle";
 import { useEffect, useState, type JSX } from "react";
-// import { useAppDispatch } from "./hooks"; // ✅ ใช้ hook แบบมี type
 import { fetchPlayer } from "./store/slices/playerSlice";
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
 	const userId = useSelector((state: RootState) => state.player.id);
+	if (userId) {
+		return children;
+	} else {
+		console.log("not logged in moving to login page");
+		return <Navigate to="/login" replace />;
+	}
 	return userId ? children : <Navigate to="/login" replace />;
 };
 

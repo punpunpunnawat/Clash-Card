@@ -35,7 +35,7 @@ const PvP = () => {
 		| "DO_DAMAGE"
 		| "DRAW_CARD"
 		| "END";
-		
+
 	// Game State
 	const [gameState, setGameState] = useState<GameState>("WAIT_OPPONENT");
 
@@ -133,14 +133,12 @@ const PvP = () => {
 		ws.current.onmessage = (e) => {
 			try {
 				const msg = JSON.parse(e.data) as ServerMessage;
-				console.log(msg);
 				switch (msg.type) {
 					case "slot_assigned":
 						//setPlayerSlot(msg.slot);
 						break;
 
 					case "initialData":
-						console.log(msg);
 						//set hand
 						setPlayerHand(msg.player.hand);
 						setOpponentHandSize(msg.opponent.handSize);
@@ -241,8 +239,6 @@ const PvP = () => {
 
 	//Gamestate and round_result handler
 	useEffect(() => {
-		console.log(roundResult);
-		console.log(gameState);
 		if (roundResult) {
 			switch (gameState) {
 				case "BOTH_SELECTED":
@@ -613,7 +609,7 @@ const PvP = () => {
 	if (gameState === "WAIT_OPPONENT")
 		return (
 			<div className="battle-Loading">
-				<NavBar BackPath="/" />
+				<NavBar backPath="/" />
 				<div className="battle-Loading__body">
 					<div className="battle-Loading__body_text">
 						<div className="battle-Loading__body_text_header">
@@ -650,6 +646,7 @@ const PvP = () => {
 			{/* Event Overlay */}
 			{toggleTrueSightResult && (
 				<div className="battle__overlay">
+					<h2>Opponent hand's card</h2>
 					{Object.entries(toggleTrueSightResult).flatMap(
 						([type, count]) =>
 							Array.from({ length: count }).map((_, i) => (
@@ -664,6 +661,7 @@ const PvP = () => {
 
 			{toggleTrueSightAlert && (
 				<div className="battle__overlay">
+					<h2>Opponent use True Sight and know your hand's card</h2>
 					<img src="/cards/TrueSightCard.svg" />
 				</div>
 			)}
@@ -717,7 +715,7 @@ const PvP = () => {
 							key={card.id}
 							style={{
 								transform,
-								transition: "transform 0.5s ease", //ใส่ transition ตรงนี้
+								transition: "transform 0.5s ease",
 							}}
 						>
 							<div className="card-wrapper">
@@ -858,6 +856,7 @@ const PvP = () => {
 
 					return (
 						<div
+						key={`opponent-card-${index}`}
 							style={{
 								transform,
 								transition: "transform 0.5s ease",
@@ -868,8 +867,9 @@ const PvP = () => {
 								style={{ transform: "scaleY(-1)" }}
 							>
 								<Card
-									id={"id here"}
-									type="hidden" // เปลี่ยน type ได้ตามที่ต้องการ
+									
+									id={"none"}
+									type="hidden"
 									isHidden
 								/>
 							</div>

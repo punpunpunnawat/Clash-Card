@@ -17,10 +17,12 @@ import PlayerStatus from "../../components/PlayerStatus";
 import { playBGM, sfx } from "../../managers/soundManager";
 import ClassSkillOverlay from "../../components/ClassSkillOverlay";
 import GameEnd from "./Overlay/GameEnd/GameEnd";
+import { playCard, startBattle, trueSight } from "../../api/api";
 
 const Campaign = () => {
 	const { levelId } = useParams();
-	const [matchID, setMatchID] = useState();
+	const [matchID, setMatchID] = useState<string>("");
+
 	const navigate = useNavigate();
 
 	//GAME STATE
@@ -119,27 +121,20 @@ const Campaign = () => {
 
 	//Initial
 	useEffect(() => {
-		fetch("http://localhost:8080/api/battle/start", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-			},
-			body: JSON.stringify({ levelId: Number(levelId) }),
-		})
-			.then((res) => res.json())
-			.then((data) => {
-				//set hand
+		const token = localStorage.getItem("authToken") || "";
+
+		async function initBattle() {
+			try {
+				const data = await startBattle(Number(levelId), token);
+
 				setPlayerHand(data.player.hand);
 				setOpponentHandSize(data.opponent.handSize);
 
-				//setCardRemaining
 				setCardRemaining({
 					player: data.player.cardRemaining,
 					opponent: data.opponent.cardRemaining,
 				});
 
-				//set Stat
 				setPlayerDetail({
 					name: data.player.name,
 					level: data.player.level,
@@ -147,6 +142,7 @@ const Campaign = () => {
 					class: data.player.class,
 					trueSight: 0,
 				});
+
 				setOpponentDetail({
 					name: data.opponent.name,
 					level: data.opponent.level,
@@ -154,30 +150,27 @@ const Campaign = () => {
 					class: data.opponent.class,
 					trueSight: 0,
 				});
+
 				setCurrentPlayerHP(data.player.currentHP);
 				setCurrentOpponentHP(data.opponent.currentHP);
-				setMatchID(data.matchID);
+				setMatchID(data.matchID ?? "none");
 				setGameState("SELECT_CARD");
-			})
-			.catch((err) => {
+			} catch (err) {
 				console.error("Error starting battle:", err);
-			});
+			}
+		}
+
+		initBattle();
 	}, [levelId]);
 
 	//Gamestate and round_result handler
 	useEffect(() => {
-		console.log(roundResult);
-		console.log(gameState);
 		if (roundResult) {
 			switch (gameState) {
 				case "BOTH_SELECTED":
-					console.log(gameState);
-
 					setGameState("SHOW_RESULT");
 					break;
 				case "SHOW_RESULT":
-					console.log(gameState);
-
 					setTimeout(() => {
 						setSelectedOpponentCard(
 							roundResult.opponent.cardPlayed
@@ -191,7 +184,6 @@ const Campaign = () => {
 					break;
 
 				case "DO_DAMAGE":
-					console.log(gameState);
 					if (roundResult) {
 						// ทำ animation โจมตีก่อน
 						// Player
@@ -307,7 +299,6 @@ const Campaign = () => {
 					break;
 
 				case "DRAW_CARD":
-					console.log(gameState);
 					setCardRemaining({
 						player: roundResult.player.cardRemaining,
 						opponent: roundResult.opponent.cardRemaining,
@@ -348,10 +339,9 @@ const Campaign = () => {
 	}, [gameState, roundResult]);
 
 	//handle function
-	const handlePlayerCardSelect = (cardID: string) => {
+	const handlePlayerCardSelect = async (cardID: string) => {
 		if (gameState !== "SELECT_CARD") return;
 
-		console.log("card id " + cardID);
 		const hand = playerHandRef.current;
 		const cardPlacer = playerCardPlacerRef.current;
 
@@ -361,7 +351,7 @@ const Campaign = () => {
 
 		sfx.card.play();
 		setPlayerSelectingCard(true);
-		// start at deck
+
 		setPlayerSelectStyle({
 			position: "fixed",
 			left: handRect.left + handRect.width / 3,
@@ -376,7 +366,6 @@ const Campaign = () => {
 			prevHand.filter((card) => card.id !== cardID)
 		);
 
-		// trigger animation in next tick
 		setTimeout(() => {
 			setPlayerSelectStyle((prev) => ({
 				...prev,
@@ -385,63 +374,46 @@ const Campaign = () => {
 			}));
 		}, 50);
 
-		// after animation ends
 		setTimeout(() => {
 			setSelectedPlayerCard(
 				playerHand.find((card) => card.id === cardID) || null
 			);
 			setPlayerSelectingCard(false);
 		}, 500);
-		console.log("card id ?" + cardID);
-		fetch(`http://localhost:8080/api/battle/${matchID}/play`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${localStorage.getItem("authToken")}`, // ใส่ token ตรงนี้
-			},
-			body: JSON.stringify({ cardID: cardID }),
-		})
-			.then((res) => res.json())
-			.then((data) => {
-				setGameState("CARD_SELECTED");
-				setRoundResult(data);
-				animateOpponentCardSelect();
-				setGameState("BOTH_SELECTED");
-			})
-			.catch((err) => {
-				console.error("Error starting battle:", err);
-				console.log("Error");
-			});
+
+		try {
+			const token = localStorage.getItem("authToken") || "";
+			const data = await playCard(matchID, cardID, token); // แปลงเป็น number ถ้า cardID เป็น string
+
+			setGameState("CARD_SELECTED");
+			setRoundResult(data);
+			animateOpponentCardSelect();
+			setGameState("BOTH_SELECTED");
+		} catch (err) {
+			console.error("Error playing card:", err);
+		}
 	};
 
-	const handleTrueSightUse = () => {
+	const handleTrueSightUse = async () => {
 		if (gameState !== "SELECT_CARD" || playerDetail.trueSight <= 0) return;
 
-		fetch(`http://localhost:8080/api/battle/${matchID}/play/true-sight`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-			},
-		})
-			.then((res) => {
-				if (!res.ok) throw new Error("Network response was not ok");
-				return res.json();
-			})
-			.then((data) => {
-				console.log("Response from server:", data);
-				setToggleTrueSightResult(data.opponentHand);
-				setPlayerDetail((prev) => ({
-					...prev,
-					trueSight: data.trueSightLeft,
-				}));
-				setTimeout(() => {
-					setToggleTrueSightResult(null);
-				}, 3000);
-			})
-			.catch((err) => {
-				console.error("Fetch error:", err);
-			});
+		const token = localStorage.getItem("authToken") || "";
+		try {
+			const data = await trueSight(matchID, token);
+
+			setToggleTrueSightResult(data.opponentHand);
+
+			setPlayerDetail((prev) => ({
+				...prev,
+				trueSight: data.trueSightLeft,
+			}));
+
+			setTimeout(() => {
+				setToggleTrueSightResult(null);
+			}, 3000);
+		} catch (err) {
+			console.error("Fetch error:", err);
+		}
 	};
 
 	const handleClickBackToMenu = () => {
@@ -584,7 +556,7 @@ const Campaign = () => {
 	if (gameState === "LOADING")
 		return (
 			<div className="battle-Loading">
-				<NavBar BackPath="/level" />
+				<NavBar backPath="/level" />
 				<div className="battle-Loading__body">
 					<div className="battle-Loading__body_text">
 						<div className="battle-Loading__body_text_header">
@@ -669,7 +641,7 @@ const Campaign = () => {
 					const angleStep = 10; // ค่าที่ควบคุมความเอียง
 					const mid = (total - 1) / 2;
 					const angle = (index - mid) * angleStep;
-					const xOffset = (index - mid) * -30; // 👉 เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
+					const xOffset = (index - mid) * -30; // เพิ่มระยะห่างแนวนอน (ค่ามากขึ้น = ห่างขึ้น)
 					const yOffset = Math.abs(index - mid) * 20; // ยิ่งห่างจากตรงกลาง ยิ่งต่ำลง
 					const transform = `rotate(${angle}deg) translate(${xOffset}px, ${yOffset}px)`;
 					return (
@@ -677,7 +649,7 @@ const Campaign = () => {
 							key={card.id}
 							style={{
 								transform,
-								transition: "transform 0.5s ease", // 👈 ใส่ transition ตรงนี้
+								transition: "transform 0.5s ease",
 							}}
 						>
 							<div className="card-wrapper">
@@ -822,6 +794,7 @@ const Campaign = () => {
 
 					return (
 						<div
+							key={`opponent-card-${index}`}
 							style={{
 								transform,
 								transition: "transform 0.5s ease",
@@ -831,11 +804,7 @@ const Campaign = () => {
 								className="card-wrapper"
 								style={{ transform: "scaleY(-1)" }}
 							>
-								<Card
-									id={"id here"}
-									type="hidden" // เปลี่ยน type ได้ตามที่ต้องการ
-									isHidden
-								/>
+								<Card id={"none"} type="hidden" isHidden />
 							</div>
 						</div>
 					);

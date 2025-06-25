@@ -14,6 +14,11 @@
 	z-index: 999;
 }
 
+.NavBar__left-side {
+	display: flex;
+	align-items: center;
+}
+
 .NavBar__right-side {
 	display: flex;
 	gap: 8px;

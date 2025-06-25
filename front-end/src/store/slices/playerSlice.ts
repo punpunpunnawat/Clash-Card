@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { UnitStat } from "../../types/UnitStat";
+import { getUser } from "../../api/api";
 
 export interface Player {
   id: string;
@@ -35,27 +36,14 @@ const initialState: Player = {
 };
 
 export const fetchPlayer = createAsyncThunk(
-  "player/fetchPlayer",
-  async () => {
-    const token = localStorage.getItem("authToken");
-    console.log(token)
-    if (!token) {
-      throw new Error("No auth token");
-    }
-
-    const res = await fetch("http://localhost:8080/api/user", {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch user data");
-    }
-
-    
-    return await res.json();
-  }
+	"player/fetchPlayer",
+	async () => {
+		const token = localStorage.getItem("authToken");
+		if (!token) {
+			throw new Error("No auth token");
+		}
+		return await getUser(token);
+	}
 );
 
 
@@ -63,7 +51,7 @@ const playerSlice = createSlice({
   name: "player",
   initialState,
   reducers: {
-    setPlayer(state, action: PayloadAction<Player>) {
+    setPlayer(_state, action: PayloadAction<Player>) {
       return action.payload; 
     },
     clearPlayer() {
@@ -71,7 +59,7 @@ const playerSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(fetchPlayer.fulfilled, (state, action) => {
+    builder.addCase(fetchPlayer.fulfilled, (_state, action) => {
       return action.payload; 
     });
   },

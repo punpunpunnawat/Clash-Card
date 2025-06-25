@@ -8,14 +8,13 @@
     display: flex;
     flex-direction: column;
     padding: 128px;
-    gap: 128px;
+    justify-content: space-evenly;
     flex: 1;
     align-items: center;
 }
 
 .Login__body_logo {
     display: flex;
-    flex: 1;
     align-items:center;
 }
 

@@ -1,84 +1,7 @@
 import type { CardProps } from "./Card";
 import type { PlayerClass, UnitStat } from "./UnitStat";
 
-export type ServerMessage =
-	| { type: "slot_assigned"; slot: "A" | "B" }
-	| {
-			type: "selection_status";
-			playerSelected: boolean;
-			opponentSelected: boolean;
-	  }
-	| InitialData
-	| {
-			type: "true_sight_alert";		
-	  }
-	| {
-			type: "true_sight_result";
-			opponentHand:  CardCount,
-			trueSightLeft: number,
-	  }
-	| {
-			type: "opponent_left";
-	  }
-	| RoundResult;
-
-export type RoundResult = {
-	type: "round_result";
-	gameStatus: string;
-	roundWinner: string;
-	player: {
-		hp: number;
-		hand: CardProps[];
-		cardPlayed: CardProps;
-		doDamage: number;
-		cardRemaining: CardCount;
-		trueSight: number;
-		specialEvent: "Warrior Blood"|"True Strike"|"True Sight"|"nothing";
-	};
-	opponent: {
-		hp: number;
-		handLength: number;
-		cardPlayed: CardProps;
-		doDamage: number;
-		cardRemaining: CardCount;
-		trueSight: number;
-		specialEvent: "Warrior Blood"|"True Strike"|"True Sight"|"nothing";
-	};
-	postGameDetail: PostGameDetail;
-};
-
-export type InitialData = {
-	type: "initialData";
-			player: {
-				name: string;
-				level: number;
-				currentHP: number;
-				cardRemaining: CardCount;
-				hand: CardProps[];
-				stat: {
-					atk: number;
-					def: number;
-					spd: number;
-					hp: number;
-				};
-				class: PlayerClass;
-			};
-			opponent: {
-				name: string;
-				level: number;
-				currentHP: number;
-				cardRemaining: CardCount;
-				handSize: number;
-				stat: {
-					atk: number;
-					def: number;
-					spd: number;
-					hp: number;
-				};
-				class: PlayerClass;
-			};
-}
-
+// Basic types
 export type CardCount = {
 	rock: number;
 	paper: number;
@@ -112,4 +35,93 @@ export type PostGameDetail = {
 	gold: number;
 	lvlUp: number;
 	statGain: UnitStat;
+};
+
+// Main ServerMessage union type
+export type ServerMessage =
+	| { type: "slot_assigned"; slot: "A" | "B" }
+	| {
+			type: "selection_status";
+			playerSelected: boolean;
+			opponentSelected: boolean;
+	  }
+	| InitialData
+	| RoundResult
+	| TrueSightResult
+	| { type: "true_sight_alert" }
+	| { type: "opponent_left" };
+
+// TrueSightResult type
+export type TrueSightResult = {
+	type: "true_sight_result";
+	opponentHand: CardCount;
+	trueSightLeft: number;
+};
+
+// InitialData type
+export type InitialData = {
+	type: "initialData";
+	matchID?: string;
+	player: {
+		name: string;
+		level: number;
+		currentHP: number;
+		cardRemaining: CardCount;
+		hand: CardProps[];
+		stat: {
+			atk: number;
+			def: number;
+			spd: number;
+			hp: number;
+		};
+		class: PlayerClass;
+	};
+	opponent: {
+		name: string;
+		level: number;
+		currentHP: number;
+		cardRemaining: CardCount;
+		handSize: number;
+		stat: {
+			atk: number;
+			def: number;
+			spd: number;
+			hp: number;
+		};
+		class: PlayerClass;
+	};
+};
+
+// RoundResult type
+export type RoundResult = {
+	type: "round_result";
+	gameStatus: string;
+	roundWinner: string;
+	player: {
+		hp: number;
+		hand: CardProps[];
+		cardPlayed: CardProps;
+		doDamage: number;
+		cardRemaining: CardCount;
+		trueSight: number;
+		specialEvent:
+			| "Warrior Blood"
+			| "True Strike"
+			| "True Sight"
+			| "nothing";
+	};
+	opponent: {
+		hp: number;
+		handLength: number;
+		cardPlayed: CardProps;
+		doDamage: number;
+		cardRemaining: CardCount;
+		trueSight: number;
+		specialEvent:
+			| "Warrior Blood"
+			| "True Strike"
+			| "True Sight"
+			| "nothing";
+	};
+	postGameDetail: PostGameDetail;
 };

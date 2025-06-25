@@ -5,86 +5,50 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchPlayer } from "../../store/slices/playerSlice";
 import type { AppDispatch, RootState } from "../../store";
 import { fetchDeck } from "../../store/slices/deckSlice";
+import { buyCard, changeClass, upgradeStat } from "../../api/api";
 
 const Upgrade = () => {
-	const dispatch: AppDispatch = useDispatch();
-	useEffect(() => {
-		dispatch(fetchPlayer());
-		dispatch(fetchDeck());
-	}, [dispatch]);
+  const dispatch: AppDispatch = useDispatch();
+  const player = useSelector((state: RootState) => state.player);
+  const deck = useSelector((state: RootState) => state.deck);
 
-	const player = useSelector((state: RootState) => state.player);
-	const deck = useSelector((state: RootState) => state.deck);
-	console.log(player);
-	console.log(deck);
+  useEffect(() => {
+    dispatch(fetchPlayer());
+    dispatch(fetchDeck());
+  }, [dispatch]);
 
-	const handleClickChangeClass = async (newClass: string) => {
-		try {
-			const res = await fetch("http://localhost:8080/api/change-class", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${localStorage.getItem(
-						"authToken"
-					)}`,
-				},
-				body: JSON.stringify({ class: newClass }),
-			});
+  const token = localStorage.getItem("authToken") || "";
 
-			if (!res.ok) throw new Error("Change class failed");
+  const handleClickChangeClass = async (newClass: string) => {
+    try {
+      await changeClass(newClass, token);
+      await dispatch(fetchPlayer());
+    } catch (err) {
+      console.error("Change class failed", err);
+    }
+  };
 
-			await dispatch(fetchPlayer());
-		} catch (err) {
-			console.error(err);
-		}
-	}
+  const handleClickUpgradeStat = async (statType: string) => {
+    try {
+      await upgradeStat(statType, token);
+      await dispatch(fetchPlayer());
+    } catch (err) {
+      console.error("Upgrade stat failed", err);
+    }
+  };
 
-	const handleClickUpgradeStat = async (statType: string) => {
-		try {
-			const res = await fetch("http://localhost:8080/api/upgrade-stat", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${localStorage.getItem(
-						"authToken"
-					)}`,
-				},
-				body: JSON.stringify({ type: statType }),
-			});
-
-			if (!res.ok) throw new Error("Upgrade failed");
-
-			await dispatch(fetchPlayer());
-		} catch (err) {
-			console.error(err);
-		}
-	};
-
-	const handleClickBuyCard = async (cardType: string) => {
-		try {
-			const res = await fetch("http://localhost:8080/api/buy-card", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${localStorage.getItem(
-						"authToken"
-					)}`,
-				},
-				body: JSON.stringify({ type: cardType }),
-			});
-
-			if (!res.ok) throw new Error("Buy failed");
-
-			await dispatch(fetchDeck());
-			await dispatch(fetchPlayer());
-		} catch (err) {
-			console.error(err);
-		}
-	};
-
+  const handleClickBuyCard = async (cardType: string) => {
+    try {
+      await buyCard(cardType, token);
+      await dispatch(fetchDeck());
+      await dispatch(fetchPlayer());
+    } catch (err) {
+      console.error("Buy card failed", err);
+    }
+  };
 	return (
 		<div className="upgrade">
-			<NavBar BackPath="/" />
+			<NavBar backPath="/" />
 			<div className="upgrade__body">
 				<h1>Upgrade and buy card</h1>
 				<div className="upgrade__body_class-card">

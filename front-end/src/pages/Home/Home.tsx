@@ -40,9 +40,7 @@ const Home = () => {
 	};
 
 	const handleClickConfirmPvP = () => {
-		if (lobbyID.trim()) {
-			navigate(`/lobby/${lobbyID.trim()}`);
-		}
+		navigate(`/lobby/${lobbyID}`);
 	};
 
 	const handleClickCloseOverlay = () => {
@@ -52,7 +50,6 @@ const Home = () => {
 
 	return (
 		<div className="Home">
-	
 			{toggleOverlay && (
 				<div className="Home__overlay">
 					<img
@@ -61,7 +58,7 @@ const Home = () => {
 						onClick={handleClickCloseOverlay}
 					/>
 					<input
-						type="text"
+						type="number"
 						placeholder="LOBBY ID"
 						value={lobbyID}
 						onChange={(e) => setLobbyID(e.target.value)}

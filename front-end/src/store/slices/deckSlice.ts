@@ -3,6 +3,7 @@ import {
 	createAsyncThunk,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
+import { getUserDeck } from "../../api/api";
 export interface DeckCard {
 	rock: number;
 	paper: number;
@@ -25,25 +26,12 @@ export const fetchDeck = createAsyncThunk("deck/fetchDeck", async () => {
 	const token = localStorage.getItem("authToken");
 	if (!token) throw new Error("No auth token");
 
-	const res = await fetch("http://localhost:8080/api/deck", {
-		headers: { Authorization: `Bearer ${token}` },
-	});
-
-	if (!res.ok) throw new Error("Failed to fetch user data");
-
-	console.log(res);
-	// สมมติ backend ส่งมาแบบ array [{card_type:"rock", quantity:10},...]
-	const data: { card_type: keyof DeckCard; quantity: number }[] =
-		await res.json();
-
-	console.log("Backend response data:", data); // เพิ่มบรรทัดนี้ดูข้อมูลดิบก่อนแปลง
+	const data: { card_type: keyof DeckCard; quantity: number }[] = await getUserDeck(token);
 
 	const deckObj: DeckCard = { rock: 0, paper: 0, scissors: 0 };
 	data.forEach((c) => {
 		deckObj[c.card_type] = c.quantity;
 	});
-
-	console.log("Converted deck object:", deckObj); // ดูข้อมูลหลังแปลง
 
 	return deckObj;
 });

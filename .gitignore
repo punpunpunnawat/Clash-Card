@@ -1,0 +1,44 @@
+# .env
+.env
+.env.*
+
+# Build & Dependency folders
+node_modules/
+dist/
+build/
+coverage/
+
+# DB volume (Docker)
+db_data/
+
+# Go build
+*.exe
+*.out
+*.test
+/myapp
+
+# Docker junk
+*.pid
+*.sock
+
+# Logs
+*.log
+*.log.*
+
+# OS/Editor specific
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Misc
+*.swp
+
+# .env.example
+PORT=8080
+DB_USER=your_user
+DB_PASS=your_pass
+DB_NAME=clash_and_card
+JWT_SECRET=your_jwt_secret
+

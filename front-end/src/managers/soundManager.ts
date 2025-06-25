@@ -2,8 +2,8 @@ import { Howl } from 'howler';
 
 // BGM
 const bgmTracks = {
-  menu: new Howl({ src: ['/sounds/bgm/menu.mp3'], loop: true, volume: 0.5 }),
-  battle: new Howl({ src: ['/sounds/bgm/battle.mp3'], loop: true, volume: 0.5 }),
+  menu: new Howl({ src: ['/sounds/bgm/menu.mp3'], loop: true, volume: 0.2 }),
+  battle: new Howl({ src: ['/sounds/bgm/battle.mp3'], loop: true, volume: 0.2 }),
 };
 
 let currentBGM: Howl | null = null;

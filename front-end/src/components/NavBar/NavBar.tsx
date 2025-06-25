@@ -1,15 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import "./NavBar.css";
-import type { AppDispatch, RootState } from "../../store";
+import type { AppDispatch, RootState } from "../../store";	
 import { useEffect } from "react";
-import { fetchPlayer } from "../../store/slices/playerSlice";
+import { clearPlayer, fetchPlayer } from "../../store/slices/playerSlice";
 import { useDispatch, useSelector } from "react-redux";
 import LevelBar from "./LevelBar";
 
 type NavBarProps = {
-	BackPath?: string;
+	backPath?: string;
+	showDetail?: boolean;
 };
-const NavBar = ({ BackPath }: NavBarProps) => {
+const NavBar = ({ backPath, showDetail=true }: NavBarProps) => {
 	const navigate = useNavigate();
 	const dispatch: AppDispatch = useDispatch();
 
@@ -23,21 +24,22 @@ const NavBar = ({ BackPath }: NavBarProps) => {
 	const player = useSelector((state: RootState) => state.player);
 
 	const handleClickBack = () => {
-		navigate(BackPath??"/");
+		navigate(backPath ?? "/");
 	};
 
 	const handleClickLogout = () => {
 		navigate("/login");
 		localStorage.clear();
+		dispatch(clearPlayer());
 	};
 
 	const isLoggedIn = player.id !== "";
 
-	if (isLoggedIn) {
+	if (isLoggedIn && showDetail) {
 		return (
 			<div className="NavBar">
 				<div className="NavBar__left-side">
-					{BackPath ? (
+					{backPath ? (
 						<button onClick={handleClickBack}>Back</button>
 					) : (
 						<img src="/others/LogoSmall.svg" />

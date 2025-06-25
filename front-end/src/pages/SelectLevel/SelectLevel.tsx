@@ -20,19 +20,14 @@ const SelectLevel = () => {
 	useEffect(() => {
 		playBGM("menu");
 	}, []);
-	console.log(player);
 
 	const handleSelectLevel = (levelId: number) => {
 		navigate(`/campaign/${levelId}`);
 	};
 
-	useEffect(() => {
-		console.log(player);
-	}, [player]);
-
 	return (
 		<div className="SelectLevel">
-			<NavBar BackPath="/" />
+			<NavBar backPath="/" />
 
 			<div className="SelectLevel__body">
 				<header className="SelectLevel__body_header">

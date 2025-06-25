@@ -7,6 +7,7 @@ import { stopBGM } from "../../managers/soundManager";
 import { fetchPlayer } from "../../store/slices/playerSlice";
 import type { AppDispatch } from "../../store";
 import { useDispatch } from "react-redux";
+import { checkEmail, login, register } from "../../api/api";
 
 export default function Login() {
 	const dispatch: AppDispatch = useDispatch();
@@ -21,31 +22,20 @@ export default function Login() {
 	);
 
 	useEffect(() => {
+		dispatch(fetchPlayer());
 		stopBGM();
 	}, []);
 
+
 	const handleLogin = async () => {
 		try {
-			const res = await fetch("http://localhost:8080/api/login", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email, password }),
-			});
-
-			if (!res.ok) {
-				const errorText = await res.text();
-				console.error("Login failed:", errorText);
-				alert(errorText);
-				return;
-			}
-
-			const data = await res.json();
+			const data = await login(email, password);
 			localStorage.setItem("authToken", data.token);
 			await dispatch(fetchPlayer());
 			navigate("/");
 		} catch (err) {
-			console.error("Unexpected error:", err);
-			alert("Something went wrong");
+			console.error("Login failed:", err);
+			alert("Login failed: " + err);
 		}
 	};
 
@@ -56,21 +46,12 @@ export default function Login() {
 		}
 
 		try {
-			const res = await fetch("http://localhost:8080/api/check-email", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email }),
-			});
-
-			if (!res.ok) {
-				const errMsg = await res.text();
-				alert("Register failed: " + errMsg);
-				return;
+			const data = await checkEmail(email);
+			if (data.exists === true) {
+				alert("This EMAIL is already in use.");
+			} else {
+				setMode("selectClass");
 			}
-			const data = await res.json();
-			if (data.exists === true) alert("This EMAIL already in used: ");
-			else setMode("selectClass");
-			console.log(data);
 		} catch (err) {
 			alert("Network error: " + err);
 		}
@@ -87,31 +68,18 @@ export default function Login() {
 			alert("Passwords do not match");
 			return;
 		}
-		console.log(email, password, selectedClass);
 		try {
-			const res = await fetch("http://localhost:8080/api/register", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					username,
-					email,
-					password,
-					class: selectedClass,
-				}),
-			});
-
-			if (!res.ok) {
-				const errMsg = await res.text();
-				alert("Register failed: " + errMsg);
-				return;
-			}
-
-			const data = await res.json();
-			console.log(data);
+			const data = await register(
+				username,
+				email,
+				password,
+				selectedClass
+			);
 			localStorage.setItem("authToken", data.token);
+			await dispatch(fetchPlayer());
 			navigate("/");
 		} catch (err) {
-			alert("Network error: " + err);
+			alert("Register failed: " + err);
 		}
 	};
 
@@ -128,7 +96,7 @@ export default function Login() {
 
 	return (
 		<div className="Login">
-			<NavBar />
+			<NavBar showDetail={false}/>
 			<div className="Login__body">
 				<section className="Login__body_logo">
 					<img src="others/LogoBig.svg" alt="Logo" />
@@ -136,13 +104,26 @@ export default function Login() {
 				<section className="Login__body_main">
 					<div className="Login__body_main_select-mode">
 						<button
-							style={{ flex: 1, boxShadow:mode=="login"?undefined:"none", backgroundColor:mode=="login"?undefined:"transparent" }}
+							style={{
+								flex: 1,
+								boxShadow: mode == "login" ? undefined : "none",
+								backgroundColor:
+									mode == "login" ? undefined : "transparent",
+							}}
 							onClick={() => setMode("login")}
 						>
 							Login
 						</button>
 						<button
-							style={{ flex: 1, boxShadow:mode=="register"?undefined:"none", backgroundColor:mode=="register"?undefined:"transparent" }}
+							style={{
+								flex: 1,
+								boxShadow:
+									mode == "register" ? undefined : "none",
+								backgroundColor:
+									mode == "register"
+										? undefined
+										: "transparent",
+							}}
 							onClick={() => setMode("register")}
 						>
 							Register

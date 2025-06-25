@@ -56,7 +56,7 @@ const SelectClass = ({
 	};
 	return (
 		<div className="select-class">
-			<NavBar />
+			<NavBar showDetail={false}/>
 			<div className="select-class__body">
 				<h1>Select your starter class</h1>
 				<div className="select-class__body_class-card">

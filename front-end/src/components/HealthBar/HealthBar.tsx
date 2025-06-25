@@ -1,4 +1,3 @@
-import React from "react";
 import "./HealthBar.css";
 import type { PlayerClass } from "../../types/UnitStat";
 
@@ -13,9 +12,9 @@ const HealthBar = ({ level, currentHP, maxHP, playerClass }: HealthBarProps) => 
   const percent = Math.min(100, Math.floor((currentHP / maxHP) * 100));
 
   const getHealthColor = (percent: number) => {
-  if (percent > 60) return "#4caf50"; // เขียว
-  if (percent > 30) return "#ff9800"; // ส้ม
-  return "#f44336"; // แดง
+  if (percent > 60) return "#4caf50";
+  if (percent > 30) return "#ff9800";
+  return "#f44336";
 };
 
 

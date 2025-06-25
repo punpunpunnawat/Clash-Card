@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,7 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte("SECRET_KEY")
+var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 type LoginRequest struct {
 	Email    string `json:"email"`
@@ -34,13 +36,13 @@ func isEmailExists(db *sql.DB, email string) (bool, error) {
 
 func LoginHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("login")
 		var req LoginRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
 
-		// ดึง hash password จาก db
 		var userID string
 		var hashedPassword string
 		err := db.QueryRow(`SELECT id, password FROM users WHERE email = ?`, req.Email).Scan(&userID, &hashedPassword)
@@ -52,13 +54,11 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// เปรียบเทียบ password
 		if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password)); err != nil {
 			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 			return
 		}
 
-		// ออก token
 		token, err := CreateToken(userID)
 		if err != nil {
 			http.Error(w, "Token generation failed", http.StatusInternalServerError)
@@ -202,7 +202,7 @@ func ExtractUserIDFromToken(tokenStr string) (string, error) {
 func CreateToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(), // token หมดอายุ 24 ชั่วโมง
+		"exp":     time.Now().Add(time.Hour * 24).Unix(), // token 24hr exp
 		"iat":     time.Now().Unix(),
 	}
 
