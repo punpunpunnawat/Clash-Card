@@ -474,6 +474,7 @@ const Campaign = () => {
 			opponentDetail={opponentDetail}
 			onClickSelectCard={handlePlayerCardSelect}
 			onClickTrueSight={handleTrueSightUse}
+			onClickLeave={() => navigate("/level")}
 			setUiState={setUiState}
 		/>
 	);

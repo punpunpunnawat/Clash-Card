@@ -34,6 +34,7 @@ interface BattleUIProps {
 	opponentDetail: PlayerDetail & { currentHP: number };
 	onClickSelectCard: (cardID: string) => void;
 	onClickTrueSight: () => void;
+	onClickLeave: () => void;
 	setUiState: React.Dispatch<
 		React.SetStateAction<{
 			hideCard: boolean;
@@ -59,6 +60,7 @@ const BattleUI: React.FC<BattleUIProps> = ({
 	opponentDetail,
 	onClickSelectCard,
 	onClickTrueSight,
+	onClickLeave,
 	setUiState,
 }) => {
 	const handleCardSelect = (cardID: string) => {
@@ -68,6 +70,17 @@ const BattleUI: React.FC<BattleUIProps> = ({
 	const handleUseTrueSight = () => {
 		onClickTrueSight?.();
 	};
+
+	const handleClickClassSkill = () => {
+		setUiState((prev) => ({
+			...prev,
+			showClassSkill: true,
+		}));
+	};
+
+	const handleClickLeave = () => {
+		onClickLeave?.()
+	}
 
 	return (
 		<div className="battle">
@@ -177,6 +190,7 @@ const BattleUI: React.FC<BattleUIProps> = ({
 				</div>
 			)}
 
+			{/* Board */}
 			<div className="battle__board">
 				<div
 					className="battle__board_card-placers"
@@ -318,6 +332,20 @@ const BattleUI: React.FC<BattleUIProps> = ({
 					/>
 				</div>
 			)}
+
+			<div className="battle__menu-button">
+				<h4>Menu</h4>
+				<button onClick={handleClickClassSkill}>Class Skill</button>
+				<button
+					onClick={handleClickLeave}
+					style={{
+						width: "100%",
+						backgroundColor: "rgba(255, 70, 70, 0.5)",
+					}}
+				>
+					Leave
+				</button>
+			</div>
 		</div>
 	);
 };

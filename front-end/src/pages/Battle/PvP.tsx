@@ -548,6 +548,7 @@ const PvP = () => {
 			opponentDetail={opponentDetail}
 			onClickSelectCard={handlePlayerCardSelect}
 			onClickTrueSight={handleTrueSightUse}
+			onClickLeave={() => navigate("/")}
 			setUiState={setUiState}
 		/>
 	);
