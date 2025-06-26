@@ -24,7 +24,7 @@ const PvP = () => {
 	const { id: roomID } = useParams();
 	const navigate = useNavigate();
 	const ws = useRef<WebSocket | null>(null);
-
+	const WS_BASE_URL = import.meta.env.VITE_WS_URL;
 	//GAME STATE
 	type GameState =
 		| "LOADING"
@@ -76,8 +76,9 @@ const PvP = () => {
 
 	// Round Result / Postgame
 	const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
-	const [postGameDetail, setPostGameDetail] = useState<PostGameDetail | null>(null);
-
+	const [postGameDetail, setPostGameDetail] = useState<PostGameDetail | null>(
+		null
+	);
 
 	// UI States
 	const [uiState, setUiState] = useState({
@@ -121,15 +122,15 @@ const PvP = () => {
 	};
 
 	const battleFunc = useBattle(
-			playerHand,
-			setPlayerHand,
-			setOpponentHandSize,
-			setAnimationState,
-			setSelectedPlayerCard,
-			setSelectedOpponentCard,
-			roundResult,
-			refs
-		);
+		playerHand,
+		setPlayerHand,
+		setOpponentHandSize,
+		setAnimationState,
+		setSelectedPlayerCard,
+		setSelectedOpponentCard,
+		roundResult,
+		refs
+	);
 
 	useEffect(() => {
 		playBGM("battle");
@@ -142,7 +143,8 @@ const PvP = () => {
 		const token = localStorage.getItem("authToken")!;
 
 		ws.current = new WebSocket(
-			`ws://localhost:8080/ws/pvp?room=${roomID}`,
+			//`ws://localhost:8080/ws/pvp?room=${roomID}`,
+			`${WS_BASE_URL}/pvp?room=${roomID}`,
 			[token]
 		);
 		ws.current.onmessage = (e) => {
@@ -202,21 +204,21 @@ const PvP = () => {
 						break;
 
 					case "opponent_left":
-						console.log("opponent_left")
+						console.log("opponent_left");
 						setGameState("END");
 						setPostGameDetail({
-							result: "Win" ,
-								detail:"Opponent leave",
-								exp: 0,
-								gold: 0,
-								lvlUp: 0,
-								statGain: {
-									atk:0,
-									def:0,
-									spd:0,
-									hp:0,
-								}
-						})
+							result: "Win",
+							detail: "Opponent leave",
+							exp: 0,
+							gold: 0,
+							lvlUp: 0,
+							statGain: {
+								atk: 0,
+								def: 0,
+								spd: 0,
+								hp: 0,
+							},
+						});
 						break;
 
 					case "true_sight_result":
@@ -416,7 +418,10 @@ const PvP = () => {
 						roundResult.player.cardRemaining.scissors >
 					3
 				) {
-					battleFunc.drawCard("player", battleFunc.findNewCard(roundResult.player.hand));
+					battleFunc.drawCard(
+						"player",
+						battleFunc.findNewCard(roundResult.player.hand)
+					);
 				}
 				if (
 					roundResult.opponent.cardRemaining.rock +
@@ -424,7 +429,10 @@ const PvP = () => {
 						roundResult.opponent.cardRemaining.scissors >
 					3
 				) {
-					battleFunc.drawCard("opponent", { id: "hidden", type: "hidden" });
+					battleFunc.drawCard("opponent", {
+						id: "hidden",
+						type: "hidden",
+					});
 				}
 
 				setUiState((prev) => ({ ...prev, hideCard: true }));
