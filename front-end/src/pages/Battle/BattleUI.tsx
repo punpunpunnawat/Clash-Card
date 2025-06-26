@@ -177,41 +177,6 @@ const BattleUI: React.FC<BattleUIProps> = ({
 				</div>
 			)}
 
-			{/* Card Placer */}
-			{/* <div className="battle__board">
-				<div
-					className="battle__board_card-placer"
-					ref={refs.player.cardPlacer}
-				>
-					<img
-						src="/cards/CardPlacer-Player.svg"
-						width={170}
-						height={270}
-					/>
-					{animationState.player.takenDamage && (
-						<div className="floating-damage">
-							{animationState.player.takenDamage}
-						</div>
-					)}
-				</div>
-
-				<div
-					className="battle__board_card-placer"
-					ref={refs.opponent.cardPlacer}
-				>
-					<img
-						src="/cards/CardPlacer-Opponent.svg"
-						width={170}
-						height={270}
-					/>
-					{animationState.opponent.takenDamage && (
-						<div className="floating-damage">
-							{animationState.opponent.takenDamage}
-						</div>
-					)}
-				</div>
-			</div> */}
-
 			<div className="battle__board">
 				<div
 					className="battle__board_card-placers"
@@ -252,7 +217,7 @@ const BattleUI: React.FC<BattleUIProps> = ({
 								isHidden={
 									uiState.hideCard && uiState.hidePlayerCard
 								}
-								className={`card ${animationState.player.battleAnimation}`}
+								className={`${animationState.player.battleAnimation}`}
 							/>
 						</div>
 					) : (
@@ -266,7 +231,7 @@ const BattleUI: React.FC<BattleUIProps> = ({
 								type={selectedOpponentCard.type}
 								id={selectedOpponentCard.id}
 								isHidden={uiState.hideCard}
-								className={`card ${animationState.opponent.battleAnimation}`}
+								className={`${animationState.opponent.battleAnimation}`}
 							/>
 						</div>
 					) : (

@@ -152,7 +152,3 @@
 .true-strike-right {
 	animation: trueStrikeRight 1s ease-out forwards;
 }
-
-.card {
-	z-index: 3;
-}
