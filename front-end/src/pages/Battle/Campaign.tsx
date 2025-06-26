@@ -449,7 +449,7 @@ const Campaign = () => {
 			return (
 				<GameEnd
 					postGameDetail={postGameDetail}
-					type="pvp"
+					type="campaign"
 					onClickPlayAgain={handleClickPlayAgain}
 					onClickkBackToMenu={handleClickBackToMenu}
 					onClickContinue={handleClickContinue}
