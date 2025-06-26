@@ -34,14 +34,8 @@ func newShuffledDeck(level int) []Card {
 	var cards []Card
 	types := []string{"rock", "paper", "scissors"}
 	idCounter := 1
-	// for _, t := range types {
-	// 	for i := 0; i < 5+(level); i++ {
-	// 		cards = append(cards, Card{ID: "bot" + strconv.Itoa(idCounter), Type: t})
-	// 		idCounter++
-	// 	}
-	// }
 	for _, t := range types {
-		for i := 0; i < 2; i++ {
+		for i := 0; i < 5+(level); i++ {
 			cards = append(cards, Card{ID: "bot" + strconv.Itoa(idCounter), Type: t})
 			idCounter++
 		}
