@@ -7,9 +7,13 @@ export function useBattle(
 	setPlayerHand: React.Dispatch<React.SetStateAction<CardProps[]>>,
 	setOpponentHandSize: React.Dispatch<React.SetStateAction<number>>,
 	setAnimationState: React.Dispatch<React.SetStateAction<AnimationState>>,
-	setSelectedPlayerCard: React.Dispatch<React.SetStateAction<CardProps|null>>,
-	setSelectedOpponentCard: React.Dispatch<React.SetStateAction<CardProps|null>>,
-	roundResult: RoundResult|null,
+	setSelectedPlayerCard: React.Dispatch<
+		React.SetStateAction<CardProps | null>
+	>,
+	setSelectedOpponentCard: React.Dispatch<
+		React.SetStateAction<CardProps | null>
+	>,
+	roundResult: RoundResult | null,
 	refs: BattleRefs
 ) {
 	const findNewCard = (updatedCard: CardProps[]) => {
@@ -167,17 +171,23 @@ export function useBattle(
 		setTimeout(() => {
 			if (isPlayer) {
 				setPlayerHand(roundResult?.player.hand ?? []);
-				setAnimationState((prev) => ({
-					...prev,
-					player: { ...prev.player, drawingCard: null },
-				}));
+				console.log(
+					"✅ หลังจั่ว - playerHand ถูกเซ็ต:",
+					roundResult?.player.hand
+				);
 			} else {
 				setOpponentHandSize(roundResult?.opponent.handLength ?? 0);
-				setAnimationState((prev) => ({
-					...prev,
-					opponent: { ...prev.opponent, drawingCard: null },
-				}));
+				console.log(
+					"✅ หลังจั่ว - opponentHandSize ถูกเซ็ต:",
+					roundResult?.opponent.handLength
+				);
 			}
+
+			// clear draw animation
+			setAnimationState((prev) => ({
+				...prev,
+				[side]: { ...prev[side], drawingCard: null },
+			}));
 		}, 500);
 	};
 

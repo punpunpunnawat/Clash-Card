@@ -1,6 +1,7 @@
 /* ===== FLIGHT ANIMATIONS ===== */
 @keyframes flyRight {
-	0%, 50% {
+	0%,
+	50% {
 		transform: translateX(0) rotate(0);
 		opacity: 1;
 	}
@@ -11,7 +12,8 @@
 }
 
 @keyframes flyLeft {
-	0%, 50% {
+	0%,
+	50% {
 		transform: translateX(0) rotate(0);
 		opacity: 1;
 	}
@@ -29,20 +31,35 @@
 	animation: flyLeft 1s ease forwards;
 }
 
-
 /* ===== ATTACK BOUNCE ===== */
 @keyframes attackBounceRight {
-	0% { transform: translateX(0) scale(1); }
-	30% { transform: translateX(20px) scale(1.1); }
-	60% { transform: translateX(-10px) scale(0.95); }
-	100% { transform: translateX(0) scale(1); }
+	0% {
+		transform: translateX(0) scale(1);
+	}
+	30% {
+		transform: translateX(20px) scale(1.1);
+	}
+	60% {
+		transform: translateX(-10px) scale(0.95);
+	}
+	100% {
+		transform: translateX(0) scale(1);
+	}
 }
 
 @keyframes attackBounceLeft {
-	0% { transform: translateX(0) scale(1); }
-	30% { transform: translateX(-20px) scale(1.1); }
-	60% { transform: translateX(10px) scale(0.95); }
-	100% { transform: translateX(0) scale(1); }
+	0% {
+		transform: translateX(0) scale(1);
+	}
+	30% {
+		transform: translateX(-20px) scale(1.1);
+	}
+	60% {
+		transform: translateX(10px) scale(0.95);
+	}
+	100% {
+		transform: translateX(0) scale(1);
+	}
 }
 
 .attack-right {
@@ -53,20 +70,43 @@
 	animation: attackBounceLeft 1s ease forwards;
 }
 
-
 /* ===== DODGE ===== */
 @keyframes dodgeLeft {
-	0% { transform: translateX(0) rotate(0); opacity: 1; }
-	30% { transform: translateX(-80px) rotate(-10deg); opacity: 0.7; }
-	60% { transform: translateX(-60px) rotate(-15deg); opacity: 0.5; }
-	100% { transform: translateX(0) rotate(0); opacity: 1; }
+	0% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
+	30% {
+		transform: translateX(-80px) rotate(-10deg);
+		opacity: 0.7;
+	}
+	60% {
+		transform: translateX(-60px) rotate(-15deg);
+		opacity: 0.5;
+	}
+	100% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
 }
 
 @keyframes dodgeRight {
-	0% { transform: translateX(0) rotate(0); opacity: 1; }
-	30% { transform: translateX(80px) rotate(10deg); opacity: 0.7; }
-	60% { transform: translateX(60px) rotate(15deg); opacity: 0.5; }
-	100% { transform: translateX(0) rotate(0); opacity: 1; }
+	0% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
+	30% {
+		transform: translateX(80px) rotate(10deg);
+		opacity: 0.7;
+	}
+	60% {
+		transform: translateX(60px) rotate(15deg);
+		opacity: 0.5;
+	}
+	100% {
+		transform: translateX(0) rotate(0);
+		opacity: 1;
+	}
 }
 
 .dodge-left {
@@ -76,7 +116,6 @@
 .dodge-right {
 	animation: dodgeRight 1s ease-out forwards;
 }
-
 
 /* ===== FLOATING DAMAGE ===== */
 @keyframes floatUp {
@@ -90,25 +129,38 @@
 	}
 }
 
-.floating-damage {
+.floating-damage-player,.floating-damage-opponent {
 	position: absolute;
 	color: white;
 	font-weight: bold;
 	font-size: 32px;
 	animation: floatUp 2s ease-out forwards;
 	pointer-events: none;
-	left: 50%;
-	top: 50%;
+	left: calc(50% - 117px);
+	top: 32%;
 	transform: translate(-50%, -50%);
 	text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
 }
 
+.floating-damage-opponent {
+	left: calc(50% + 117px);
+	top: 32%;
+}
 
 /* ===== WARRIOR BLOOD SHAKE ===== */
 @keyframes warriorBloodShake {
-	0%, 100% { transform: translate(0, 0); }
-	20%, 60% { transform: translate(-5px, 0); }
-	40%, 80% { transform: translate(5px, 0); }
+	0%,
+	100% {
+		transform: translate(0, 0);
+	}
+	20%,
+	60% {
+		transform: translate(-5px, 0);
+	}
+	40%,
+	80% {
+		transform: translate(5px, 0);
+	}
 }
 
 .warrior-blood-left,
@@ -116,11 +168,14 @@
 	animation: warriorBloodShake 1s ease-in-out 3;
 }
 
-
 /* ===== TRUE SIGHT ROTATE ===== */
 @keyframes simpleRotate {
-	0% { transform: rotate(0deg); }
-	100% { transform: rotate(360deg); }
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
 }
 
 .true-sight-left,
@@ -129,20 +184,43 @@
 	transform-origin: center center;
 }
 
-
 /* ===== TRUE STRIKE ===== */
 @keyframes trueStrikeLeft {
-	0% { transform: translateX(0); opacity: 1; }
-	30% { transform: translateX(-80px); opacity: 0.2; }
-	50% { transform: translateX(400px); opacity: 0.4; }
-	100% { transform: translateX(0); opacity: 1; }
+	0% {
+		transform: translateX(0);
+		opacity: 1;
+	}
+	30% {
+		transform: translateX(-80px);
+		opacity: 0.2;
+	}
+	50% {
+		transform: translateX(400px);
+		opacity: 0.4;
+	}
+	100% {
+		transform: translateX(0);
+		opacity: 1;
+	}
 }
 
 @keyframes trueStrikeRight {
-	0% { transform: translateX(0); opacity: 1; }
-	30% { transform: translateX(80px); opacity: 0.2; }
-	50% { transform: translateX(-400px); opacity: 0.4; }
-	100% { transform: translateX(0); opacity: 1; }
+	0% {
+		transform: translateX(0);
+		opacity: 1;
+	}
+	30% {
+		transform: translateX(80px);
+		opacity: 0.2;
+	}
+	50% {
+		transform: translateX(-400px);
+		opacity: 0.4;
+	}
+	100% {
+		transform: translateX(0);
+		opacity: 1;
+	}
 }
 
 .true-strike-left {

@@ -393,11 +393,12 @@ const PvP = () => {
 
 					setTimeout(() => {
 						if (roundResult.gameStatus === "end") {
-							setGameState("END");
 							setPostGameDetail(roundResult.postGameDetail);
 							if (roundResult.postGameDetail.result === "Win")
 								sfx.win.play();
 							else sfx.lose.play();
+							
+							setGameState("END");
 						} else {
 							setGameState("DRAW_CARD");
 						}

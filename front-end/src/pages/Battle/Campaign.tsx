@@ -184,6 +184,7 @@ const Campaign = () => {
 				break;
 
 			case "SHOW_RESULT":
+				//console.log(roundResult);
 				setTimeout(() => {
 					setUiState((prev) => ({ ...prev, hideCard: false }));
 					sfx.card.play();
@@ -297,8 +298,8 @@ const Campaign = () => {
 
 					setTimeout(() => {
 						if (roundResult.gameStatus === "end") {
-							setGameState("END");
 							setPostGameDetail(roundResult.postGameDetail);
+							setGameState("END");
 							if (roundResult.postGameDetail.result === "Win")
 								sfx.win.play();
 							else sfx.lose.play();
@@ -319,18 +320,24 @@ const Campaign = () => {
 				if (
 					roundResult.player.cardRemaining.rock +
 						roundResult.player.cardRemaining.paper +
-						roundResult.player.cardRemaining.scissors >
+						roundResult.player.cardRemaining.scissors >=
 					3
 				) {
-					battleFunc.drawCard("player", battleFunc.findNewCard(roundResult.player.hand));
+					battleFunc.drawCard(
+						"player",
+						battleFunc.findNewCard(roundResult.player.hand)
+					);
 				}
 				if (
 					roundResult.opponent.cardRemaining.rock +
 						roundResult.opponent.cardRemaining.paper +
-						roundResult.opponent.cardRemaining.scissors >
+						roundResult.opponent.cardRemaining.scissors >=
 					3
 				) {
-					battleFunc.drawCard("opponent", { id: "hidden", type: "hidden" });
+					battleFunc.drawCard("opponent", {
+						id: "hidden",
+						type: "hidden",
+					});
 				}
 
 				setUiState((prev) => ({ ...prev, hideCard: true }));
@@ -424,7 +431,7 @@ const Campaign = () => {
 		navigate(`/campaign/${Number(levelId) + 1}`, { replace: true });
 		window.location.reload();
 	};
-
+	
 	//waiting page
 	if (gameState === "LOADING")
 		return (

@@ -144,6 +144,7 @@ const BattleUI: React.FC<BattleUIProps> = ({
 							}}
 						>
 							<div className="card-wrapper">
+								{card.id}
 								<Card
 									id={card.id}
 									type={card.type}
@@ -176,7 +177,7 @@ const BattleUI: React.FC<BattleUIProps> = ({
 				3 ? (
 					<img src="/cards/BackOfCard.svg" width={150} height={250} />
 				) : (
-					<div style={{ width: 150, height: 250 }} />
+					<div ref={refs.player.deck} style={{ width: 150, height: 250 }} />
 				)}
 			</div>
 
@@ -288,7 +289,7 @@ const BattleUI: React.FC<BattleUIProps> = ({
 				3 ? (
 					<img src="/cards/BackOfCard.svg" width={150} height={250} />
 				) : (
-					<div style={{ width: 150, height: 250 }} />
+					<div ref={refs.player.deck} style={{ width: 150, height: 250 }} />
 				)}
 			</div>
 
@@ -330,6 +331,18 @@ const BattleUI: React.FC<BattleUIProps> = ({
 						type={animationState.opponent.drawingCard.type}
 						isHidden
 					/>
+				</div>
+			)}
+
+			{animationState.player.takenDamage && (
+				<div className="floating-damage-player">
+					{animationState.player.takenDamage}
+				</div>
+			)}
+
+			{animationState.opponent.takenDamage && (
+				<div className="floating-damage-opponent">
+					{animationState.opponent.takenDamage}
 				</div>
 			)}
 
