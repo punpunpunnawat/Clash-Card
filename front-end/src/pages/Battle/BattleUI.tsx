@@ -144,7 +144,6 @@ const BattleUI: React.FC<BattleUIProps> = ({
 							}}
 						>
 							<div className="card-wrapper">
-								{card.id}
 								<Card
 									id={card.id}
 									type={card.type}
