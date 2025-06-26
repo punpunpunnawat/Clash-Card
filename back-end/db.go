@@ -18,8 +18,6 @@ func ConnectDB() *sql.DB {
 
 	dsn := user + ":" + pass + "@tcp(" + host + ":" + port + ")/" + dbname
 
-	log.Println("dsn: " + dsn)
-
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("Connect error:", err)

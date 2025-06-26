@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -18,10 +17,10 @@ func main() {
 	dir, _ := os.Getwd()
 	log.Println("Current working dir:", dir)
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	db := ConnectDB()
 	defer db.Close()
@@ -42,6 +41,7 @@ func main() {
 	r.HandleFunc("/api/battle/{matchID}/play", battle.PlayCardHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/battle/{matchID}/play/true-sight", battle.TrueSightHandler()).Methods("POST", "OPTIONS")
 	r.HandleFunc("/ws/pvp", battle.HandlePVPWebSocket(db))
+
 	//upgrade
 	r.HandleFunc("/api/change-class", upgrade.ChangeClassHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/upgrade-stat", upgrade.UpgradeStatHandler(db)).Methods("POST", "OPTIONS")
@@ -53,7 +53,7 @@ func main() {
 	// }
 	http.ListenAndServe(":"+port, r)
 
-	log.Println("Server running at :8080")
+	log.Println("Server running at :" + port)
 	//http.ListenAndServe(":8080", r)
 }
 
