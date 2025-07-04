@@ -180,7 +180,9 @@ const Campaign = () => {
 				setMatchID(data.matchID ?? "none");
 				setGameState("SELECT_CARD");
 			} catch (err) {
-				setErrorMessage(err instanceof Error ? err.message : "Unknown error");
+				setErrorMessage(
+					err instanceof Error ? err.message : "Unknown error"
+				);
 			}
 		}
 
@@ -220,13 +222,15 @@ const Campaign = () => {
 					}));
 				} else {
 					let anim = "";
-					if (roundResult.roundWinner === "player") anim = "attack-left";
+					if (roundResult.roundWinner === "player")
+						anim = "attack-left";
 					else if (
 						roundResult.roundWinner === "opponent" &&
 						roundResult.opponent.doDamage === -1
 					)
 						anim = "dodge-left";
-					else if (roundResult.roundWinner === "opponent") anim = "fly-left";
+					else if (roundResult.roundWinner === "opponent")
+						anim = "fly-left";
 
 					setAnimationState((prev) => ({
 						...prev,
@@ -246,13 +250,15 @@ const Campaign = () => {
 					}));
 				} else {
 					let anim = "";
-					if (roundResult.roundWinner === "opponent") anim = "attack-right";
+					if (roundResult.roundWinner === "opponent")
+						anim = "attack-right";
 					else if (
 						roundResult.roundWinner === "player" &&
 						roundResult.player.doDamage === -1
 					)
 						anim = "dodge-right";
-					else if (roundResult.roundWinner === "player") anim = "fly-right";
+					else if (roundResult.roundWinner === "player")
+						anim = "fly-right";
 
 					setAnimationState((prev) => ({
 						...prev,
@@ -269,7 +275,8 @@ const Campaign = () => {
 								roundResult.player.doDamage === -1
 									? "Miss"
 									: roundResult.player.doDamage !== 0
-									? "- " + roundResult.player.doDamage.toString()
+									? "- " +
+									  roundResult.player.doDamage.toString()
 									: null,
 						},
 						player: {
@@ -278,16 +285,19 @@ const Campaign = () => {
 								roundResult.opponent.doDamage === -1
 									? "Miss"
 									: roundResult.opponent.doDamage !== 0
-									? "- " + roundResult.opponent.doDamage.toString()
+									? "- " +
+									  roundResult.opponent.doDamage.toString()
 									: null,
 						},
 					}));
 
 					if (roundResult.player.doDamage >= 1) sfx.hit.play();
-					else if (roundResult.player.doDamage === -1) sfx.evade.play();
+					else if (roundResult.player.doDamage === -1)
+						sfx.evade.play();
 
 					if (roundResult.opponent.doDamage >= 1) sfx.hit.play();
-					else if (roundResult.opponent.doDamage === -1) sfx.evade.play();
+					else if (roundResult.opponent.doDamage === -1)
+						sfx.evade.play();
 
 					setPlayerDetail((prev) => ({
 						...prev,
@@ -304,7 +314,8 @@ const Campaign = () => {
 						if (roundResult.gameStatus === "end") {
 							setPostGameDetail(roundResult.postGameDetail);
 							setGameState("END");
-							if (roundResult.postGameDetail.result === "Win") sfx.win.play();
+							if (roundResult.postGameDetail.result === "Win")
+								sfx.win.play();
 							else sfx.lose.play();
 						} else {
 							setGameState("DRAW_CARD");
@@ -337,7 +348,10 @@ const Campaign = () => {
 						roundResult.opponent.cardRemaining.scissors >=
 					3
 				) {
-					battleFunc.drawCard("opponent", { id: "hidden", type: "hidden" });
+					battleFunc.drawCard("opponent", {
+						id: "hidden",
+						type: "hidden",
+					});
 				}
 
 				setUiState((prev) => ({ ...prev, hideCard: true }));
@@ -385,7 +399,9 @@ const Campaign = () => {
 				setRoundResult(data);
 				setGameState("BOTH_SELECTED");
 			} catch (err) {
-				setErrorMessage(err instanceof Error ? err.message : "Unknown error");
+				setErrorMessage(
+					err instanceof Error ? err.message : "Unknown error"
+				);
 			}
 		}, 500);
 	};
@@ -414,7 +430,9 @@ const Campaign = () => {
 				}));
 			}, 3000);
 		} catch (err) {
-			setErrorMessage(err instanceof Error ? err.message : "Unknown error");
+			setErrorMessage(
+				err instanceof Error ? err.message : "Unknown error"
+			);
 		}
 	};
 
