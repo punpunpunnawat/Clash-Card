@@ -4,6 +4,7 @@ import (
 	"clash_and_card/battle"
 	"clash_and_card/upgrade"
 	"clash_and_card/user"
+	"fmt"
 	"os"
 
 	"log"
@@ -61,6 +62,7 @@ func main() {
 func middlewareCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
+		fmt.Println("Origin:", origin) // ดูว่าได้อะไร
 
 		allowedOrigins := map[string]bool{
 			"http://localhost:5173":                        true,
