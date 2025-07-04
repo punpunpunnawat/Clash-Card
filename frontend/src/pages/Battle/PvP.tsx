@@ -535,13 +535,13 @@ const PvP = () => {
 
 	if (gameState === "WAIT_OPPONENT")
 		return (
-			<div className="battle-Loading">
+			<div className="battle-loading">
 				<NavBar backPath="/" />
-				<div className="battle-Loading__body">
-					<div className="battle-Loading__body_text">
-						<div className="battle-Loading__body_text_header">
+				<div className="battle-loading__body">
+					<div className="battle-loading__body_text">
+						<div className="battle-loading__body_text_header">
 							<h2>Lobby ID</h2>
-							<div className="battle-Loading__body_text_header_lobby-ID">
+							<div className="battle-loading__body_text_header_lobby-ID">
 								{roomID}
 							</div>
 						</div>

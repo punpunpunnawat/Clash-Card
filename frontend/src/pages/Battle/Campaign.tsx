@@ -436,11 +436,11 @@ const Campaign = () => {
 
 	if (gameState === "LOADING")
 		return (
-			<div className="battle-Loading">
+			<div className="battle-loading">
 				<NavBar backPath="/level" />
-				<div className="battle-Loading__body">
-					<div className="battle-Loading__body_text">
-						<div className="battle-Loading__body_text_header">
+				<div className="battle-loading__body">
+					<div className="battle-loading__body_text">
+						<div className="battle-loading__body_text_header">
 							<h2>Loading</h2>
 						</div>
 						<span>Please Wait</span>
