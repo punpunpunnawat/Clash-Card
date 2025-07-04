@@ -8,6 +8,7 @@ import { fetchPlayer } from "../../store/slices/playerSlice";
 import type { AppDispatch } from "../../store";
 import { useDispatch } from "react-redux";
 import { checkEmail, login, register } from "../../api/api";
+import ErrorOverlay from "../../components/ErrorOverlay";
 
 export default function Login() {
 	const dispatch: AppDispatch = useDispatch();
@@ -20,12 +21,12 @@ export default function Login() {
 	const [mode, setMode] = useState<"login" | "register" | "selectClass">(
 		"login"
 	);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	useEffect(() => {
 		dispatch(fetchPlayer());
 		stopBGM();
 	}, []);
-
 
 	const handleLogin = async () => {
 		try {
@@ -35,25 +36,30 @@ export default function Login() {
 			navigate("/");
 		} catch (err) {
 			console.error("Login failed:", err);
-			alert("Login failed: " + err);
+			setErrorMessage(
+				err instanceof Error ? err.message : "Unknown error"
+			);
 		}
 	};
 
 	const handleRegister = async () => {
 		if (password !== confirmPassword) {
-			alert("Passwords do not match");
+			setErrorMessage("Password do not match");
+
 			return;
 		}
 
 		try {
 			const data = await checkEmail(email);
 			if (data.exists === true) {
-				alert("This EMAIL is already in use.");
+				setErrorMessage("Email already in use");
 			} else {
 				setMode("selectClass");
 			}
 		} catch (err) {
-			alert("Network error: " + err);
+			setErrorMessage(
+				err instanceof Error ? err.message : "Unknown error"
+			);
 		}
 	};
 
@@ -65,7 +71,7 @@ export default function Login() {
 
 	const handleSelectClass = async (selectedClass: string) => {
 		if (password !== confirmPassword) {
-			alert("Passwords do not match");
+			setErrorMessage("Passwords do not match");
 			return;
 		}
 		try {
@@ -79,7 +85,10 @@ export default function Login() {
 			await dispatch(fetchPlayer());
 			navigate("/");
 		} catch (err) {
-			alert("Register failed: " + err);
+			setErrorMessage(
+				"Register failed: " +
+					(err instanceof Error ? err.message : "Unknown error")
+			);
 		}
 	};
 
@@ -96,7 +105,7 @@ export default function Login() {
 
 	return (
 		<div className="Login">
-			<NavBar showDetail={false}/>
+			<NavBar showDetail={false} />
 			<div className="Login__body">
 				<section className="Login__body_logo">
 					<img src="others/LogoBig.svg" alt="Logo" />
@@ -178,6 +187,12 @@ export default function Login() {
 					</form>
 				</section>
 			</div>
+			{errorMessage && (
+				<ErrorOverlay
+					message={errorMessage}
+					onClose={() => setErrorMessage(null)}
+				/>
+			)}
 		</div>
 	);
 }

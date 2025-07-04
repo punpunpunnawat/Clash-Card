@@ -16,19 +16,29 @@ const request = async (
 		headers["Authorization"] = `Bearer ${token}`;
 	}
 
-	const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-		method,
-		headers,
-		body: data ? JSON.stringify(data) : undefined,
-	});
+	try {
+		const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+			method,
+			headers,
+			body: data ? JSON.stringify(data) : undefined,
+		});
 
-	if (!res.ok) {
-		const error = await res.json().catch(() => ({}));
-		throw new Error(error.message || `Error ${res.status}`);
+		if (!res.ok) {
+			const error = await res.json().catch(() => ({}));
+			throw new Error(error.message || `Error ${res.status}`);
+		}
+
+		return res.json();
+	} catch (err) {
+	if (err instanceof Error) {
+		throw new Error(err.message || "Network error");
+	} else {
+		throw new Error("Unknown error occurred");
 	}
+}
 
-	return res.json();
 };
+
 
 // ==================== User ====================
 export const login = (email: string, password: string) =>
@@ -61,6 +71,7 @@ export const playCard = (
 ): Promise<RoundResult> => {
 	return request(`/battle/${matchID}/play`, "POST", { cardId }, token);
 };
+
 export const trueSight = (
 	matchID: string,
 	token: string

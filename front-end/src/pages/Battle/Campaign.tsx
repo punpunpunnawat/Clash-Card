@@ -19,6 +19,7 @@ import GameEnd from "./Overlay/GameEnd/GameEnd";
 import { playCard, startBattle, trueSight } from "../../api/api";
 import BattleUI from "./BattleUI";
 import { useBattle } from "../../hooks/useBattle";
+import ErrorOverlay from "../../components/ErrorOverlay";
 
 const Campaign = () => {
 	const { levelId } = useParams();
@@ -116,6 +117,8 @@ const Campaign = () => {
 		},
 	};
 
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
 	const battleFunc = useBattle(
 		playerHand,
 		setPlayerHand,
@@ -167,7 +170,9 @@ const Campaign = () => {
 				setMatchID(data.matchID ?? "none");
 				setGameState("SELECT_CARD");
 			} catch (err) {
-				console.error("Error starting battle:", err);
+				setErrorMessage(
+					err instanceof Error ? err.message : "Unknown error"
+				);
 			}
 		}
 
@@ -385,7 +390,9 @@ const Campaign = () => {
 
 				setGameState("BOTH_SELECTED");
 			} catch (err) {
-				console.error("Error playing card:", err);
+				setErrorMessage(
+					err instanceof Error ? err.message : "Unknown error"
+				);
 			}
 		}, 500);
 	};
@@ -414,7 +421,9 @@ const Campaign = () => {
 				}));
 			}, 3000);
 		} catch (err) {
-			console.error("Fetch error:", err);
+			setErrorMessage(
+				err instanceof Error ? err.message : "Unknown error"
+			);
 		}
 	};
 
@@ -431,7 +440,7 @@ const Campaign = () => {
 		navigate(`/campaign/${Number(levelId) + 1}`, { replace: true });
 		window.location.reload();
 	};
-	
+
 	//waiting page
 	if (gameState === "LOADING")
 		return (
@@ -467,23 +476,31 @@ const Campaign = () => {
 
 	//default page
 	return (
-		<BattleUI
-			gameState={gameState}
-			refs={refs}
-			uiState={uiState}
-			animationState={animationState}
-			playerHand={playerHand}
-			opponentHandSize={opponentHandSize}
-			cardRemaining={cardRemaining}
-			selectedPlayerCard={selectedPlayerCard}
-			selectedOpponentCard={selectedOpponentCard}
-			playerDetail={playerDetail}
-			opponentDetail={opponentDetail}
-			onClickSelectCard={handlePlayerCardSelect}
-			onClickTrueSight={handleTrueSightUse}
-			onClickLeave={() => navigate("/level")}
-			setUiState={setUiState}
-		/>
+		<>
+			<BattleUI
+				gameState={gameState}
+				refs={refs}
+				uiState={uiState}
+				animationState={animationState}
+				playerHand={playerHand}
+				opponentHandSize={opponentHandSize}
+				cardRemaining={cardRemaining}
+				selectedPlayerCard={selectedPlayerCard}
+				selectedOpponentCard={selectedOpponentCard}
+				playerDetail={playerDetail}
+				opponentDetail={opponentDetail}
+				onClickSelectCard={handlePlayerCardSelect}
+				onClickTrueSight={handleTrueSightUse}
+				onClickLeave={() => navigate("/level")}
+				setUiState={setUiState}
+			/>
+			{errorMessage && (
+				<ErrorOverlay
+					message={errorMessage}
+					onClose={() => setErrorMessage(null)}
+				/>
+			)}
+		</>
 	);
 };
 

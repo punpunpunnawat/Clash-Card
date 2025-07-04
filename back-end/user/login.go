@@ -28,6 +28,12 @@ type RegisterRequest struct {
 	Class    string `json:"class"`
 }
 
+func writeJSONError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{"message": message})
+}
+
 func isEmailExists(db *sql.DB, email string) (bool, error) {
 	var exists bool
 	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = ?)", email).Scan(&exists)
@@ -39,7 +45,7 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 		fmt.Println("login")
 		var req LoginRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request", http.StatusBadRequest)
+			writeJSONError(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
 
@@ -47,21 +53,21 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 		var hashedPassword string
 		err := db.QueryRow(`SELECT id, password FROM users WHERE email = ?`, req.Email).Scan(&userID, &hashedPassword)
 		if err == sql.ErrNoRows {
-			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+			writeJSONError(w, "Invalid email or password", http.StatusUnauthorized)
 			return
 		} else if err != nil {
-			http.Error(w, "Server error", http.StatusInternalServerError)
+			writeJSONError(w, "Server error", http.StatusInternalServerError)
 			return
 		}
 
 		if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password)); err != nil {
-			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+			writeJSONError(w, "Invalid email or password", http.StatusUnauthorized)
 			return
 		}
 
 		token, err := CreateToken(userID)
 		if err != nil {
-			http.Error(w, "Token generation failed", http.StatusInternalServerError)
+			writeJSONError(w, "Token generation failed", http.StatusInternalServerError)
 			return
 		}
 
@@ -80,17 +86,17 @@ func CheckEmailHandler(db *sql.DB) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		var req Req
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Email == "" {
-			http.Error(w, "Invalid input", http.StatusBadRequest)
+			writeJSONError(w, "Invalid input", http.StatusBadRequest)
 			return
 		}
 		exists, err := isEmailExists(db, req.Email)
 		if err != nil {
-			http.Error(w, "Server error", http.StatusInternalServerError)
+			writeJSONError(w, "Server error", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -114,27 +120,27 @@ func initDeck(class string) (rock int, paper int, scissors int) {
 func RegisterHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		var req RegisterRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil ||
 			req.Email == "" || req.Password == "" || req.Class == "" {
-			http.Error(w, "Invalid input", http.StatusBadRequest)
+			writeJSONError(w, "Invalid input", http.StatusBadRequest)
 			return
 		}
 		exists, err := isEmailExists(db, req.Email)
 		if err != nil {
-			http.Error(w, "Server error", http.StatusInternalServerError)
+			writeJSONError(w, "Server error", http.StatusInternalServerError)
 			return
 		}
 		if exists {
-			http.Error(w, "Email already registered", http.StatusConflict)
+			writeJSONError(w, "Email already registered", http.StatusConflict)
 			return
 		}
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {
-			http.Error(w, "Server error", http.StatusInternalServerError)
+			writeJSONError(w, "Server error", http.StatusInternalServerError)
 			return
 		}
 		userID := uuid.New().String()
@@ -150,7 +156,7 @@ func RegisterHandler(db *sql.DB) http.HandlerFunc {
 			req.Username, req.Email, string(hashedPassword), 20, 10, 10, 50, 1, 1, 0, 0, time.Now(), req.Class, 0,
 		)
 		if err != nil {
-			http.Error(w, "Server error", http.StatusInternalServerError)
+			writeJSONError(w, "Server error", http.StatusInternalServerError)
 			return
 		}
 
@@ -162,14 +168,13 @@ func RegisterHandler(db *sql.DB) http.HandlerFunc {
 			userID, "scissors", initScissors,
 		)
 		if err != nil {
-			http.Error(w, "Server error", http.StatusInternalServerError)
+			writeJSONError(w, "Server error", http.StatusInternalServerError)
 			return
 		}
 
-		// ออก token
 		token, err := CreateToken(userID)
 		if err != nil {
-			http.Error(w, "Token generation failed", http.StatusInternalServerError)
+			writeJSONError(w, "Token generation failed", http.StatusInternalServerError)
 			return
 		}
 

@@ -328,7 +328,7 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 		}()
 
 		go pvpRead(client)
-		go pvpWrite(client)
+		// go pvpWrite(client)
 
 	}
 }
@@ -668,8 +668,6 @@ func pvpRead(c *PVPClient) {
 				}
 			}
 
-			fmt.Println("trueeee")
-
 			notify := map[string]interface{}{
 				"type": "true_sight_alert",
 			}
@@ -695,14 +693,14 @@ func pvpRead(c *PVPClient) {
 	}
 }
 
-func pvpWrite(c *PVPClient) {
-	for msg := range c.send {
-		err := c.conn.WriteMessage(websocket.TextMessage, msg)
-		if err != nil {
-			break
-		}
-	}
-}
+// func pvpWrite(c *PVPClient) {
+// 	for msg := range c.send {
+// 		err := c.conn.WriteMessage(websocket.TextMessage, msg)
+// 		if err != nil {
+// 			break
+// 		}
+// 	}
+// }
 
 func pvpRemoveClient(c *PVPClient) {
 	pvpManager.lock.Lock()

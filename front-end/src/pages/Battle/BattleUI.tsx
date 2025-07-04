@@ -79,8 +79,8 @@ const BattleUI: React.FC<BattleUIProps> = ({
 	};
 
 	const handleClickLeave = () => {
-		onClickLeave?.()
-	}
+		onClickLeave?.();
+	};
 
 	return (
 		<div className="battle">
@@ -125,6 +125,44 @@ const BattleUI: React.FC<BattleUIProps> = ({
 				/>
 			)}
 
+			{/* Player Status */}
+			<div className="battle__player_status">
+				<PlayerStatus
+					level={playerDetail.level}
+					playerClass={playerDetail.class}
+					currentHP={playerDetail.currentHP}
+					stat={playerDetail.stat}
+					cardRemaining={cardRemaining.player}
+					trueSight={playerDetail.trueSight}
+					onClickPassive={() => handleUseTrueSight()}
+				/>
+			</div>
+
+			{/* Player Deck */}
+			<div className="battle__player_deck" ref={refs.player.deck}>
+				{cardRemaining.player.rock +
+					cardRemaining.player.paper +
+					cardRemaining.player.scissors >
+				3 ? (
+					<img src="/cards/BackOfCard.svg" width={150} height={250} />
+				) : (
+					<div
+						ref={refs.player.deck}
+						style={{ width: 150, height: 250 }}
+					/>
+				)}
+			</div>
+
+			{/* Player Drawing Card */}
+			{animationState.player.drawingCard && (
+				<div style={animationState.player.drawStyle}>
+					<Card
+						id={animationState.player.drawingCard.id}
+						type={animationState.player.drawingCard.type}
+					/>
+				</div>
+			)}
+
 			{/* Player Hand */}
 			<div className="battle__player_hand" ref={refs.player.hand}>
 				{playerHand.map((card, index) => {
@@ -153,107 +191,6 @@ const BattleUI: React.FC<BattleUIProps> = ({
 						</div>
 					);
 				})}
-			</div>
-
-			{/* Player Status */}
-			<div className="battle__player_status">
-				<PlayerStatus
-					level={playerDetail.level}
-					playerClass={playerDetail.class}
-					currentHP={playerDetail.currentHP}
-					stat={playerDetail.stat}
-					cardRemaining={cardRemaining.player}
-					trueSight={playerDetail.trueSight}
-					onClickPassive={() => handleUseTrueSight()}
-				/>
-			</div>
-
-			{/* Player Deck */}
-			<div className="battle__player_deck" ref={refs.player.deck}>
-				{cardRemaining.player.rock +
-					cardRemaining.player.paper +
-					cardRemaining.player.scissors >
-				3 ? (
-					<img src="/cards/BackOfCard.svg" width={150} height={250} />
-				) : (
-					<div ref={refs.player.deck} style={{ width: 150, height: 250 }} />
-				)}
-			</div>
-
-			{/* Player Drawing Card */}
-			{animationState.player.drawingCard && (
-				<div style={animationState.player.drawStyle}>
-					<Card
-						id={animationState.player.drawingCard.id}
-						type={animationState.player.drawingCard.type}
-					/>
-				</div>
-			)}
-
-			{/* Board */}
-			<div className="battle__board">
-				<div
-					className="battle__board_card-placers"
-					ref={refs.player.cardPlacer}
-				>
-					<div className="battle__board_card-placer player">
-						<img src="/cards/CardPlacer-Player.svg" />
-					</div>
-
-					<div
-						className="battle__board_card-placer opponent"
-						ref={refs.opponent.cardPlacer}
-					>
-						<img src="/cards/CardPlacer-Opponent.svg" />
-					</div>
-				</div>
-
-				<div className="battle__board_card-selected">
-					{selectedPlayerCard ? (
-						<div
-							onMouseEnter={() =>
-								gameState === "CARD_SELECTED" &&
-								setUiState((prev) => ({
-									...prev,
-									hidePlayerCard: false,
-								}))
-							}
-							onMouseLeave={() =>
-								setUiState((prev) => ({
-									...prev,
-									hidePlayerCard: true,
-								}))
-							}
-						>
-							<Card
-								type={selectedPlayerCard.type}
-								id={selectedPlayerCard.id}
-								isHidden={
-									uiState.hideCard && uiState.hidePlayerCard
-								}
-								className={`${animationState.player.battleAnimation}`}
-							/>
-						</div>
-					) : (
-						<div style={{ visibility: "hidden" }}>
-							<Card id={"temp"} type={"hidden"} isHidden />
-						</div>
-					)}
-					{selectedOpponentCard ? (
-						<div className="battle__board_card-placer_selected-card">
-							<Card
-								type={selectedOpponentCard.type}
-								id={selectedOpponentCard.id}
-								isHidden={uiState.hideCard}
-								className={`${animationState.opponent.battleAnimation}`}
-							/>
-						</div>
-					) : (
-						<div style={{ visibility: "hidden" }}>
-							<Card id={"temp"} type={"hidden"} isHidden />
-						</div>
-					)}
-				</div>
 			</div>
 
 			{/* Animations */}
@@ -288,7 +225,10 @@ const BattleUI: React.FC<BattleUIProps> = ({
 				3 ? (
 					<img src="/cards/BackOfCard.svg" width={150} height={250} />
 				) : (
-					<div ref={refs.player.deck} style={{ width: 150, height: 250 }} />
+					<div
+						ref={refs.player.deck}
+						style={{ width: 150, height: 250 }}
+					/>
 				)}
 			</div>
 
@@ -357,6 +297,72 @@ const BattleUI: React.FC<BattleUIProps> = ({
 				>
 					Leave
 				</button>
+			</div>
+
+			{/* Board */}
+			<div className="battle__board">
+				<div
+					className="battle__board_card-placers"
+					ref={refs.player.cardPlacer}
+				>
+					<div className="battle__board_card-placer player">
+						<img src="/cards/CardPlacer-Player.svg" />
+					</div>
+
+					<div
+						className="battle__board_card-placer opponent"
+						ref={refs.opponent.cardPlacer}
+					>
+						<img src="/cards/CardPlacer-Opponent.svg" />
+					</div>
+				</div>
+
+				<div className="battle__board_card-selected">
+					{selectedPlayerCard ? (
+						<div
+							onMouseEnter={() =>
+								gameState === "CARD_SELECTED" &&
+								setUiState((prev) => ({
+									...prev,
+									hidePlayerCard: false,
+								}))
+							}
+							onMouseLeave={() =>
+								setUiState((prev) => ({
+									...prev,
+									hidePlayerCard: true,
+								}))
+							}
+						>
+							<Card
+								type={selectedPlayerCard.type}
+								id={selectedPlayerCard.id}
+								isHidden={
+									uiState.hideCard && uiState.hidePlayerCard
+								}
+								className={`${animationState.player.battleAnimation}`}
+							/>
+						</div>
+					) : (
+						<div style={{ visibility: "hidden" }}>
+							<Card id={"temp"} type={"hidden"} isHidden />
+						</div>
+					)}
+					{selectedOpponentCard ? (
+						<div className="battle__board_card-placer_selected-card">
+							<Card
+								type={selectedOpponentCard.type}
+								id={selectedOpponentCard.id}
+								isHidden={uiState.hideCard}
+								className={`${animationState.opponent.battleAnimation}`}
+							/>
+						</div>
+					) : (
+						<div style={{ visibility: "hidden" }}>
+							<Card id={"temp"} type={"hidden"} isHidden />
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
 	);
