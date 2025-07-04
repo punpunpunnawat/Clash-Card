@@ -1,4 +1,4 @@
-// components/BattleUI.tsx
+// components/Battle.tsx
 import React from "react";
 
 import type {
@@ -7,14 +7,15 @@ import type {
 	CardCount,
 	CardRemaining,
 	PlayerDetail,
-} from "../../types/Battle";
-import type { CardProps } from "../../types/Card";
-import ClassSkillOverlay from "../../components/ClassSkillOverlay";
-import Card from "../../components/Card";
-import PlayerStatus from "../../components/PlayerStatus";
+} from "../../../../types/Battle";
+import type { CardProps } from "../../../../types/Card";
+import ClassSkillOverlay from "../../../../components/ClassSkillOverlay";
+import Card from "../../../../components/Card";
+import PlayerStatus from "../../../../components/PlayerStatus";
+import "./css/Battle.css";
 import "./css/CardAttack.css";
 
-interface BattleUIProps {
+interface BattleProps {
 	gameState: string;
 	refs: BattleRefs;
 	uiState: {
@@ -46,7 +47,7 @@ interface BattleUIProps {
 	>;
 }
 
-const BattleUI: React.FC<BattleUIProps> = ({
+const Battle: React.FC<BattleProps> = ({
 	gameState,
 	refs,
 	uiState,
@@ -287,7 +288,7 @@ const BattleUI: React.FC<BattleUIProps> = ({
 
 			<div className="battle__menu-button">
 				<h4>Menu</h4>
-				<button onClick={handleClickClassSkill}>Class Skill</button>
+				<button onClick={handleClickClassSkill}>Rule and Skill</button>
 				<button
 					onClick={handleClickLeave}
 					style={{
@@ -368,4 +369,4 @@ const BattleUI: React.FC<BattleUIProps> = ({
 	);
 };
 
-export default BattleUI;
+export default Battle;

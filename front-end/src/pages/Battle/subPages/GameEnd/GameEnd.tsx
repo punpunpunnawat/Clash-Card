@@ -9,14 +9,14 @@ type GameEndProps = {
 	type: "campaign" | "pvp";
 	onClickContinue?: () => void;
 	onClickPlayAgain?: () => void;
-	onClickkBackToMenu?: () => void;
+	onClickBackToMenu?: () => void;
 };
 const GameEnd = ({
 	postGameDetail,
 	type,
 	onClickContinue,
 	onClickPlayAgain,
-	onClickkBackToMenu,
+	onClickBackToMenu,
 }: GameEndProps) => {
 
     const player = useSelector((state: RootState) => state.player);
@@ -30,7 +30,7 @@ const GameEnd = ({
 	};
 
 	const handleClickBackToMenu = () => {
-		onClickkBackToMenu?.();
+		onClickBackToMenu?.();
 	};
 	return (
 		<div className="game-end">

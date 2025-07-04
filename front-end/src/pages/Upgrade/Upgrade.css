@@ -71,24 +71,6 @@
 	flex: 1;
 }
 
-
-.upgrade__body_detail_stat_quantity_atk,
-.upgrade__body_detail_stat_quantity_def,
-.upgrade__body_detail_stat_quantity_spd,
-.upgrade__body_detail_stat_quantity_hp {
-	display: flex;
-	gap: 16px;
-	align-items: center;
-}
-
-.upgrade__body_detail_card_quantity_rock,
-.upgrade__body_detail_card_quantity_paper,
-.upgrade__body_detail_card_quantity_scissors {
-	display: flex;
-	gap: 16px;
-	align-items: center;
-}
-
 .upgrade__body_detail_active-class {
     display: flex;
 }

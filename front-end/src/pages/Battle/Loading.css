@@ -1,0 +1,43 @@
+/* ========== Loading Screen ========== */
+.battle-loading {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+.battle-loading__body {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	padding: 128px;
+	gap: 64px;
+	justify-content: center;
+	align-items: center;
+}
+
+.battle-loading__body_text {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	font-family: "MOON_Light";
+	align-items: center;
+}
+
+.battle-loading__body_text_header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.battle-loading__body_text_header_lobby-ID {
+	font-family: "MOON_Bold";
+	display: flex;
+	color: white;
+	height: 40px;
+	padding: 0 32px;
+	justify-content: center;
+	align-items: center;
+	border-radius: 8px;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+	transition: background-color 0.4s ease, border-color 0.2s ease;
+}

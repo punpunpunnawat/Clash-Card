@@ -10,10 +10,8 @@ import (
 
 func GetUserHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("🔍 [GetUserHandler] Called")
 
 		authHeader := r.Header.Get("Authorization")
-		fmt.Println("🔑 Authorization Header:", authHeader)
 		if authHeader == "" {
 			fmt.Println("Missing Authorization header")
 			return
@@ -21,7 +19,6 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 
 		tokenStr := ""
 		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
-		fmt.Println("🧾 Extracted Token:", tokenStr)
 		if tokenStr == "" {
 			fmt.Println("Invalid Authorization format")
 			return

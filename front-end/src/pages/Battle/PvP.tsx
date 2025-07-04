@@ -1,32 +1,42 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import type { CardProps } from "../../types/Card";
-import "./css/Battle.css";
-import "./css/CardAttack.css";
-import {
-	type AnimationState,
-	type BattleRefs,
-	type CardCount,
-	type CardRemaining,
-	type PlayerDetail,
-	type PostGameDetail,
-	type RoundResult,
-	type ServerMessage,
+
+import type {
+	AnimationState,
+	BattleRefs,
+	CardCount,
+	CardRemaining,
+	PlayerDetail,
+	PostGameDetail,
+	RoundResult,
+	ServerMessage,
 } from "../../types/Battle";
+
+import type { CardProps } from "../../types/Card";
+
 import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
-import { playBGM, sfx } from "../../managers/soundManager";
-import GameEnd from "./Overlay/GameEnd/GameEnd";
-import BattleUI from "./BattleUI";
-import { useBattle } from "../../hooks/useBattle";
+import GameEnd from "./subPages/GameEnd";
+import Battle from "./subPages/Battle";
 import ErrorOverlay from "../../components/ErrorOverlay";
 
+import { playBGM, sfx } from "../../managers/soundManager";
+import { useBattle } from "../../hooks/useBattle";
+
+import "./Loading.css";
+
 const PvP = () => {
+	// Router hooks
 	const { id: roomID } = useParams();
 	const navigate = useNavigate();
+
+	// WebSocket ref & constants
 	const ws = useRef<WebSocket | null>(null);
 	const WS_BASE_URL = import.meta.env.VITE_WS_URL;
-	//GAME STATE
+
+	// --- State ---
+
+	// Game state enum
 	type GameState =
 		| "LOADING"
 		| "WAIT_OPPONENT"
@@ -38,9 +48,9 @@ const PvP = () => {
 		| "DRAW_CARD"
 		| "END";
 
-	// Game State
 	const [gameState, setGameState] = useState<GameState>("WAIT_OPPONENT");
 
+	// Player & Opponent info + HP
 	const [playerDetail, setPlayerDetail] = useState<
 		PlayerDetail & { currentHP: number }
 	>({
@@ -63,25 +73,27 @@ const PvP = () => {
 		currentHP: 0,
 	});
 
-	// Card & Hand Management
+	// Cards and hands
 	const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
 	const [opponentHandSize, setOpponentHandSize] = useState<number>(0);
 	const [cardRemaining, setCardRemaining] = useState<CardRemaining>({
 		player: { rock: 0, paper: 0, scissors: 0 },
 		opponent: { rock: 0, paper: 0, scissors: 0 },
 	});
+
+	// Selected cards
 	const [selectedPlayerCard, setSelectedPlayerCard] =
 		useState<CardProps | null>(null);
 	const [selectedOpponentCard, setSelectedOpponentCard] =
 		useState<CardProps | null>(null);
 
-	// Round Result / Postgame
+	// Round result & postgame detail
 	const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
 	const [postGameDetail, setPostGameDetail] = useState<PostGameDetail | null>(
 		null
 	);
 
-	// UI States
+	// UI state
 	const [uiState, setUiState] = useState({
 		hideCard: true,
 		hidePlayerCard: true,
@@ -90,25 +102,27 @@ const PvP = () => {
 		showClassSkill: false,
 	});
 
+	// Animation states
 	const [animationState, setAnimationState] = useState<AnimationState>({
 		player: {
-			drawingCard: null as CardProps | null,
+			drawingCard: null,
 			drawStyle: {} as React.CSSProperties,
 			selectingCard: false,
 			selectStyle: {} as React.CSSProperties,
 			battleAnimation: "",
-			takenDamage: null as string | null,
+			takenDamage: null,
 		},
 		opponent: {
-			drawingCard: null as CardProps | null,
+			drawingCard: null,
 			drawStyle: {} as React.CSSProperties,
 			selectingCard: false,
 			selectStyle: {} as React.CSSProperties,
 			battleAnimation: "",
-			takenDamage: null as string | null,
+			takenDamage: null,
 		},
 	});
 
+	// Refs for DOM elements
 	const refs: BattleRefs = {
 		player: {
 			deck: useRef<HTMLDivElement>(null),
@@ -122,8 +136,10 @@ const PvP = () => {
 		},
 	};
 
+	// Error message state
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+	// Battle functions hook
 	const battleFunc = useBattle(
 		playerHand,
 		setPlayerHand,
@@ -135,41 +151,40 @@ const PvP = () => {
 		refs
 	);
 
+	// --- Effects ---
+
+	// Play BGM on mount
 	useEffect(() => {
 		playBGM("battle");
 	}, []);
 
-	//Web socket message handler
+	// Setup WebSocket and handle messages
 	useEffect(() => {
 		if (!roomID) return;
 
 		const token = localStorage.getItem("authToken")!;
 
-		ws.current = new WebSocket(
-			//`ws://localhost:8080/ws/pvp?room=${roomID}`,
-			`${WS_BASE_URL}/pvp?room=${roomID}`,
-			[token]
-		);
+		ws.current = new WebSocket(`${WS_BASE_URL}/pvp?room=${roomID}`, [
+			token,
+		]);
+
 		ws.current.onmessage = (e) => {
 			try {
 				const msg = JSON.parse(e.data) as ServerMessage;
 				switch (msg.type) {
 					case "slot_assigned":
-						//setPlayerSlot(msg.slot);
+						// TODO: handle slot assignment if needed
 						break;
 
 					case "initialData":
-						//set hand
 						setPlayerHand(msg.player.hand);
 						setOpponentHandSize(msg.opponent.handSize);
 
-						//setCardRemaining
 						setCardRemaining({
 							player: msg.player.cardRemaining,
 							opponent: msg.opponent.cardRemaining,
 						});
 
-						//set Stat
 						setPlayerDetail({
 							name: msg.player.name,
 							level: msg.player.level,
@@ -178,6 +193,7 @@ const PvP = () => {
 							currentHP: msg.player.stat.hp,
 							trueSight: 0,
 						});
+
 						setOpponentDetail({
 							name: msg.opponent.name,
 							level: msg.opponent.level,
@@ -186,6 +202,7 @@ const PvP = () => {
 							currentHP: msg.opponent.stat.hp,
 							trueSight: 0,
 						});
+
 						sfx.card.play();
 						setGameState("SELECT_CARD");
 						break;
@@ -199,15 +216,11 @@ const PvP = () => {
 					case "round_result":
 						setTimeout(() => {
 							setRoundResult(msg);
-
-							//trigger show result event
 							setGameState("BOTH_SELECTED");
 						}, 600);
-
 						break;
 
 					case "opponent_left":
-						console.log("opponent_left");
 						setGameState("END");
 						setPostGameDetail({
 							result: "Win",
@@ -215,12 +228,7 @@ const PvP = () => {
 							exp: 0,
 							gold: 0,
 							lvlUp: 0,
-							statGain: {
-								atk: 0,
-								def: 0,
-								spd: 0,
-								hp: 0,
-							},
+							statGain: { atk: 0, def: 0, spd: 0, hp: 0 },
 						});
 						break;
 
@@ -271,10 +279,12 @@ const PvP = () => {
 
 		ws.current.onclose = () => null;
 
-		return () => ws.current?.close();
+		return () => {
+			ws.current?.close();
+		};
 	}, [roomID]);
 
-	//Gamestate and round_result handler
+	// Handle game state changes and round results
 	useEffect(() => {
 		if (!roundResult) return;
 
@@ -295,179 +305,196 @@ const PvP = () => {
 				break;
 
 			case "DO_DAMAGE":
-				// Animation Player
-				if (roundResult.player.specialEvent !== "nothing") {
-					const event =
-						roundResult.player.specialEvent
-							.toLowerCase()
-							.replace(" ", "-") + "-left";
-					setAnimationState((prev) => ({
-						...prev,
-						player: { ...prev.player, battleAnimation: event },
-					}));
-				} else {
-					let anim = "";
-					if (roundResult.roundWinner === "player")
-						anim = "attack-left";
-					else if (
-						roundResult.roundWinner === "opponent" &&
-						roundResult.opponent.doDamage === -1
-					)
-						anim = "dodge-left";
-					else if (roundResult.roundWinner === "opponent")
-						anim = "fly-left";
-					setAnimationState((prev) => ({
-						...prev,
-						player: { ...prev.player, battleAnimation: anim },
-					}));
-				}
-
-				// Animation Opponent
-				if (roundResult.opponent.specialEvent !== "nothing") {
-					const event =
-						roundResult.opponent.specialEvent
-							.toLowerCase()
-							.replace(" ", "-") + "-right";
-					setAnimationState((prev) => ({
-						...prev,
-						opponent: { ...prev.opponent, battleAnimation: event },
-					}));
-				} else {
-					let anim = "";
-					if (roundResult.roundWinner === "opponent")
-						anim = "attack-right";
-					else if (
-						roundResult.roundWinner === "player" &&
-						roundResult.player.doDamage === -1
-					)
-						anim = "dodge-right";
-					else if (roundResult.roundWinner === "player")
-						anim = "fly-right";
-					setAnimationState((prev) => ({
-						...prev,
-						opponent: { ...prev.opponent, battleAnimation: anim },
-					}));
-				}
-
-				setTimeout(() => {
-					// Show damage text
-					setAnimationState((prev) => ({
-						...prev,
-						opponent: {
-							...prev.opponent,
-							takenDamage:
-								roundResult.player.doDamage === -1
-									? "Miss"
-									: roundResult.player.doDamage !== 0
-									? "- " +
-									  roundResult.player.doDamage.toString()
-									: null,
-						},
-						player: {
-							...prev.player,
-							takenDamage:
-								roundResult.opponent.doDamage === -1
-									? "Miss"
-									: roundResult.opponent.doDamage !== 0
-									? "- " +
-									  roundResult.opponent.doDamage.toString()
-									: null,
-						},
-					}));
-
-					// Play sounds
-					if (roundResult.player.doDamage >= 1) sfx.hit.play();
-					else if (roundResult.player.doDamage === -1)
-						sfx.evade.play();
-
-					if (roundResult.opponent.doDamage >= 1) sfx.hit.play();
-					else if (roundResult.opponent.doDamage === -1)
-						sfx.evade.play();
-
-					// Update HP inside playerDetail and opponentDetail
-					setPlayerDetail((prev) => ({
-						...prev,
-						currentHP: Number(roundResult.player.hp),
-						trueSight: roundResult.player.trueSight,
-					}));
-					setOpponentDetail((prev) => ({
-						...prev,
-						currentHP: Number(roundResult.opponent.hp),
-						trueSight: roundResult.opponent.trueSight,
-					}));
-
-					setTimeout(() => {
-						if (roundResult.gameStatus === "end") {
-							setPostGameDetail(roundResult.postGameDetail);
-							if (roundResult.postGameDetail.result === "Win")
-								sfx.win.play();
-							else sfx.lose.play();
-
-							setGameState("END");
-						} else {
-							setGameState("DRAW_CARD");
-						}
-					}, 1500);
-				}, 300); // animation time
-
+				handleDoDamage();
 				break;
 
 			case "DRAW_CARD":
-				setCardRemaining({
-					player: roundResult.player.cardRemaining,
-					opponent: roundResult.opponent.cardRemaining,
-				});
-
-				if (
-					roundResult.player.cardRemaining.rock +
-						roundResult.player.cardRemaining.paper +
-						roundResult.player.cardRemaining.scissors >
-					3
-				) {
-					battleFunc.drawCard(
-						"player",
-						battleFunc.findNewCard(roundResult.player.hand)
-					);
-				}
-				if (
-					roundResult.opponent.cardRemaining.rock +
-						roundResult.opponent.cardRemaining.paper +
-						roundResult.opponent.cardRemaining.scissors >
-					3
-				) {
-					battleFunc.drawCard("opponent", {
-						id: "hidden",
-						type: "hidden",
-					});
-				}
-
-				setUiState((prev) => ({ ...prev, hideCard: true }));
-				setSelectedPlayerCard(null);
-				setSelectedOpponentCard(null);
-				setRoundResult(null);
-				setAnimationState((prev) => ({
-					player: {
-						...prev.player,
-						battleAnimation: "",
-						takenDamage: null,
-					},
-					opponent: {
-						...prev.opponent,
-						battleAnimation: "",
-						takenDamage: null,
-					},
-				}));
-
-				setTimeout(() => {
-					setGameState("SELECT_CARD");
-				}, 600);
-
+				handleDrawCard();
 				break;
 
 			default:
 				break;
 		}
 	}, [gameState, roundResult]);
+
+	// --- Handlers for game phases ---
+
+	const handleDoDamage = () => {
+		if (!roundResult) {
+			setErrorMessage(
+				"Something went wrong in your game please restart the game"
+			);
+			return;
+		}
+		// Player animation
+		if (roundResult.player.specialEvent !== "nothing") {
+			const event =
+				roundResult.player.specialEvent
+					.toLowerCase()
+					.replace(" ", "-") + "-left";
+			setAnimationState((prev) => ({
+				...prev,
+				player: { ...prev.player, battleAnimation: event },
+			}));
+		} else {
+			let anim = "";
+			if (roundResult.roundWinner === "player") anim = "attack-left";
+			else if (
+				roundResult.roundWinner === "opponent" &&
+				roundResult.opponent.doDamage === -1
+			)
+				anim = "dodge-left";
+			else if (roundResult?.roundWinner === "opponent") anim = "fly-left";
+
+			setAnimationState((prev) => ({
+				...prev,
+				player: { ...prev.player, battleAnimation: anim },
+			}));
+		}
+
+		// Opponent animation
+		if (roundResult.opponent.specialEvent !== "nothing") {
+			const event =
+				roundResult.opponent.specialEvent
+					.toLowerCase()
+					.replace(" ", "-") + "-right";
+			setAnimationState((prev) => ({
+				...prev,
+				opponent: { ...prev.opponent, battleAnimation: event },
+			}));
+		} else {
+			let anim = "";
+			if (roundResult.roundWinner === "opponent") anim = "attack-right";
+			else if (
+				roundResult.roundWinner === "player" &&
+				roundResult.player.doDamage === -1
+			)
+				anim = "dodge-right";
+			else if (roundResult?.roundWinner === "player") anim = "fly-right";
+
+			setAnimationState((prev) => ({
+				...prev,
+				opponent: { ...prev.opponent, battleAnimation: anim },
+			}));
+		}
+
+		setTimeout(() => {
+			// Show damage text
+			setAnimationState((prev) => ({
+				...prev,
+				opponent: {
+					...prev.opponent,
+					takenDamage:
+						roundResult.player.doDamage === -1
+							? "Miss"
+							: roundResult?.player.doDamage !== 0
+							? "- " + roundResult?.player.doDamage.toString()
+							: null,
+				},
+				player: {
+					...prev.player,
+					takenDamage:
+						roundResult.opponent.doDamage === -1
+							? "Miss"
+							: roundResult.opponent.doDamage !== 0
+							? "- " + roundResult.opponent.doDamage.toString()
+							: null,
+				},
+			}));
+
+			// Play sounds
+			if (roundResult.player.doDamage >= 1) sfx.hit.play();
+			else if (roundResult?.player.doDamage === -1) sfx.evade.play();
+
+			if (roundResult.opponent.doDamage >= 1) sfx.hit.play();
+			else if (roundResult?.opponent.doDamage === -1) sfx.evade.play();
+
+			// Update HP & TrueSight
+			setPlayerDetail((prev) => ({
+				...prev,
+				currentHP: Number(roundResult.player.hp),
+				trueSight: roundResult?.player.trueSight,
+			}));
+
+			setOpponentDetail((prev) => ({
+				...prev,
+				currentHP: Number(roundResult.opponent.hp),
+				trueSight: roundResult.opponent.trueSight,
+			}));
+
+			setTimeout(() => {
+				if (roundResult?.gameStatus === "end") {
+					setPostGameDetail(roundResult.postGameDetail);
+					if (roundResult.postGameDetail.result === "Win")
+						sfx.win.play();
+					else sfx.lose.play();
+
+					setGameState("END");
+				} else {
+					setGameState("DRAW_CARD");
+				}
+			}, 1500);
+		}, 300); // animation time
+	};
+
+	const handleDrawCard = () => {
+		if (!roundResult) {
+			setErrorMessage(
+				"Something went wrong in your game please restart the game"
+			);
+			return;
+		}
+
+		setCardRemaining({
+			player: roundResult.player.cardRemaining,
+			opponent: roundResult.opponent.cardRemaining,
+		});
+
+		if (
+			roundResult.player.cardRemaining.rock +
+				roundResult.player.cardRemaining.paper +
+				roundResult.player.cardRemaining.scissors >
+			3
+		) {
+			battleFunc.drawCard(
+				"player",
+				battleFunc.findNewCard(roundResult.player.hand)
+			);
+		}
+
+		if (
+			roundResult.opponent.cardRemaining.rock +
+				roundResult.opponent.cardRemaining.paper +
+				roundResult.opponent.cardRemaining.scissors >
+			3
+		) {
+			battleFunc.drawCard("opponent", { id: "hidden", type: "hidden" });
+		}
+
+		setUiState((prev) => ({ ...prev, hideCard: true }));
+		setSelectedPlayerCard(null);
+		setSelectedOpponentCard(null);
+		setRoundResult(null);
+
+		setAnimationState({
+			player: {
+				...animationState.player,
+				battleAnimation: "",
+				takenDamage: null,
+			},
+			opponent: {
+				...animationState.opponent,
+				battleAnimation: "",
+				takenDamage: null,
+			},
+		});
+
+		setTimeout(() => {
+			setGameState("SELECT_CARD");
+		}, 600);
+	};
+
+	// --- Event handlers ---
 
 	const handleClickBackToMenu = () => {
 		navigate("/");
@@ -489,13 +516,14 @@ const PvP = () => {
 				cardID: cardID,
 			})
 		);
+
 		setGameState("CARD_SELECTED");
 	};
 
 	const handleTrueSightUse = () => {
 		if (gameState !== "SELECT_CARD" || playerDetail.trueSight <= 0) return;
-
 		if (ws.current?.readyState !== WebSocket.OPEN) return;
+
 		ws.current.send(
 			JSON.stringify({
 				type: "use_true_sight",
@@ -503,7 +531,8 @@ const PvP = () => {
 		);
 	};
 
-	//waiting page
+	// --- Render ---
+
 	if (gameState === "WAIT_OPPONENT")
 		return (
 			<div className="battle-Loading">
@@ -523,25 +552,19 @@ const PvP = () => {
 			</div>
 		);
 
-	//game ended page
-	if (gameState === "END") {
-		//game ended page
-		if (gameState === "END" && postGameDetail) {
-			return (
-				<GameEnd
-					postGameDetail={postGameDetail}
-					type="pvp"
-					onClickPlayAgain={handleClickPlayAgain}
-					onClickkBackToMenu={handleClickBackToMenu}
-				/>
-			);
-		}
-	}
+	if (gameState === "END" && postGameDetail)
+		return (
+			<GameEnd
+				postGameDetail={postGameDetail}
+				type="pvp"
+				onClickPlayAgain={handleClickPlayAgain}
+				onClickBackToMenu={handleClickBackToMenu}
+			/>
+		);
 
-	//default page
 	return (
 		<>
-			<BattleUI
+			<Battle
 				gameState={gameState}
 				refs={refs}
 				uiState={uiState}

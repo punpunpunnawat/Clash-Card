@@ -1,7 +1,10 @@
-import type { InitialData, RoundResult, TrueSightResult } from "../types/Battle";
+import type {
+	InitialData,
+	RoundResult,
+	TrueSightResult,
+} from "../types/Battle";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;;
-console.log(API_BASE_URL)
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const request = async (
 	endpoint: string,
@@ -30,15 +33,9 @@ const request = async (
 
 		return res.json();
 	} catch (err) {
-	if (err instanceof Error) {
-		throw new Error(err.message || "Network error");
-	} else {
-		throw new Error("Unknown error occurred");
+		throw new Error((err as Error)?.message || "Unknown error occurred");
 	}
-}
-
 };
-
 
 // ==================== User ====================
 export const login = (email: string, password: string) =>
@@ -47,8 +44,18 @@ export const login = (email: string, password: string) =>
 export const checkEmail = (email: string) =>
 	request("/check-email", "POST", { email });
 
-export const register = (username: string, email: string, password: string, playerClass: string) =>
-	request("/register", "POST", { username, email, password, class:playerClass });
+export const register = (
+	username: string,
+	email: string,
+	password: string,
+	playerClass: string
+) =>
+	request("/register", "POST", {
+		username,
+		email,
+		password,
+		class: playerClass,
+	});
 
 export const getUser = (token: string) =>
 	request("/user", "GET", undefined, token);
@@ -65,19 +72,19 @@ export const startBattle = async (
 };
 
 export const playCard = (
-	matchID: string,
+	matchId: string,
 	cardId: string,
 	token: string
 ): Promise<RoundResult> => {
-	return request(`/battle/${matchID}/play`, "POST", { cardId }, token);
+	return request(`/battle/${matchId}/play`, "POST", { cardId }, token);
 };
 
 export const trueSight = (
-	matchID: string,
+	matchId: string,
 	token: string
 ): Promise<TrueSightResult> => {
 	return request(
-		`/battle/${matchID}/play/true-sight`,
+		`/battle/${matchId}/play/true-sight`,
 		"POST",
 		undefined,
 		token

@@ -1,8 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+
 import type { CardProps } from "../../types/Card";
-import "./css/Battle.css";
-import "./css/CardAttack.css";
 import type {
 	AnimationState,
 	BattleRefs,
@@ -12,22 +11,30 @@ import type {
 	PostGameDetail,
 	RoundResult,
 } from "../../types/Battle";
+
 import NavBar from "../../components/NavBar";
 import LoadingCard from "../../components/LoadingCard";
-import { playBGM, sfx } from "../../managers/soundManager";
-import GameEnd from "./Overlay/GameEnd/GameEnd";
-import { playCard, startBattle, trueSight } from "../../api/api";
-import BattleUI from "./BattleUI";
-import { useBattle } from "../../hooks/useBattle";
 import ErrorOverlay from "../../components/ErrorOverlay";
 
-const Campaign = () => {
-	const { levelId } = useParams();
-	const [matchID, setMatchID] = useState<string>("");
+import { playBGM, sfx } from "../../managers/soundManager";
+import { playCard, startBattle, trueSight } from "../../api/api";
 
+import Battle from "./subPages/Battle";
+import GameEnd from "./subPages/GameEnd";
+
+import { useBattle } from "../../hooks/useBattle";
+
+import "./Loading.css";
+
+const Campaign = () => {
+	// Router hooks
+	const { levelId } = useParams();
 	const navigate = useNavigate();
 
-	//GAME STATE
+	// Match ID from backend
+	const [matchID, setMatchID] = useState<string>("");
+
+	// --- Game state enum ---
 	type GameState =
 		| "LOADING"
 		| "SELECT_CARD"
@@ -38,10 +45,9 @@ const Campaign = () => {
 		| "DRAW_CARD"
 		| "END";
 
-	// Game State
+	// --- State ---
 	const [gameState, setGameState] = useState<GameState>("LOADING");
 
-	// Player & Opponent Detail
 	const [playerDetail, setPlayerDetail] = useState<PlayerDetail>({
 		name: "player",
 		level: 0,
@@ -58,25 +64,25 @@ const Campaign = () => {
 		currentHP: 0,
 		trueSight: 0,
 	});
-	// Card & Hand Management
+
 	const [playerHand, setPlayerHand] = useState<CardProps[]>([]);
 	const [opponentHandSize, setOpponentHandSize] = useState<number>(0);
+
 	const [cardRemaining, setCardRemaining] = useState<CardRemaining>({
 		player: { rock: 0, paper: 0, scissors: 0 },
 		opponent: { rock: 0, paper: 0, scissors: 0 },
 	});
+
 	const [selectedPlayerCard, setSelectedPlayerCard] =
 		useState<CardProps | null>(null);
 	const [selectedOpponentCard, setSelectedOpponentCard] =
 		useState<CardProps | null>(null);
 
-	// Round Result / Postgame
 	const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
 	const [postGameDetail, setPostGameDetail] = useState<PostGameDetail | null>(
 		null
 	);
 
-	// UI States
 	const [uiState, setUiState] = useState({
 		hideCard: true,
 		hidePlayerCard: true,
@@ -87,20 +93,20 @@ const Campaign = () => {
 
 	const [animationState, setAnimationState] = useState<AnimationState>({
 		player: {
-			drawingCard: null as CardProps | null,
+			drawingCard: null,
 			drawStyle: {} as React.CSSProperties,
 			selectingCard: false,
 			selectStyle: {} as React.CSSProperties,
 			battleAnimation: "",
-			takenDamage: null as string | null,
+			takenDamage: null,
 		},
 		opponent: {
-			drawingCard: null as CardProps | null,
+			drawingCard: null,
 			drawStyle: {} as React.CSSProperties,
 			selectingCard: false,
 			selectStyle: {} as React.CSSProperties,
 			battleAnimation: "",
-			takenDamage: null as string | null,
+			takenDamage: null,
 		},
 	});
 
@@ -119,6 +125,7 @@ const Campaign = () => {
 
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+	// Custom hook with battle logic
 	const battleFunc = useBattle(
 		playerHand,
 		setPlayerHand,
@@ -130,11 +137,14 @@ const Campaign = () => {
 		refs
 	);
 
+	// --- Effects ---
+
+	// Play BGM once
 	useEffect(() => {
 		playBGM("battle");
 	}, []);
 
-	//Initial
+	// Initialize battle on levelId change
 	useEffect(() => {
 		const token = localStorage.getItem("authToken") || "";
 
@@ -170,15 +180,14 @@ const Campaign = () => {
 				setMatchID(data.matchID ?? "none");
 				setGameState("SELECT_CARD");
 			} catch (err) {
-				setErrorMessage(
-					err instanceof Error ? err.message : "Unknown error"
-				);
+				setErrorMessage(err instanceof Error ? err.message : "Unknown error");
 			}
 		}
 
 		initBattle();
 	}, [levelId]);
 
+	// Handle game state & round results
 	useEffect(() => {
 		if (!roundResult) return;
 
@@ -189,7 +198,6 @@ const Campaign = () => {
 				break;
 
 			case "SHOW_RESULT":
-				//console.log(roundResult);
 				setTimeout(() => {
 					setUiState((prev) => ({ ...prev, hideCard: false }));
 					sfx.card.play();
@@ -200,7 +208,7 @@ const Campaign = () => {
 				break;
 
 			case "DO_DAMAGE":
-				// Animation Player
+				// Animate player
 				if (roundResult.player.specialEvent !== "nothing") {
 					const event =
 						roundResult.player.specialEvent
@@ -212,22 +220,21 @@ const Campaign = () => {
 					}));
 				} else {
 					let anim = "";
-					if (roundResult.roundWinner === "player")
-						anim = "attack-left";
+					if (roundResult.roundWinner === "player") anim = "attack-left";
 					else if (
 						roundResult.roundWinner === "opponent" &&
 						roundResult.opponent.doDamage === -1
 					)
 						anim = "dodge-left";
-					else if (roundResult.roundWinner === "opponent")
-						anim = "fly-left";
+					else if (roundResult.roundWinner === "opponent") anim = "fly-left";
+
 					setAnimationState((prev) => ({
 						...prev,
 						player: { ...prev.player, battleAnimation: anim },
 					}));
 				}
 
-				// Animation Opponent
+				// Animate opponent
 				if (roundResult.opponent.specialEvent !== "nothing") {
 					const event =
 						roundResult.opponent.specialEvent
@@ -239,15 +246,14 @@ const Campaign = () => {
 					}));
 				} else {
 					let anim = "";
-					if (roundResult.roundWinner === "opponent")
-						anim = "attack-right";
+					if (roundResult.roundWinner === "opponent") anim = "attack-right";
 					else if (
 						roundResult.roundWinner === "player" &&
 						roundResult.player.doDamage === -1
 					)
 						anim = "dodge-right";
-					else if (roundResult.roundWinner === "player")
-						anim = "fly-right";
+					else if (roundResult.roundWinner === "player") anim = "fly-right";
+
 					setAnimationState((prev) => ({
 						...prev,
 						opponent: { ...prev.opponent, battleAnimation: anim },
@@ -255,7 +261,6 @@ const Campaign = () => {
 				}
 
 				setTimeout(() => {
-					// Show damage text
 					setAnimationState((prev) => ({
 						...prev,
 						opponent: {
@@ -264,8 +269,7 @@ const Campaign = () => {
 								roundResult.player.doDamage === -1
 									? "Miss"
 									: roundResult.player.doDamage !== 0
-									? "- " +
-									  roundResult.player.doDamage.toString()
+									? "- " + roundResult.player.doDamage.toString()
 									: null,
 						},
 						player: {
@@ -274,22 +278,17 @@ const Campaign = () => {
 								roundResult.opponent.doDamage === -1
 									? "Miss"
 									: roundResult.opponent.doDamage !== 0
-									? "- " +
-									  roundResult.opponent.doDamage.toString()
+									? "- " + roundResult.opponent.doDamage.toString()
 									: null,
 						},
 					}));
 
-					// Play sounds
 					if (roundResult.player.doDamage >= 1) sfx.hit.play();
-					else if (roundResult.player.doDamage === -1)
-						sfx.evade.play();
+					else if (roundResult.player.doDamage === -1) sfx.evade.play();
 
 					if (roundResult.opponent.doDamage >= 1) sfx.hit.play();
-					else if (roundResult.opponent.doDamage === -1)
-						sfx.evade.play();
+					else if (roundResult.opponent.doDamage === -1) sfx.evade.play();
 
-					// Update HP inside playerDetail and opponentDetail
 					setPlayerDetail((prev) => ({
 						...prev,
 						currentHP: Number(roundResult.player.hp),
@@ -305,14 +304,13 @@ const Campaign = () => {
 						if (roundResult.gameStatus === "end") {
 							setPostGameDetail(roundResult.postGameDetail);
 							setGameState("END");
-							if (roundResult.postGameDetail.result === "Win")
-								sfx.win.play();
+							if (roundResult.postGameDetail.result === "Win") sfx.win.play();
 							else sfx.lose.play();
 						} else {
 							setGameState("DRAW_CARD");
 						}
 					}, 1500);
-				}, 300); // animation time
+				}, 300);
 
 				break;
 
@@ -339,10 +337,7 @@ const Campaign = () => {
 						roundResult.opponent.cardRemaining.scissors >=
 					3
 				) {
-					battleFunc.drawCard("opponent", {
-						id: "hidden",
-						type: "hidden",
-					});
+					battleFunc.drawCard("opponent", { id: "hidden", type: "hidden" });
 				}
 
 				setUiState((prev) => ({ ...prev, hideCard: true }));
@@ -373,7 +368,8 @@ const Campaign = () => {
 		}
 	}, [gameState, roundResult]);
 
-	//handle function
+	// --- Event Handlers ---
+
 	const handlePlayerCardSelect = async (cardID: string) => {
 		if (gameState !== "SELECT_CARD") return;
 
@@ -383,16 +379,13 @@ const Campaign = () => {
 		setTimeout(async () => {
 			try {
 				const token = localStorage.getItem("authToken") || "";
-				const data = await playCard(matchID, cardID, token); // แปลงเป็น number ถ้า cardID เป็น string
+				const data = await playCard(matchID, cardID, token);
 
 				setGameState("CARD_SELECTED");
 				setRoundResult(data);
-
 				setGameState("BOTH_SELECTED");
 			} catch (err) {
-				setErrorMessage(
-					err instanceof Error ? err.message : "Unknown error"
-				);
+				setErrorMessage(err instanceof Error ? err.message : "Unknown error");
 			}
 		}, 500);
 	};
@@ -421,9 +414,7 @@ const Campaign = () => {
 				}));
 			}, 3000);
 		} catch (err) {
-			setErrorMessage(
-				err instanceof Error ? err.message : "Unknown error"
-			);
+			setErrorMessage(err instanceof Error ? err.message : "Unknown error");
 		}
 	};
 
@@ -441,7 +432,8 @@ const Campaign = () => {
 		window.location.reload();
 	};
 
-	//waiting page
+	// --- Render ---
+
 	if (gameState === "LOADING")
 		return (
 			<div className="battle-Loading">
@@ -458,26 +450,20 @@ const Campaign = () => {
 			</div>
 		);
 
-	//game ended page
-	if (gameState === "END") {
-		//game ended page
-		if (gameState === "END" && postGameDetail) {
-			return (
-				<GameEnd
-					postGameDetail={postGameDetail}
-					type="campaign"
-					onClickPlayAgain={handleClickPlayAgain}
-					onClickkBackToMenu={handleClickBackToMenu}
-					onClickContinue={handleClickContinue}
-				/>
-			);
-		}
-	}
+	if (gameState === "END" && postGameDetail)
+		return (
+			<GameEnd
+				postGameDetail={postGameDetail}
+				type="campaign"
+				onClickPlayAgain={handleClickPlayAgain}
+				onClickBackToMenu={handleClickBackToMenu}
+				onClickContinue={handleClickContinue}
+			/>
+		);
 
-	//default page
 	return (
 		<>
-			<BattleUI
+			<Battle
 				gameState={gameState}
 				refs={refs}
 				uiState={uiState}

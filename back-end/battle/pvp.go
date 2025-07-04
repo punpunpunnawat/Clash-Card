@@ -28,14 +28,14 @@ const (
 
 type Message struct {
 	Type   string `json:"type"`
-	CardID string `json:"cardID,omitempty"` // ใช้เมื่อ Type = "selected_card"
+	CardID string `json:"cardID,omitempty"`
 }
 
 type PVPClient struct {
 	conn   *websocket.Conn
 	roomID string
-	slot   string // "A" หรือ "B"
-	userID string // เก็บ userID ที่ถอดจาก token
+	slot   string // "A", "B"
+	userID string
 	send   chan []byte
 }
 
@@ -53,16 +53,15 @@ var pvpManager = PVPManager{
 	rooms: make(map[string]*PVPMatch),
 }
 
-// pvpStates เก็บสถานะเกมจริง (Deck, Stat, HP...) ของแต่ละห้อง
 var (
 	pvpStates   = make(map[string]*PVPState)
 	pvpStatesMu sync.Mutex
 )
 
 type PVPState struct {
-	sync.Mutex // ล็อกภายใน state เอง
-	PlayerA    PlayerData
-	PlayerB    PlayerData
+	sync.Mutex
+	PlayerA PlayerData
+	PlayerB PlayerData
 }
 
 type Stat struct {
@@ -73,7 +72,6 @@ type Stat struct {
 }
 
 type PlayerData struct {
-	//ID        int
 	Name      string
 	Level     int
 	CurrentHP int
@@ -150,7 +148,7 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 		}
 
 		header := http.Header{}
-		header.Add("Sec-WebSocket-Protocol", tokenStr) // ส่งกลับ client ด้วย
+		header.Add("Sec-WebSocket-Protocol", tokenStr)
 
 		userID, err := user.ExtractUserIDFromToken(tokenStr)
 
@@ -159,7 +157,7 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		conn, err := upgrader.Upgrade(w, r, header) // ต้องใส่ header กลับไป
+		conn, err := upgrader.Upgrade(w, r, header)
 		if err != nil {
 			log.Println("WebSocket upgrade error:", err)
 			return
@@ -328,7 +326,7 @@ func HandlePVPWebSocket(db *sql.DB) http.HandlerFunc {
 		}()
 
 		go pvpRead(client)
-		// go pvpWrite(client)
+		go pvpWrite(client)
 
 	}
 }
@@ -353,7 +351,7 @@ func pvpRead(c *PVPClient) {
 
 		switch m.Type {
 		case "selected_card":
-			// ตรวจสอบและดึง state กับ match
+			// check, get state and match
 			pvpStatesMu.Lock()
 			state, ok := pvpStates[c.roomID]
 			pvpStatesMu.Unlock()
@@ -371,10 +369,9 @@ func pvpRead(c *PVPClient) {
 
 			pvpManager.lock.Unlock()
 
-			// แก้ไขมือผู้เล่น
 			state.Lock()
-
 			var hand []Card
+
 			switch c.slot {
 			case "A":
 				hand = state.PlayerA.Hand
@@ -399,7 +396,7 @@ func pvpRead(c *PVPClient) {
 				return
 			}
 
-			// อัปเดต selected card ของฝั่งนั้น
+			// update opponent selected card
 			fmt.Println("CT " + CardType(playerCard.Type))
 			match.Selected[c.slot] = playerCard
 			fmt.Println("Player ", c.slot, " Selected Card")
@@ -416,7 +413,7 @@ func pvpRead(c *PVPClient) {
 				}
 
 				respBJSON, _ := json.Marshal(responseForB)
-				// A เป็นคนเลือก → ส่งให้ B
+				// if A select sent msg to B
 				if clientB, ok := match.Clients["B"]; ok {
 					select {
 					case clientB.send <- respBJSON:
@@ -424,7 +421,6 @@ func pvpRead(c *PVPClient) {
 					}
 				}
 			case "B":
-				// สร้าง response ที่แยกฝั่ง
 				responseForA := map[string]interface{}{
 					"type":             "selection_status",
 					"playerSelected":   match.Selected["A"] != nil,
@@ -432,7 +428,7 @@ func pvpRead(c *PVPClient) {
 				}
 				respAJSON, _ := json.Marshal(responseForA)
 
-				// B เป็นคนเลือก → ส่งให้ A
+				// if B select sent msg to A
 				if clientA, ok := match.Clients["A"]; ok {
 					select {
 					case clientA.send <- respAJSON:
@@ -441,7 +437,7 @@ func pvpRead(c *PVPClient) {
 				}
 			}
 
-			//เช็คว่าเลือกครบ 2 คนยัง
+			//if both selected
 			if match.Selected["A"] != nil && match.Selected["B"] != nil {
 
 				// remove card from hand
@@ -485,7 +481,7 @@ func pvpRead(c *PVPClient) {
 				A_CardRemaining := countCard(append(state.PlayerA.Deck, state.PlayerA.Hand...))
 				B_CardRemaining := countCard(append(state.PlayerB.Deck, state.PlayerB.Hand...))
 
-				//ส่งผลลัพธ์แยกกัน
+				//sent msg to A and B
 				respA := map[string]interface{}{
 					"type": "round_result",
 					"player": map[string]interface{}{
@@ -570,7 +566,6 @@ func pvpRead(c *PVPClient) {
 				respAJSON, _ := json.Marshal(respA)
 				respBJSON, _ := json.Marshal(respB)
 
-				// ส่งกลับ client A และ B
 				if clientA, ok := match.Clients["A"]; ok {
 					select {
 					case clientA.send <- respAJSON:
@@ -591,7 +586,6 @@ func pvpRead(c *PVPClient) {
 					}(c.roomID)
 				}
 
-				//logPVPState(c.roomID, state)
 				pvpManager.lock.Lock()
 				match.Selected = make(map[string]*Card)
 				pvpManager.lock.Unlock()
@@ -693,14 +687,14 @@ func pvpRead(c *PVPClient) {
 	}
 }
 
-// func pvpWrite(c *PVPClient) {
-// 	for msg := range c.send {
-// 		err := c.conn.WriteMessage(websocket.TextMessage, msg)
-// 		if err != nil {
-// 			break
-// 		}
-// 	}
-// }
+func pvpWrite(c *PVPClient) {
+	for msg := range c.send {
+		err := c.conn.WriteMessage(websocket.TextMessage, msg)
+		if err != nil {
+			break
+		}
+	}
+}
 
 func pvpRemoveClient(c *PVPClient) {
 	pvpManager.lock.Lock()
@@ -711,7 +705,6 @@ func pvpRemoveClient(c *PVPClient) {
 		return
 	}
 
-	// แจ้งอีกฝั่งก่อนลบ
 	var opponent *PVPClient
 	switch c.slot {
 	case "A":
