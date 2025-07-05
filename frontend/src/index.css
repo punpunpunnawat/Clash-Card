@@ -11,13 +11,13 @@
 /* Fonts */
 @font-face {
 	font-family: "MOON_Bold";
-	src: url("../public/fonts/Moon_Bold.otf") format("opentype");
+	src: url("../fonts/Moon_Bold.otf") format("opentype");
 	font-weight: normal;
 	font-style: normal;
 }
 @font-face {
 	font-family: "MOON_Light";
-	src: url("../public/fonts/Moon_Light.otf") format("opentype");
+	src: url("../fonts/Moon_Light.otf") format("opentype");
 	font-weight: normal;
 	font-style: normal;
 }
