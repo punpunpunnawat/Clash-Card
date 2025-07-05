@@ -476,18 +476,18 @@ const PvP = () => {
 		setSelectedOpponentCard(null);
 		setRoundResult(null);
 
-		setAnimationState({
+		setAnimationState((prev) => ({
 			player: {
-				...animationState.player,
+				...prev.player,
 				battleAnimation: "",
 				takenDamage: null,
 			},
 			opponent: {
-				...animationState.opponent,
+				...prev.opponent,
 				battleAnimation: "",
 				takenDamage: null,
 			},
-		});
+		}));
 
 		setTimeout(() => {
 			setGameState("SELECT_CARD");
@@ -578,7 +578,7 @@ const PvP = () => {
 				opponentDetail={opponentDetail}
 				onClickSelectCard={handlePlayerCardSelect}
 				onClickTrueSight={handleTrueSightUse}
-				onClickLeave={() => navigate("/level")}
+				onClickLeave={() => navigate("/")}
 				setUiState={setUiState}
 			/>
 			{errorMessage && (

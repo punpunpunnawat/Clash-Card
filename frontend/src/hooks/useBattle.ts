@@ -172,13 +172,11 @@ export function useBattle(
 			if (isPlayer) {
 				setPlayerHand(roundResult?.player.hand ?? []);
 				console.log(
-					"✅ หลังจั่ว - playerHand ถูกเซ็ต:",
 					roundResult?.player.hand
 				);
 			} else {
 				setOpponentHandSize(roundResult?.opponent.handLength ?? 0);
 				console.log(
-					"✅ หลังจั่ว - opponentHandSize ถูกเซ็ต:",
 					roundResult?.opponent.handLength
 				);
 			}
