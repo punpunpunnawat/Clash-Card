@@ -23,7 +23,6 @@ A Rock-Paper-Scissors-inspired card game featuring unique characters, deck-build
 - [React](https://reactjs.org/)
 - [TypeScript](https://www.typescriptlang.org/)
 - [Vite](https://vitejs.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
 
 ### Backend
 - [Go (Golang)](https://golang.org/)
