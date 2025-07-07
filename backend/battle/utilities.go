@@ -230,7 +230,7 @@ func removeCardFromHand(hand *[]Card, cardID string) bool {
 	for _, card := range *hand {
 		if card.ID == cardID && !found {
 			found = true
-			continue // ข้ามอันนี้เพื่อ "ลบ"
+			continue
 		}
 		newHand = append(newHand, card)
 	}

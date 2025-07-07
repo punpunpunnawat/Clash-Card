@@ -50,19 +50,16 @@ func main() {
 	r.HandleFunc("/api/buy-card", upgrade.BuyCardHandler(db)).Methods("POST", "OPTIONS")
 
 	port := os.Getenv("PORT")
-	// if port == "" {
-	// 	port = "8080"
-	// }
+
 	http.ListenAndServe(":"+port, r)
 
 	log.Println("Server running at :" + port)
-	//http.ListenAndServe(":8080", r)
 }
 
 func middlewareCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		fmt.Println("Origin:", origin) // ดูว่าได้อะไร
+		fmt.Println("Origin:", origin)
 
 		allowedOrigins := map[string]bool{
 			"http://localhost:5173":                        true,
