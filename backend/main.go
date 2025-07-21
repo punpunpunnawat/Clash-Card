@@ -4,6 +4,7 @@ import (
 	"clash_and_card/battle"
 	"clash_and_card/upgrade"
 	"clash_and_card/user"
+	"context"
 	"fmt"
 	"os"
 
@@ -31,23 +32,23 @@ func main() {
 
 	r.Use(middlewareCORS)
 
-	//user
+	// User routes
 	r.HandleFunc("/api/login", user.LoginHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/check-email", user.CheckEmailHandler(db)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/register", user.RegisterHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/user", user.GetUserHandler(db)).Methods("GET", "OPTIONS")
-	r.HandleFunc("/api/deck", user.GetUserDeckHandler(db)).Methods("GET", "OPTIONS")
+	r.Handle("/api/user", authMiddleware(user.GetUserHandler(db))).Methods("GET", "OPTIONS")
+	r.Handle("/api/deck", authMiddleware(user.GetUserDeckHandler(db))).Methods("GET", "OPTIONS")
 
-	//battle
-	r.HandleFunc("/api/battle/start", battle.StartBattleHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/battle/{matchID}/play", battle.PlayCardHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/battle/{matchID}/play/true-sight", battle.TrueSightHandler()).Methods("POST", "OPTIONS")
-	r.HandleFunc("/ws/pvp", battle.HandlePVPWebSocket(db))
+	// Battle routes
+	r.Handle("/api/battle/start", authMiddleware(battle.StartBattleHandler(db))).Methods("POST", "OPTIONS")
+	r.Handle("/api/battle/{matchID}/play", authMiddleware(battle.PlayCardHandler(db))).Methods("PUT", "OPTIONS")
+	r.Handle("/api/battle/{matchID}/play/true-sight", authMiddleware(battle.TrueSightHandler())).Methods("PUT", "OPTIONS")
+	r.HandleFunc("/ws/pvp", battle.HandlePVPWebSocket(db)).Methods("GET")
 
-	//upgrade
-	r.HandleFunc("/api/change-class", upgrade.ChangeClassHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/upgrade-stat", upgrade.UpgradeStatHandler(db)).Methods("POST", "OPTIONS")
-	r.HandleFunc("/api/buy-card", upgrade.BuyCardHandler(db)).Methods("POST", "OPTIONS")
+	// Upgrade routes
+	r.Handle("/api/change-class", authMiddleware(upgrade.ChangeClassHandler(db))).Methods("PUT", "OPTIONS") // เปลี่ยน class ถือเป็นแก้ข้อมูล
+	r.Handle("/api/upgrade-stat", authMiddleware(upgrade.UpgradeStatHandler(db))).Methods("PUT", "OPTIONS") // เพิ่ม stat คือแก้ข้อมูล
+	r.Handle("/api/buy-card", authMiddleware(upgrade.BuyCardHandler(db))).Methods("POST", "OPTIONS")        // ซื้อการ์ดถือเป็นการสร้างรายการใหม่ (POST)
 
 	port := os.Getenv("PORT")
 
@@ -83,5 +84,33 @@ func middlewareCORS(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+func authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		var tokenStr string
+		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
+		if tokenStr == "" {
+			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
+			return
+		}
+		fmt.Println("[DEBUG] token:", tokenStr)
+
+		userID, err := user.ExtractUserIDFromToken(tokenStr)
+		if err != nil {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+		fmt.Println("[DEBUG] userID:", userID)
+
+		ctx := context.WithValue(r.Context(), "userID", userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

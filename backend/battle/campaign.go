@@ -3,7 +3,6 @@ package battle
 import (
 	"bytes"
 	"clash_and_card/models"
-	"clash_and_card/user"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -70,12 +69,12 @@ func handlePlayerWin(userID string, db *sql.DB, wonLevel int) (statGain models.U
 
 	fmt.Println("[DEBUG] cLVL ", currentLevel)
 	fmt.Println("[DEBUG] wLVL ", wonLevel)
-	// คำนวณรางวัล
+	// cal prize
 	if wonLevel == currentLevel {
 		fmt.Println("[DEBUG] ??? ")
 		expGain = 50 + (20 * wonLevel)
 		goldGain = 20 * wonLevel
-		levelGain = 1 // เพราะเลเวลเพิ่มแน่ๆ
+		levelGain = 1
 	} else {
 		expGain = 5 * wonLevel
 		goldGain = 5 * wonLevel
@@ -84,7 +83,7 @@ func handlePlayerWin(userID string, db *sql.DB, wonLevel int) (statGain models.U
 	fmt.Println("[DEBUG] exp gain ", expGain)
 	fmt.Println("[DEBUG] gold gain ", goldGain)
 
-	// ดึงข้อมูลปัจจุบัน
+	// get current data
 	var level, currentExp int
 	var class string
 	query := `SELECT level, exp, class FROM users WHERE id = ?`
@@ -98,7 +97,7 @@ func handlePlayerWin(userID string, db *sql.DB, wonLevel int) (statGain models.U
 	newLevel := level
 	levelUpCount := 0
 
-	// คำนวณเลเวลใหม่ (ถ้าเก็บ exp เพิ่มเลเวล)
+	// cal level
 	for {
 		requiredExp := 50 + (newLevel * 50)
 		if totalExp >= requiredExp {
@@ -112,7 +111,7 @@ func handlePlayerWin(userID string, db *sql.DB, wonLevel int) (statGain models.U
 
 	levelGain = levelUpCount
 
-	// คำนวณ stat bonus ตามคลาส
+	// cal stat by class
 	switch class {
 	case "warrior":
 		statGain.Atk = 2 * levelUpCount
@@ -133,7 +132,7 @@ func handlePlayerWin(userID string, db *sql.DB, wonLevel int) (statGain models.U
 
 	statPointUp := levelUpCount * 2
 
-	// สร้าง SQL update
+	// creat SQL update
 	var updateQuery string
 	if wonLevel == currentLevel {
 		updateQuery = `
@@ -172,28 +171,12 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 		var req struct {
 			BotLevel int `json:"levelId"`
 		}
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			fmt.Println("[ERROR] Missing Authorization header")
-			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
-			return
-		}
 
-		var tokenStr string
-		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
-		if tokenStr == "" {
-			fmt.Println("[ERROR] Invalid Authorization header format:", authHeader)
-			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
-			return
-		}
-
-		userID, err := user.ExtractUserIDFromToken(tokenStr)
-		if err != nil {
-			fmt.Println("[ERROR] Failed to extract user ID from token:", err)
+		userID, ok := r.Context().Value("userID").(string)
+		if !ok {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		fmt.Println("[INFO] userID from token:", userID)
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || userID == "0" {
 			fmt.Println("[ERROR] Failed to decode request body or invalid userID, body decode error:", err)
@@ -259,7 +242,7 @@ func StartBattleHandler(db *sql.DB) http.HandlerFunc {
 			PlayingLevel: req.BotLevel,
 		}
 
-		matchID := uuid.New().String() // สร้าง match id ใหม่
+		matchID := uuid.New().String() // create new match id
 
 		gameStatesMutex.Lock()
 		gameStates[matchID] = gameState
@@ -315,26 +298,11 @@ func PlayCardHandler(db *sql.DB) http.HandlerFunc {
 		matchID := vars["matchID"]
 		fmt.Println("[DEBUG] matchID:", matchID)
 
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+		userID, ok := r.Context().Value("userID").(string)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-
-		var tokenStr string
-		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
-		if tokenStr == "" {
-			http.Error(w, "Invalid Authorization header", http.StatusUnauthorized)
-			return
-		}
-		fmt.Println("[DEBUG] token:", tokenStr)
-
-		userID, err := user.ExtractUserIDFromToken(tokenStr)
-		if err != nil {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
-			return
-		}
-		fmt.Println("[DEBUG] userID:", userID)
 
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {

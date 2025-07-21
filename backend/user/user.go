@@ -82,7 +82,7 @@ func GetUserHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		fmt.Println("✅ User data fetched successfully:", user)
+		fmt.Println("User data fetched successfully:", user)
 
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(user)

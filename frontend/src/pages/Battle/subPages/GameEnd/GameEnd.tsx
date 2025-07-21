@@ -53,7 +53,7 @@ const GameEnd = ({
 							<div
 								className="number-box"
 								style={{
-									background: "rgba(140, 140, 70, 0.5)",
+									background: "rgba(140, 70, 140, 0.5)",
 								}}
 							>
 								{postGameDetail?.exp}
@@ -64,7 +64,7 @@ const GameEnd = ({
 							<div
 								className="number-box"
 								style={{
-									background: "rgba(140, 70, 140, 0.5)",
+									background: "rgba(140, 140, 70, 0.5)",
 								}}
 							>
 								{postGameDetail?.gold}

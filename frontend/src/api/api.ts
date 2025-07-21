@@ -8,7 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const request = async (
 	endpoint: string,
-	method: "GET" | "POST",
+	method: "GET" | "POST" | "PUT",
 	data?: unknown,
 	token?: string
 ) => {
@@ -76,7 +76,7 @@ export const playCard = (
 	cardId: string,
 	token: string
 ): Promise<RoundResult> => {
-	return request(`/battle/${matchId}/play`, "POST", { cardId }, token);
+	return request(`/battle/${matchId}/play`, "PUT", { cardId }, token);
 };
 
 export const trueSight = (
@@ -85,7 +85,7 @@ export const trueSight = (
 ): Promise<TrueSightResult> => {
 	return request(
 		`/battle/${matchId}/play/true-sight`,
-		"POST",
+		"PUT",
 		undefined,
 		token
 	);
@@ -93,10 +93,10 @@ export const trueSight = (
 
 // ==================== Upgrade ====================
 export const changeClass = (newClass: string, token: string) =>
-	request("/change-class", "POST", { class: newClass }, token);
+	request("/change-class", "PUT", { class: newClass }, token);
 
 export const upgradeStat = (statType: string, token: string) =>
-	request("/upgrade-stat", "POST", { type: statType }, token);
+	request("/upgrade-stat", "PUT", { type: statType }, token);
 
 export const buyCard = (cardType: string, token: string) =>
 	request("/buy-card", "POST", { type: cardType }, token);

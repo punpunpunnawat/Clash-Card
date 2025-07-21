@@ -1,7 +1,6 @@
 package upgrade
 
 import (
-	"clash_and_card/user"
 	"clash_and_card/utilities"
 	"database/sql"
 	"encoding/json"
@@ -11,21 +10,9 @@ import (
 
 func UpgradeStatHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			utilities.WriteJSONError(w, "Missing Authorization header", http.StatusUnauthorized)
-			return
-		}
 
-		var tokenStr string
-		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
-		if tokenStr == "" {
-			utilities.WriteJSONError(w, "Invalid Authorization header", http.StatusUnauthorized)
-			return
-		}
-
-		userID, err := user.ExtractUserIDFromToken(tokenStr)
-		if err != nil || userID == "0" {
+		userID, ok := r.Context().Value("userID").(string)
+		if !ok || userID == "" {
 			utilities.WriteJSONError(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -38,24 +25,20 @@ func UpgradeStatHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		stat := req.Type
-
 		statValues := map[string]int{
 			"atk": 1,
 			"def": 1,
 			"spd": 1,
 			"hp":  10,
 		}
-
-		increase, ok := statValues[stat]
+		increase, ok := statValues[req.Type]
 		if !ok {
 			utilities.WriteJSONError(w, "Invalid stat field", http.StatusBadRequest)
 			return
 		}
 
 		var statPoint int
-		err = db.QueryRow("SELECT stat_point FROM users WHERE id = ?", userID).Scan(&statPoint)
-		if err != nil {
+		if err := db.QueryRow("SELECT stat_point FROM users WHERE id = ?", userID).Scan(&statPoint); err != nil {
 			utilities.WriteJSONError(w, "User not found", http.StatusNotFound)
 			return
 		}
@@ -68,10 +51,9 @@ func UpgradeStatHandler(db *sql.DB) http.HandlerFunc {
 			UPDATE users
 			SET %s = %s + ?, stat_point = stat_point - 1
 			WHERE id = ?
-		`, stat, stat)
+		`, req.Type, req.Type)
 
-		_, err = db.Exec(query, increase, userID)
-		if err != nil {
+		if _, err := db.Exec(query, increase, userID); err != nil {
 			utilities.WriteJSONError(w, "Failed to update stat", http.StatusInternalServerError)
 			return
 		}
@@ -83,21 +65,8 @@ func UpgradeStatHandler(db *sql.DB) http.HandlerFunc {
 
 func BuyCardHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			utilities.WriteJSONError(w, "Missing Authorization header", http.StatusUnauthorized)
-			return
-		}
-
-		var tokenStr string
-		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
-		if tokenStr == "" {
-			utilities.WriteJSONError(w, "Invalid Authorization header", http.StatusUnauthorized)
-			return
-		}
-
-		userID, err := user.ExtractUserIDFromToken(tokenStr)
-		if err != nil || userID == "0" {
+		userID, ok := r.Context().Value("userID").(string)
+		if !ok || userID == "" {
 			utilities.WriteJSONError(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -179,21 +148,8 @@ func BuyCardHandler(db *sql.DB) http.HandlerFunc {
 
 func ChangeClassHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			utilities.WriteJSONError(w, "Missing Authorization header", http.StatusUnauthorized)
-			return
-		}
-
-		var tokenStr string
-		fmt.Sscanf(authHeader, "Bearer %s", &tokenStr)
-		if tokenStr == "" {
-			utilities.WriteJSONError(w, "Invalid Authorization header", http.StatusUnauthorized)
-			return
-		}
-
-		userID, err := user.ExtractUserIDFromToken(tokenStr)
-		if err != nil || userID == "0" {
+		userID, ok := r.Context().Value("userID").(string)
+		if !ok || userID == "" {
 			utilities.WriteJSONError(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
